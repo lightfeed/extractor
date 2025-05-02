@@ -38,32 +38,32 @@ const productSchema = z.object({
 
 describe("Extract Integration Tests", () => {
   describe("Blog Post Extraction", () => {
-    // test("should extract blog post data using Google Gemini", async () => {
-    //   const result = await extract({
-    //     content: blogPostHtml,
-    //     format: ContentFormat.HTML,
-    //     schema: blogSchema,
-    //     provider: LLMProvider.GOOGLE_GEMINI,
-    //     googleApiKey: process.env.GOOGLE_API_KEY,
-    //   });
+    test("should extract blog post data using Google Gemini default model", async () => {
+      const result = await extract({
+        content: blogPostHtml,
+        format: ContentFormat.HTML,
+        schema: blogSchema,
+        provider: LLMProvider.GOOGLE_GEMINI,
+        googleApiKey: process.env.GOOGLE_API_KEY,
+      });
 
-    //   // Check types and structure, not exact values (as LLM output can vary)
-    //   expect(result.data).toBeDefined();
-    //   expect(result.data.title).toBe("Understanding Async/Await in JavaScript");
-    //   expect(result.data.author).toBe("John Doe");
-    //   expect(result.data.date).toBe("January 15, 2023");
-    //   expect(typeof result.data.summary).toBe("string");
+      // Check the data is extracted correctly
+      expect(result.data).toBeDefined();
+      expect(result.data.title).toBe("Understanding Async/Await in JavaScript");
+      expect(result.data.author).toBe("John Doe");
+      expect(result.data.date).toBe("January 15, 2023");
+      expect(typeof result.data.summary).toBe("string");
+      expect(result.data.summary.length).toBeGreaterThan(0);
 
-    //   // Check markdown conversion
-    //   expect(result.markdown).toContain("Async/await");
+      // Verify that usage statistics are returned
+      expect(result.usage).toBeDefined();
+      expect(result.usage.inputTokens).toBeDefined();
+      expect(result.usage.outputTokens).toBeDefined();
+      expect(result.usage.inputTokens).toBeGreaterThan(0);
+      expect(result.usage.outputTokens).toBeGreaterThan(0);
+    });
 
-    //   // Check that usage statistics are captured
-    //   expect(result.usage).toBeDefined();
-    //   expect(result.usage.inputTokens).toBeGreaterThan(0);
-    //   expect(result.usage.outputTokens).toBeGreaterThan(0);
-    // });
-
-    test("should extract data and return usage statistics with OpenAI", async () => {
+    test("should extract blog post data using OpenAI default model", async () => {
       const result = await extract({
         content: blogPostHtml,
         format: ContentFormat.HTML,
@@ -78,6 +78,7 @@ describe("Extract Integration Tests", () => {
       expect(result.data.author).toBe("John Doe");
       expect(result.data.date).toBe("January 15, 2023");
       expect(typeof result.data.summary).toBe("string");
+      expect(result.data.summary.length).toBeGreaterThan(0);
 
       // Verify that usage statistics are returned
       expect(result.usage).toBeDefined();
@@ -85,9 +86,6 @@ describe("Extract Integration Tests", () => {
       expect(result.usage.outputTokens).toBeDefined();
       expect(result.usage.inputTokens).toBeGreaterThan(0);
       expect(result.usage.outputTokens).toBeGreaterThan(0);
-
-      // Log the usage for inspection
-      console.log("Token usage:", result.usage);
     });
   });
 
