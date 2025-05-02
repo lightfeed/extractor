@@ -6,7 +6,7 @@ import { ContentExtractionOptions } from "./types";
  * This is a simple implementation - for production,
  * consider using more advanced algorithms or libraries
  */
-function extractMainContent(html: string): string {
+function extractMainHtml(html: string): string {
   // This is a simple implementation that looks for common content containers
   // In a real implementation, you would want to use a more sophisticated
   // algorithm or library like Readability
@@ -45,8 +45,8 @@ export function htmlToMarkdown(
   let processedHtml = html;
 
   // Extract main content if requested
-  if (options?.extractMainContent) {
-    processedHtml = extractMainContent(html);
+  if (options?.extractMainHtml) {
+    processedHtml = extractMainHtml(html);
   }
 
   // Convert to markdown using turndown

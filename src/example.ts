@@ -62,7 +62,7 @@ async function example() {
       // Using Google Gemini by default
       googleApiKey: process.env.GOOGLE_API_KEY,
       extractionOptions: {
-        extractMainContent: true,
+        extractMainHtml: true,
       },
     });
 

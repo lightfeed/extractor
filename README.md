@@ -8,7 +8,7 @@ A TypeScript/Node.js library for extracting structured data from HTML or markdow
 - Extract structured data using OpenAI or Google Gemini models
 - Define your extraction schema using Zod
 - Track token usage statistics
-- Option to extract only the main content from HTML
+- Option to extract only the main content from HTML, removing navigation, headers & footers
 
 ## Installation
 
@@ -93,6 +93,23 @@ async function main() {
 main().catch(console.error);
 ```
 
+### HTML Content Extraction
+
+For blog posts or articles with lots of navigation elements, headers, and footers, you can use the `extractMainHtml` option to focus on just the main content:
+
+```typescript
+const result = await extract({
+  content: htmlContent,
+  format: ContentFormat.HTML,
+  schema: mySchema,
+  extractionOptions: {
+    extractMainHtml: true // Uses heuristics to remove navigation, headers, footers, etc.
+  }
+});
+```
+
+**Note:** The `extractMainHtml` option only applies to HTML format, not markdown. It uses simple heuristics to identify and extract what appears to be the main content area (like article or main tags). It's recommended to keep this option off (false) when extracting details about a single item (like a product listing) as it might remove important contextual elements.
+
 ## API Keys
 
 The library will check for API keys in the following order:
@@ -120,7 +137,13 @@ Main function to extract structured data from content.
 | `googleApiKey` | `string` | Google API key (if using Google Gemini provider) | From env `GOOGLE_API_KEY` |
 | `openaiApiKey` | `string` | OpenAI API key (if using OpenAI provider) | From env `OPENAI_API_KEY` |
 | `temperature` | `number` | Temperature for the LLM (0-1) | `0` |
-| `extractionOptions` | `ContentExtractionOptions` | Options for content extraction | `{}` |
+| `extractionOptions` | `ContentExtractionOptions` | Options for content extraction (see below) | `{}` |
+
+#### Content Extraction Options
+
+| Option | Type | Description | Default |
+|--------|------|-------------|---------|
+| `extractMainHtml` | `boolean` | When enabled for HTML content, attempts to extract the main content area, removing navigation bars, headers, footers, etc. using heuristics. Should be kept off when extracting details about a single item. | `false` |
 
 #### Return Value
 
@@ -160,12 +183,16 @@ interface ExtractorResult<T> {
 You can test the library with real API calls and sample HTML files:
 
 ```bash
-# Run all local tests
+# Run all local tests with both providers
 npm run test:local
 
-# Run specific test type
+# Run specific test type with both providers
 npm run test:local -- blog
 npm run test:local -- product
+
+# Run tests with a specific provider
+npm run test:local -- blog openai   # Test blog extraction with OpenAI
+npm run test:local -- product gemini  # Test product extraction with Google Gemini
 ```
 
 ### Testing
@@ -177,6 +204,8 @@ The library includes both unit tests and integration tests:
 
 Integration tests require valid API keys to be provided in your `.env` file or environment variables. Tests will fail if required API keys are not available.
 
+Each integration test runs with both Google Gemini and OpenAI to ensure compatibility across providers.
+
 ## License
 
-ISC
+MIT

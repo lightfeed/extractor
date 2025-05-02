@@ -40,25 +40,35 @@ const productSchema = z.object({
 });
 
 // Test functions
-async function testBlogExtraction() {
-  console.log("Testing blog post extraction...");
+async function testBlogExtraction(provider = LLMProvider.GOOGLE_GEMINI) {
+  console.log(`Testing blog post extraction with ${provider}...`);
 
   try {
     const html = loadFixture("blog-post.html");
 
-    if (!process.env.GOOGLE_API_KEY) {
+    // Check for required API key
+    if (provider === LLMProvider.GOOGLE_GEMINI && !process.env.GOOGLE_API_KEY) {
       console.error("Error: GOOGLE_API_KEY environment variable is required");
       process.exit(1);
+    } else if (provider === LLMProvider.OPENAI && !process.env.OPENAI_API_KEY) {
+      console.error("Error: OPENAI_API_KEY environment variable is required");
+      process.exit(1);
     }
+
+    const apiKey =
+      provider === LLMProvider.GOOGLE_GEMINI
+        ? process.env.GOOGLE_API_KEY
+        : process.env.OPENAI_API_KEY;
 
     const result = await extract({
       content: html,
       format: ContentFormat.HTML,
       schema: blogSchema,
-      provider: LLMProvider.GOOGLE_GEMINI,
-      googleApiKey: process.env.GOOGLE_API_KEY,
+      provider,
+      googleApiKey: provider === LLMProvider.GOOGLE_GEMINI ? apiKey : undefined,
+      openaiApiKey: provider === LLMProvider.OPENAI ? apiKey : undefined,
       extractionOptions: {
-        extractMainContent: true,
+        extractMainHtml: true,
       },
     });
 
@@ -69,28 +79,38 @@ async function testBlogExtraction() {
 
     return result;
   } catch (error) {
-    console.error("Blog extraction error:", error);
+    console.error(`Blog extraction error with ${provider}:`, error);
     throw error;
   }
 }
 
-async function testProductExtraction() {
-  console.log("Testing product listing extraction...");
+async function testProductExtraction(provider = LLMProvider.GOOGLE_GEMINI) {
+  console.log(`Testing product listing extraction with ${provider}...`);
 
   try {
     const html = loadFixture("product-list.html");
 
-    if (!process.env.GOOGLE_API_KEY) {
+    // Check for required API key
+    if (provider === LLMProvider.GOOGLE_GEMINI && !process.env.GOOGLE_API_KEY) {
       console.error("Error: GOOGLE_API_KEY environment variable is required");
       process.exit(1);
+    } else if (provider === LLMProvider.OPENAI && !process.env.OPENAI_API_KEY) {
+      console.error("Error: OPENAI_API_KEY environment variable is required");
+      process.exit(1);
     }
+
+    const apiKey =
+      provider === LLMProvider.GOOGLE_GEMINI
+        ? process.env.GOOGLE_API_KEY
+        : process.env.OPENAI_API_KEY;
 
     const result = await extract({
       content: html,
       format: ContentFormat.HTML,
       schema: productSchema,
-      provider: LLMProvider.GOOGLE_GEMINI,
-      googleApiKey: process.env.GOOGLE_API_KEY,
+      provider,
+      googleApiKey: provider === LLMProvider.GOOGLE_GEMINI ? apiKey : undefined,
+      openaiApiKey: provider === LLMProvider.OPENAI ? apiKey : undefined,
     });
 
     console.log("Extracted data:");
@@ -100,26 +120,46 @@ async function testProductExtraction() {
 
     return result;
   } catch (error) {
-    console.error("Product extraction error:", error);
+    console.error(`Product extraction error with ${provider}:`, error);
     throw error;
   }
 }
 
 // Run tests based on command line arguments
 async function main() {
-  const testType = process.argv[2] || "all";
+  // Parse arguments: content type and provider
+  const args = process.argv.slice(2);
+  const contentType = args[0] || "all"; // 'blog', 'product', or 'all'
+  const provider =
+    args[1]?.toUpperCase() === "OPENAI"
+      ? LLMProvider.OPENAI
+      : args[1]?.toUpperCase() === "GEMINI"
+      ? LLMProvider.GOOGLE_GEMINI
+      : "all"; // 'OPENAI', 'GEMINI', or 'all'
 
   console.log("API Keys available:");
   console.log(`- GOOGLE_API_KEY: ${process.env.GOOGLE_API_KEY ? "Yes" : "No"}`);
   console.log(`- OPENAI_API_KEY: ${process.env.OPENAI_API_KEY ? "Yes" : "No"}`);
   console.log("");
 
-  if (testType === "blog" || testType === "all") {
-    await testBlogExtraction();
+  // Run blog tests
+  if (contentType === "blog" || contentType === "all") {
+    if (provider === LLMProvider.GOOGLE_GEMINI || provider === "all") {
+      await testBlogExtraction(LLMProvider.GOOGLE_GEMINI);
+    }
+    if (provider === LLMProvider.OPENAI || provider === "all") {
+      await testBlogExtraction(LLMProvider.OPENAI);
+    }
   }
 
-  if (testType === "product" || testType === "all") {
-    await testProductExtraction();
+  // Run product tests
+  if (contentType === "product" || contentType === "all") {
+    if (provider === LLMProvider.GOOGLE_GEMINI || provider === "all") {
+      await testProductExtraction(LLMProvider.GOOGLE_GEMINI);
+    }
+    if (provider === LLMProvider.OPENAI || provider === "all") {
+      await testProductExtraction(LLMProvider.OPENAI);
+    }
   }
 }
 
@@ -127,6 +167,9 @@ async function main() {
 if (require.main === module) {
   console.log("Starting local extraction test...");
   console.log("Make sure you have set up your .env file with API keys.");
+  console.log("Usage: npm run test:local -- [contentType] [provider]");
+  console.log("  contentType: 'blog', 'product', or 'all' (default)");
+  console.log("  provider: 'openai', 'gemini', or 'all' (default)");
 
   main()
     .then(() => {

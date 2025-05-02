@@ -17,10 +17,19 @@ export enum LLMProvider {
 }
 
 /**
- * Options for content extraction (HTML specific)
+ * Options for HTML content processing
  */
 export interface ContentExtractionOptions {
-  extractMainContent?: boolean;
+  /**
+   * When enabled, attempts to extract the main content from HTML, removing navigation bars, headers, footers, etc.
+   * This uses heuristics to identify the main content area.
+   *
+   * Should be kept off (false) when extracting specific details about a single item,
+   * as it might remove important contextual elements.
+   *
+   * Only applies to HTML format, not markdown.
+   */
+  extractMainHtml?: boolean;
 }
 
 /**

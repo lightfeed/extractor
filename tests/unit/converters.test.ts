@@ -32,7 +32,7 @@ describe("HTML to Markdown converter", () => {
     expect(markdown).toBe("![An image](image.jpg)");
   });
 
-  test("should extract main content when extractMainContent is true", () => {
+  test("should extract main content when extractMainHtml is true", () => {
     const html = `
       <html>
         <body>
@@ -47,7 +47,7 @@ describe("HTML to Markdown converter", () => {
     `;
 
     const markdownWithExtraction = htmlToMarkdown(html, {
-      extractMainContent: true,
+      extractMainHtml: true,
     });
     const markdownWithoutExtraction = htmlToMarkdown(html);
 
