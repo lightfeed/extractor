@@ -8,32 +8,13 @@ const blogPostHtml = fs.readFileSync(
   path.resolve(__dirname, "../fixtures/blog-post.html"),
   "utf8"
 );
-const productListHtml = fs.readFileSync(
-  path.resolve(__dirname, "../fixtures/product-list.html"),
-  "utf8"
-);
-
 // Define schemas that will be reused
 const blogSchema = z.object({
   title: z.string(),
   author: z.string(),
   date: z.string(),
-  tags: z.array(z.string()).nullable().optional(),
+  tags: z.array(z.string()).optional(),
   summary: z.string(),
-});
-
-const productSchema = z.object({
-  title: z.string(),
-  products: z.array(
-    z.object({
-      name: z.string(),
-      price: z.string(),
-      rating: z.string().optional().nullable(),
-      description: z.string().optional().nullable(),
-      features: z.array(z.string()).optional().nullable(),
-    })
-  ),
-  totalProducts: z.number(),
 });
 
 describe("Extract Integration Tests", () => {
@@ -57,8 +38,6 @@ describe("Extract Integration Tests", () => {
 
       // Verify that usage statistics are returned
       expect(result.usage).toBeDefined();
-      expect(result.usage.inputTokens).toBeDefined();
-      expect(result.usage.outputTokens).toBeDefined();
       expect(result.usage.inputTokens).toBeGreaterThan(0);
       expect(result.usage.outputTokens).toBeGreaterThan(0);
     });
@@ -82,60 +61,148 @@ describe("Extract Integration Tests", () => {
 
       // Verify that usage statistics are returned
       expect(result.usage).toBeDefined();
-      expect(result.usage.inputTokens).toBeDefined();
-      expect(result.usage.outputTokens).toBeDefined();
       expect(result.usage.inputTokens).toBeGreaterThan(0);
       expect(result.usage.outputTokens).toBeGreaterThan(0);
     });
   });
 
+  const productListHtml = fs.readFileSync(
+    path.resolve(__dirname, "../fixtures/product-list.html"),
+    "utf8"
+  );
+
+  const productSchema = z.object({
+    products: z.array(
+      z.object({
+        name: z.string(),
+        price: z.number(),
+        rating: z.number().optional(),
+        description: z.string().optional(),
+        features: z.array(z.string()).optional(),
+      })
+    ),
+  });
+
+  const groundTruthProductList = [
+    {
+      name: "Smart Speaker Pro",
+      price: 129.99,
+      rating: 4.2,
+      description:
+        "Premium smart speaker with built-in voice assistant. Control your smart home, play music, or get answers to your questions.",
+      features: [
+        "360° sound with deep bass",
+        "Multi-room audio support",
+        "Compatible with most smart home devices",
+        "Available in black, white, and gray",
+      ],
+    },
+    {
+      name: "Smart Thermostat",
+      price: 89.95,
+      rating: 4.8,
+      description:
+        "Energy-efficient smart thermostat that learns your preferences and helps save on utility bills.",
+      features: [
+        "Easy installation",
+        "Compatible with most HVAC systems",
+        "Mobile app control",
+        "Energy usage reports",
+      ],
+    },
+    {
+      name: "Smart Security Camera",
+      price: 74.5,
+      rating: 4,
+      description:
+        "HD security camera with motion detection, night vision, and two-way audio.",
+      features: [
+        "1080p HD video",
+        "Cloud storage available",
+        "Weather-resistant",
+        "Real-time alerts",
+      ],
+    },
+  ];
+
   describe("Product List Extraction", () => {
-    // test("should extract product list data using Google Gemini", async () => {
-    //   const result = await extract({
-    //     content: productListHtml,
-    //     format: ContentFormat.HTML,
-    //     schema: productSchema,
-    //     provider: LLMProvider.GOOGLE_GEMINI,
-    //     googleApiKey: process.env.GOOGLE_API_KEY,
-    //   });
-    //   // Check structure, not exact values
-    //   expect(result.data).toBeDefined();
-    //   expect(typeof result.data.title).toBe("string");
-    //   expect(Array.isArray(result.data.products)).toBe(true);
-    //   expect(result.data.products.length).toBeGreaterThan(0);
-    //   expect(typeof result.data.totalProducts).toBe("number");
-    //   // Check that each product has required fields
-    //   for (const product of result.data.products) {
-    //     expect(typeof product.name).toBe("string");
-    //     expect(typeof product.price).toBe("string");
-    //   }
-    //   // Check usage statistics
-    //   expect(result.usage).toBeDefined();
-    // });
-    // test("should extract product list data using OpenAI", async () => {
-    //   const result = await extract({
-    //     content: productListHtml,
-    //     format: ContentFormat.HTML,
-    //     schema: productSchema,
-    //     provider: LLMProvider.OPENAI,
-    //     openaiApiKey: process.env.OPENAI_API_KEY,
-    //     extractionOptions: {
-    //       extractMainHtml: true,
-    //     },
-    //   });
-    //   // Check structure, not exact values
-    //   expect(result.data).toBeDefined();
-    //   expect(typeof result.data.title).toBe("string");
-    //   expect(Array.isArray(result.data.products)).toBe(true);
-    //   expect(result.data.products.length).toBeGreaterThan(0);
-    //   expect(typeof result.data.totalProducts).toBe("number");
-    //   // Check that each product has required fields
-    //   for (const product of result.data.products) {
-    //     expect(typeof product.name).toBe("string");
-    //     expect(typeof product.price).toBe("string");
-    //   }
-    //   // Check usage statistics
-    //   expect(result.usage).toBeDefined();
-    // });
+    test("should extract product list data using Google Gemini", async () => {
+      const result = await extract({
+        content: productListHtml,
+        format: ContentFormat.HTML,
+        schema: productSchema,
+        provider: LLMProvider.GOOGLE_GEMINI,
+        googleApiKey: process.env.GOOGLE_API_KEY,
+      });
+
+      // Check structure, not exact values
+      expect(result.data).toBeDefined();
+      expect(Array.isArray(result.data.products)).toBe(true);
+
+      // Check parity with ground truth data
+      expect(result.data.products.length).toBe(groundTruthProductList.length);
+
+      // Verify each extracted product matches the ground truth
+      for (const product of result.data.products) {
+        // Find matching product in ground truth by name
+        const groundTruthProduct = groundTruthProductList.find(
+          (p) => p.name === product.name
+        );
+
+        // Ensure the product exists in ground truth
+        expect(groundTruthProduct).toBeDefined();
+
+        // Compare all product properties
+        expect(product.price).toBe(groundTruthProduct?.price);
+        expect(product.rating).toBe(groundTruthProduct?.rating);
+        expect(product.description).toBe(groundTruthProduct?.description);
+        expect(product.features).toEqual(groundTruthProduct?.features);
+      }
+
+      expect(result.usage).toBeDefined();
+      expect(result.usage.inputTokens).toBeGreaterThan(0);
+      expect(result.usage.outputTokens).toBeGreaterThan(0);
+    });
+
+    test("should extract product list data using OpenAI", async () => {
+      const result = await extract({
+        content: productListHtml,
+        format: ContentFormat.HTML,
+        schema: productSchema,
+        provider: LLMProvider.OPENAI,
+        openaiApiKey: process.env.OPENAI_API_KEY,
+        extractionOptions: {
+          extractMainHtml: true,
+        },
+      });
+
+      // Check structure, not exact values
+      expect(result.data).toBeDefined();
+      expect(Array.isArray(result.data.products)).toBe(true);
+
+      // Check parity with ground truth data
+      expect(result.data.products.length).toBe(groundTruthProductList.length);
+
+      // Verify each extracted product matches the ground truth
+      for (const product of result.data.products) {
+        // Find matching product in ground truth by name
+        const groundTruthProduct = groundTruthProductList.find(
+          (p) => p.name === product.name
+        );
+
+        // Ensure the product exists in ground truth
+        expect(groundTruthProduct).toBeDefined();
+
+        // Compare all product properties
+        expect(product.price).toBe(groundTruthProduct?.price);
+        expect(product.rating).toBe(groundTruthProduct?.rating);
+        expect(product.description).toBe(groundTruthProduct?.description);
+        expect(product.features).toEqual(groundTruthProduct?.features);
+      }
+
+      expect(result.usage).toBeDefined();
+      expect(result.usage.inputTokens).toBeGreaterThan(0);
+      expect(result.usage.outputTokens).toBeGreaterThan(0);
+    });
   });
 });
