@@ -12,7 +12,7 @@ import {
 // Default model names
 const DEFAULT_MODELS = {
   [LLMProvider.GOOGLE_GEMINI]: "gemini-2.5-flash-preview-04-17",
-  [LLMProvider.OPENAI]: "gpt-4o",
+  [LLMProvider.OPENAI]: "gpt-4o-mini",
 };
 
 /**

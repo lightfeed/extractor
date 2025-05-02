@@ -46,7 +46,12 @@ describe("Extractors", () => {
     // since we don't want to make real API calls in unit tests
 
     test("should create ChatOpenAI instance for OPENAI provider", () => {
-      const llm = createLLM(LLMProvider.OPENAI, "gpt-4o", "fake-api-key", 0);
+      const llm = createLLM(
+        LLMProvider.OPENAI,
+        "gpt-4o-mini",
+        "fake-api-key",
+        0
+      );
 
       expect(llm).toBeDefined();
       expect(llm.constructor.name).toBe("ChatOpenAI");

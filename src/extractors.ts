@@ -49,13 +49,6 @@ export function createLLM(
         apiKey,
         modelName,
         temperature,
-        callbacks: [
-          {
-            handleLLMEnd(output: LLMResult) {
-              return getUsage(output);
-            },
-          },
-        ],
       });
 
     case LLMProvider.GOOGLE_GEMINI:
@@ -63,13 +56,6 @@ export function createLLM(
         apiKey,
         model: modelName,
         temperature,
-        callbacks: [
-          {
-            handleLLMEnd(output: LLMResult) {
-              return getUsage(output);
-            },
-          },
-        ],
       });
 
     default:
@@ -98,22 +84,34 @@ Return only the structured data in valid JSON format and nothing else.
 MARKDOWN CONTENT:
 ${markdown}`;
 
-  // Define callback for usage tracking
-  const callbacks = [
-    {
-      handleLLMEnd(output: LLMResult) {
-        usage = getUsage(output);
+  try {
+    // Extract structured data with a withStructuredOutput chain
+    const structuredOutputLLM = llm.withStructuredOutput(schema);
+
+    // Create a callback handler for usage tracking
+    const callbacks = [
+      {
+        handleLLMEnd: (output: any) => {
+          if (output?.llmOutput?.tokenUsage) {
+            usage = {
+              inputTokens: output.llmOutput.tokenUsage.promptTokens,
+              outputTokens: output.llmOutput.tokenUsage.completionTokens,
+            };
+          }
+        },
       },
-    },
-  ];
+    ];
 
-  // Extract structured data
-  const res = await llm
-    .withStructuredOutput(schema, { includeRaw: true })
-    .invoke(prompt);
+    // Invoke the LLM with callbacks to track usage
+    const response = await structuredOutputLLM.invoke(prompt, { callbacks });
 
-  return {
-    data: res,
-    usage,
-  };
+    // Return the parsed data and usage statistics
+    return {
+      data: response,
+      usage,
+    };
+  } catch (error) {
+    console.error("Error during LLM extraction:", error);
+    throw error;
+  }
 }

@@ -82,7 +82,7 @@ async function main() {
     schema,
     provider: LLMProvider.OPENAI,
     openaiApiKey: 'your-openai-api-key', // API key must be provided explicitly
-    modelName: 'gpt-4o',
+    modelName: 'gpt-4o-mini',
     temperature: 0.2
   });
 
