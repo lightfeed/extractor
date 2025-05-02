@@ -1,7 +1,12 @@
 import * as fs from "fs";
 import * as path from "path";
 import { z } from "zod";
-import { extract, ContentFormat, LLMProvider } from "../../src";
+import {
+  extract,
+  ContentFormat,
+  LLMProvider,
+  ExtractorResult,
+} from "../../src";
 
 // Read the sample HTML files
 const blogPostHtml = fs.readFileSync(
@@ -17,6 +22,22 @@ const blogSchema = z.object({
   summary: z.string(),
 });
 
+// Helper function to verify blog post extraction results
+function verifyBlogPostExtraction(result: ExtractorResult<any>): void {
+  // Check the data is extracted correctly
+  expect(result.data).toBeDefined();
+  expect(result.data.title).toBe("Understanding Async/Await in JavaScript");
+  expect(result.data.author).toBe("John Doe");
+  expect(result.data.date).toBe("January 15, 2023");
+  expect(typeof result.data.summary).toBe("string");
+  expect(result.data.summary.length).toBeGreaterThan(0);
+
+  // Verify that usage statistics are returned
+  expect(result.usage).toBeDefined();
+  expect(result.usage.inputTokens).toBeGreaterThan(0);
+  expect(result.usage.outputTokens).toBeGreaterThan(0);
+}
+
 describe("Extract Integration Tests", () => {
   describe("Blog Post Extraction", () => {
     test("should extract blog post data using Google Gemini default model", async () => {
@@ -28,18 +49,7 @@ describe("Extract Integration Tests", () => {
         googleApiKey: process.env.GOOGLE_API_KEY,
       });
 
-      // Check the data is extracted correctly
-      expect(result.data).toBeDefined();
-      expect(result.data.title).toBe("Understanding Async/Await in JavaScript");
-      expect(result.data.author).toBe("John Doe");
-      expect(result.data.date).toBe("January 15, 2023");
-      expect(typeof result.data.summary).toBe("string");
-      expect(result.data.summary.length).toBeGreaterThan(0);
-
-      // Verify that usage statistics are returned
-      expect(result.usage).toBeDefined();
-      expect(result.usage.inputTokens).toBeGreaterThan(0);
-      expect(result.usage.outputTokens).toBeGreaterThan(0);
+      verifyBlogPostExtraction(result);
     });
 
     test("should extract blog post data using OpenAI default model", async () => {
@@ -51,18 +61,7 @@ describe("Extract Integration Tests", () => {
         openaiApiKey: process.env.OPENAI_API_KEY,
       });
 
-      // Check the data is extracted correctly
-      expect(result.data).toBeDefined();
-      expect(result.data.title).toBe("Understanding Async/Await in JavaScript");
-      expect(result.data.author).toBe("John Doe");
-      expect(result.data.date).toBe("January 15, 2023");
-      expect(typeof result.data.summary).toBe("string");
-      expect(result.data.summary.length).toBeGreaterThan(0);
-
-      // Verify that usage statistics are returned
-      expect(result.usage).toBeDefined();
-      expect(result.usage.inputTokens).toBeGreaterThan(0);
-      expect(result.usage.outputTokens).toBeGreaterThan(0);
+      verifyBlogPostExtraction(result);
     });
   });
 
@@ -125,6 +124,38 @@ describe("Extract Integration Tests", () => {
     },
   ];
 
+  // Helper function to verify product list extraction results
+  function verifyProductListExtraction(result: ExtractorResult<any>): void {
+    // Check structure, not exact values
+    expect(result.data).toBeDefined();
+    expect(Array.isArray(result.data.products)).toBe(true);
+
+    // Check parity with ground truth data
+    expect(result.data.products.length).toBe(groundTruthProductList.length);
+
+    // Verify each extracted product matches the ground truth
+    for (const product of result.data.products) {
+      // Find matching product in ground truth by name
+      const groundTruthProduct = groundTruthProductList.find(
+        (p) => p.name === product.name
+      );
+
+      // Ensure the product exists in ground truth
+      expect(groundTruthProduct).toBeDefined();
+
+      // Compare all product properties
+      expect(product.price).toBe(groundTruthProduct?.price);
+      expect(product.rating).toBe(groundTruthProduct?.rating);
+      expect(product.description).toBe(groundTruthProduct?.description);
+      expect(product.features).toEqual(groundTruthProduct?.features);
+    }
+
+    // Verify that usage statistics are returned
+    expect(result.usage).toBeDefined();
+    expect(result.usage.inputTokens).toBeGreaterThan(0);
+    expect(result.usage.outputTokens).toBeGreaterThan(0);
+  }
+
   describe("Product List Extraction", () => {
     test("should extract product list data using Google Gemini", async () => {
       const result = await extract({
@@ -133,35 +164,11 @@ describe("Extract Integration Tests", () => {
         schema: productSchema,
         provider: LLMProvider.GOOGLE_GEMINI,
         googleApiKey: process.env.GOOGLE_API_KEY,
+        extractionOptions: {
+          extractMainHtml: true,
+        },
       });
-
-      // Check structure, not exact values
-      expect(result.data).toBeDefined();
-      expect(Array.isArray(result.data.products)).toBe(true);
-
-      // Check parity with ground truth data
-      expect(result.data.products.length).toBe(groundTruthProductList.length);
-
-      // Verify each extracted product matches the ground truth
-      for (const product of result.data.products) {
-        // Find matching product in ground truth by name
-        const groundTruthProduct = groundTruthProductList.find(
-          (p) => p.name === product.name
-        );
-
-        // Ensure the product exists in ground truth
-        expect(groundTruthProduct).toBeDefined();
-
-        // Compare all product properties
-        expect(product.price).toBe(groundTruthProduct?.price);
-        expect(product.rating).toBe(groundTruthProduct?.rating);
-        expect(product.description).toBe(groundTruthProduct?.description);
-        expect(product.features).toEqual(groundTruthProduct?.features);
-      }
-
-      expect(result.usage).toBeDefined();
-      expect(result.usage.inputTokens).toBeGreaterThan(0);
-      expect(result.usage.outputTokens).toBeGreaterThan(0);
+      verifyProductListExtraction(result);
     });
 
     test("should extract product list data using OpenAI", async () => {
@@ -175,34 +182,7 @@ describe("Extract Integration Tests", () => {
           extractMainHtml: true,
         },
       });
-
-      // Check structure, not exact values
-      expect(result.data).toBeDefined();
-      expect(Array.isArray(result.data.products)).toBe(true);
-
-      // Check parity with ground truth data
-      expect(result.data.products.length).toBe(groundTruthProductList.length);
-
-      // Verify each extracted product matches the ground truth
-      for (const product of result.data.products) {
-        // Find matching product in ground truth by name
-        const groundTruthProduct = groundTruthProductList.find(
-          (p) => p.name === product.name
-        );
-
-        // Ensure the product exists in ground truth
-        expect(groundTruthProduct).toBeDefined();
-
-        // Compare all product properties
-        expect(product.price).toBe(groundTruthProduct?.price);
-        expect(product.rating).toBe(groundTruthProduct?.rating);
-        expect(product.description).toBe(groundTruthProduct?.description);
-        expect(product.features).toEqual(groundTruthProduct?.features);
-      }
-
-      expect(result.usage).toBeDefined();
-      expect(result.usage.inputTokens).toBeGreaterThan(0);
-      expect(result.usage.outputTokens).toBeGreaterThan(0);
+      verifyProductListExtraction(result);
     });
   });
 });
