@@ -145,12 +145,18 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
     const raw = response.raw as AIMessage;
 
     let data = response.parsed;
+    // If structured output is not successful, try to parse the raw object.
     if (data == null) {
       // Note: this only works for OpenAI models.
       if (raw.tool_calls && raw.tool_calls.length > 0) {
         // This is the raw object before structured output tool call.
         const rawObject = raw.tool_calls[0].args;
         // Manually sanitize the object and remove any unsafe but optional fields or unsafe items in arrays.
+        data = safeSanitizedParser(schema, rawObject);
+      }
+      // Note: this only works for Google Gemini models.
+      if (raw.lc_kwargs && raw.lc_kwargs.content) {
+        const rawObject = JSON.parse(raw.lc_kwargs.content);
         data = safeSanitizedParser(schema, rawObject);
       }
       if (data == null) {

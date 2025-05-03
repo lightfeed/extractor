@@ -68,7 +68,7 @@ async function testBlogExtraction(provider = LLMProvider.GOOGLE_GEMINI) {
       googleApiKey: provider === LLMProvider.GOOGLE_GEMINI ? apiKey : undefined,
       openaiApiKey: provider === LLMProvider.OPENAI ? apiKey : undefined,
       extractionOptions: {
-        extractMainHtml: true,
+        extractMainHtml: false,
       },
     });
 
@@ -111,6 +111,9 @@ async function testProductExtraction(provider = LLMProvider.GOOGLE_GEMINI) {
       provider,
       googleApiKey: provider === LLMProvider.GOOGLE_GEMINI ? apiKey : undefined,
       openaiApiKey: provider === LLMProvider.OPENAI ? apiKey : undefined,
+      extractionOptions: {
+        extractMainHtml: true,
+      },
     });
 
     console.log("Extracted data:");

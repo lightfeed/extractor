@@ -6,7 +6,6 @@ import {
   LLMProvider,
   ExtractorOptions,
   ExtractorResult,
-  Usage,
 } from "./types";
 
 // Default model names
@@ -51,12 +50,12 @@ export async function extract<T extends z.ZodTypeAny>(
 
   // Convert HTML to markdown if needed
   let content = options.content;
-  let originalFormat = options.format;
+  let formatToUse = options.format;
 
   if (options.format === ContentFormat.HTML) {
     content = htmlToMarkdown(options.content, options.extractionOptions);
-    // Keep track that we converted from HTML
-    originalFormat = ContentFormat.HTML;
+    // For the LLM, the content is now markdown
+    formatToUse = ContentFormat.MARKDOWN;
   }
 
   // Extract structured data using LLM
@@ -68,7 +67,7 @@ export async function extract<T extends z.ZodTypeAny>(
     apiKey,
     options.temperature ?? 0,
     options.prompt,
-    options.format.toString() // Pass the format as a string
+    formatToUse.toString() // Pass the correct format based on actual content
   );
 
   // Return the full result
