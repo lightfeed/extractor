@@ -86,7 +86,9 @@ ${markdown}`;
 
   try {
     // Extract structured data with a withStructuredOutput chain
-    const structuredOutputLLM = llm.withStructuredOutput(schema);
+    const structuredOutputLLM = llm.withStructuredOutput(schema, {
+      includeRaw: true,
+    });
 
     // Create a callback handler for usage tracking
     const callbacks = [
@@ -105,9 +107,11 @@ ${markdown}`;
     // Invoke the LLM with callbacks to track usage
     const response = await structuredOutputLLM.invoke(prompt, { callbacks });
 
+    console.log(JSON.stringify(response.raw, null, 2));
+
     // Return the parsed data and usage statistics
     return {
-      data: response,
+      data: response.parsed,
       usage,
     };
   } catch (error) {

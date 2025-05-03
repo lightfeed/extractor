@@ -185,4 +185,46 @@ describe("Extract Integration Tests", () => {
       verifyProductListExtraction(result);
     });
   });
+
+  const markdownContent = "Product: Apple, Price: N/A";
+
+  describe("Handle Structured Output Errors", () => {
+    test("should handle structured output errors using OpenAI", async () => {
+      const result = await extract({
+        content: markdownContent,
+        format: ContentFormat.MARKDOWN,
+        schema: z.object({
+          product: z.string(),
+          // For this test, force the price to be N/A and break the schema so we can test the
+          // structured output error handling. In real life, this could happen if the LLM returns
+          // a value that is not expected by the schema.
+          price: z.number().describe("Use 'N/A' if not available").optional(),
+        }),
+        provider: LLMProvider.OPENAI,
+        openaiApiKey: process.env.OPENAI_API_KEY,
+        modelName: "gpt-3.5-turbo",
+      });
+
+      console.log(JSON.stringify(result, null, 2));
+    });
+
+    test("should handle structured output errors using Google Gemini", async () => {
+      const result = await extract({
+        content: markdownContent,
+        format: ContentFormat.MARKDOWN,
+        schema: z.object({
+          product: z.string(),
+          // For this test, force the price to be N/A and break the schema so we can test the
+          // structured output error handling. In real life, this could happen if the LLM returns
+          // a value that is not expected by the schema.
+          price: z.number().describe("Use 'N/A' if not available").optional(),
+        }),
+        provider: LLMProvider.GOOGLE_GEMINI,
+        googleApiKey: process.env.GOOGLE_API_KEY,
+        modelName: "gemini-1.5-flash-8b",
+      });
+
+      console.log(JSON.stringify(result, null, 2));
+    });
+  });
 });
