@@ -75,3 +75,6 @@ export async function extract<T extends z.ZodTypeAny>(
 
 // Re-export types and enums
 export * from "./types";
+
+// Utils
+export { safeSanitizedParser } from "./utils/schemaUtils";

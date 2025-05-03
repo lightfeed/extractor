@@ -2,6 +2,8 @@ import { ChatOpenAI } from "@langchain/openai";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { z } from "zod";
 import { LLMProvider, Usage } from "./types";
+import { AIMessage } from "@langchain/core/messages";
+import { safeSanitizedParser } from "./utils/schemaUtils";
 
 // Define LLMResult type here since direct import is problematic
 interface TokenUsage {
@@ -106,12 +108,25 @@ ${markdown}`;
 
     // Invoke the LLM with callbacks to track usage
     const response = await structuredOutputLLM.invoke(prompt, { callbacks });
+    const raw = response.raw as AIMessage;
 
-    console.log(JSON.stringify(response.raw, null, 2));
+    let data = response.parsed;
+    if (data == null) {
+      // Note: this only works for OpenAI models.
+      if (raw.tool_calls && raw.tool_calls.length > 0) {
+        // This is the raw object before structured output tool call.
+        const rawObject = raw.tool_calls[0].args;
+        // Manually sanitize the object and remove any unsafe but optional fields or unsafe items in arrays.
+        data = safeSanitizedParser(schema, rawObject);
+      }
+      if (data == null) {
+        throw new Error("No valid data was extracted");
+      }
+    }
 
     // Return the parsed data and usage statistics
     return {
-      data: response.parsed,
+      data,
       usage,
     };
   } catch (error) {
