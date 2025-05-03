@@ -18,7 +18,10 @@ const blogSchema = z.object({
   title: z.string(),
   author: z.string(),
   date: z.string(),
-  tags: z.array(z.string()).optional(),
+  tags: z
+    .array(z.string())
+    .optional()
+    .describe("Tags appear after the date. Do not include the # symbol."),
   summary: z.string(),
 });
 
@@ -31,6 +34,7 @@ function verifyBlogPostExtraction(result: ExtractorResult<any>): void {
   expect(result.data.date).toBe("January 15, 2023");
   expect(typeof result.data.summary).toBe("string");
   expect(result.data.summary.length).toBeGreaterThan(0);
+  expect(result.data.tags).toEqual(["JavaScript", "Programming"]);
 
   // Verify that usage statistics are returned
   expect(result.usage).toBeDefined();
@@ -205,6 +209,31 @@ describe("Extract Integration Tests", () => {
         modelName: "gpt-3.5-turbo",
       });
       expect(result.data).toEqual({ product: "Apple" });
+    });
+
+    test("should handle structured output errors using Google Gemini", async () => {
+      const result = await extract({
+        content: blogPostHtml,
+        format: ContentFormat.HTML,
+        schema: z.object({
+          title: z.string(),
+          author: z.string().optional(),
+          date: z.string().optional(),
+          tags: z
+            .array(z.string())
+            .optional()
+            .describe(
+              "Tags appear after the date. Do not include the # symbol."
+            ),
+          summary: z.string(),
+          // For this test, adding an additional content field seems to cause the Google Gemini model
+          // to fail in some cases to return the structured output.
+          content: z.string().optional(),
+        }),
+        provider: LLMProvider.GOOGLE_GEMINI,
+        googleApiKey: process.env.GOOGLE_API_KEY,
+      });
+      expect(result.data).toBeDefined();
     });
   });
 });

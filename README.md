@@ -340,6 +340,26 @@ Integration tests require valid API keys to be provided in your `.env` file or e
 
 Each integration test runs with both Google Gemini and OpenAI to ensure compatibility across providers.
 
+#### Running Specific Tests
+
+You can run individual tests by using the `-t` flag with a pattern that matches the test description:
+
+```bash
+# Run a specific test by exact description
+npm run test -- -t "should extract blog post data using Google Gemini default model"
+
+# Run all tests that include a specific keyword
+npm run test -- -t "blog post"
+
+# Run all tests for a specific provider
+npm run test -- -t "OpenAI"
+
+# Run all unit tests for a specific utility
+npm run test -- -t "safeSanitizedParser"
+```
+
+The `-t` flag uses pattern matching, so you can be as specific or general as needed to select the tests you want to run.
+
 ## License
 
 MIT

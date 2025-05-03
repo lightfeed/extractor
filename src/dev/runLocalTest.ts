@@ -20,13 +20,15 @@ const blogSchema = z.object({
   title: z.string(),
   author: z.string().optional(),
   date: z.string().optional(),
-  tags: z.array(z.string()).optional(),
+  tags: z
+    .array(z.string())
+    .optional()
+    .describe("Tags appear after the date. Do not include the # symbol."),
   summary: z.string(),
   content: z.string().optional(),
 });
 
 const productSchema = z.object({
-  title: z.string(),
   products: z.array(
     z.object({
       name: z.string(),
@@ -36,7 +38,6 @@ const productSchema = z.object({
       features: z.array(z.string()).optional(),
     })
   ),
-  totalProducts: z.number(),
 });
 
 // Test functions
