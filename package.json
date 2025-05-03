@@ -41,6 +41,7 @@
   "dependencies": {
     "@langchain/google-genai": "^0.2.5",
     "@langchain/openai": "^0.5.10",
+    "jsonrepair": "^3.12.0",
     "langchain": "^0.3.24",
     "turndown": "^7.2.0",
     "zod": "^3.24.3"

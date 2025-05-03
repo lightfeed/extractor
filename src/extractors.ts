@@ -4,6 +4,7 @@ import { z } from "zod";
 import { LLMProvider, Usage, ContentFormat } from "./types";
 import { AIMessage } from "@langchain/core/messages";
 import { safeSanitizedParser } from "./utils/schemaUtils";
+import { jsonrepair } from "jsonrepair";
 
 // Define LLMResult type here since direct import is problematic
 interface TokenUsage {
@@ -149,14 +150,17 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
     if (data == null) {
       // Note: this only works for OpenAI models.
       if (raw.tool_calls && raw.tool_calls.length > 0) {
-        // This is the raw object before structured output tool call.
+        // This is the raw object in JSON mode before structured output tool call.
         const rawObject = raw.tool_calls[0].args;
         // Manually sanitize the object and remove any unsafe but optional fields or unsafe items in arrays.
         data = safeSanitizedParser(schema, rawObject);
       }
       // Note: this only works for Google Gemini models.
       if (raw.lc_kwargs && raw.lc_kwargs.content) {
-        const rawObject = JSON.parse(raw.lc_kwargs.content);
+        // Gemini does not return a JSON object, it returns a string that is a JSON object.
+        // We use jsonrepair to fix the JSON string and then parse it.
+        const rawJson = raw.lc_kwargs.content;
+        const rawObject = JSON.parse(jsonrepair(rawJson));
         data = safeSanitizedParser(schema, rawObject);
       }
       if (data == null) {
