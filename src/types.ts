@@ -6,6 +6,7 @@ import { z } from "zod";
 export enum ContentFormat {
   HTML = "html",
   MARKDOWN = "markdown",
+  TXT = "txt",
 }
 
 /**
@@ -36,7 +37,7 @@ export interface ContentExtractionOptions {
  * Options for the extractor
  */
 export interface ExtractorOptions<T extends z.ZodTypeAny> {
-  /** Content to extract from (HTML or Markdown) */
+  /** Content to extract from (HTML, Markdown, or plain text) */
   content: string;
 
   /** Format of the content */
@@ -62,6 +63,9 @@ export interface ExtractorOptions<T extends z.ZodTypeAny> {
 
   /** Content extraction options (for HTML) */
   extractionOptions?: ContentExtractionOptions;
+
+  /** Custom prompt for extraction (if not provided, a default prompt will be used) */
+  prompt?: string;
 }
 
 /**

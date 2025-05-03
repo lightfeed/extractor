@@ -1,6 +1,6 @@
 # lightfeed-extract
 
-A TypeScript/Node.js library for extracting structured data from HTML or markdown content using LLMs.
+A TypeScript/Node.js library for extracting structured data from HTML, markdown, or plain text content using LLMs.
 
 ## Features
 
@@ -8,6 +8,7 @@ A TypeScript/Node.js library for extracting structured data from HTML or markdow
 - Extract structured data using OpenAI or Google Gemini models
 - Define your extraction schema using Zod
 - Resilient data handling with `safeSanitizedParser` to sanitize and recover partial results from imperfect LLM outputs
+- Support for custom extraction prompts
 - Track token usage statistics
 - Option to extract only the main content from HTML, removing navigation, headers & footers
 
@@ -48,6 +49,37 @@ async function main() {
 
 main().catch(console.error);
 ```
+
+### Using Plain Text Input
+
+You can also extract structured data directly from plain text:
+
+```typescript
+const result = await extract({
+  content: "Product Name: Wireless Headphones\nPrice: $99.99\nRating: 4.5/5\nFeatures: Noise cancellation, 20-hour battery life",
+  format: ContentFormat.TXT,
+  schema: mySchema,
+  provider: LLMProvider.OPENAI,
+  openaiApiKey: 'your-openai-api-key'
+});
+```
+
+### Custom Extraction Prompts
+
+You can provide a custom prompt to guide the extraction process:
+
+```typescript
+const result = await extract({
+  content: textContent,
+  format: ContentFormat.TXT,
+  schema: mySchema,
+  prompt: "Extract all product details including specifications and pricing information", 
+  provider: LLMProvider.GOOGLE_GEMINI,
+  googleApiKey: 'your-google-api-key'
+});
+```
+
+If no prompt is provided, a default extraction prompt will be used.
 
 ### Advanced Example with OpenAI
 
@@ -130,9 +162,10 @@ Main function to extract structured data from content.
 
 | Option | Type | Description | Default |
 |--------|------|-------------|---------|
-| `content` | `string` | HTML or markdown content to extract from | Required |
-| `format` | `ContentFormat` | Content format (HTML or MARKDOWN) | Required |
+| `content` | `string` | HTML, markdown, or plain text content to extract from | Required |
+| `format` | `ContentFormat` | Content format (HTML, MARKDOWN, or TXT) | Required |
 | `schema` | `z.ZodTypeAny` | Zod schema defining the structure to extract | Required |
+| `prompt` | `string` | Custom prompt to guide the extraction process | Internal default prompt |
 | `provider` | `LLMProvider` | LLM provider (GOOGLE_GEMINI or OPENAI) | `LLMProvider.GOOGLE_GEMINI` |
 | `modelName` | `string` | Model name to use | Provider-specific default |
 | `googleApiKey` | `string` | Google API key (if using Google Gemini provider) | From env `GOOGLE_API_KEY` |

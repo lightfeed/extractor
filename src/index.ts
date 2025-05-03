@@ -16,10 +16,10 @@ const DEFAULT_MODELS = {
 };
 
 /**
- * Extract structured data from HTML or markdown content using an LLM
+ * Extract structured data from HTML, markdown, or plain text content using an LLM
  *
  * @param options Configuration options for extraction
- * @returns The extracted data, original markdown, and usage statistics
+ * @returns The extracted data, original content, and usage statistics
  */
 export async function extract<T extends z.ZodTypeAny>(
   options: ExtractorOptions<T>
@@ -50,25 +50,31 @@ export async function extract<T extends z.ZodTypeAny>(
   const modelName = options.modelName ?? DEFAULT_MODELS[provider];
 
   // Convert HTML to markdown if needed
-  let markdown = options.content;
+  let content = options.content;
+  let originalFormat = options.format;
+
   if (options.format === ContentFormat.HTML) {
-    markdown = htmlToMarkdown(options.content, options.extractionOptions);
+    content = htmlToMarkdown(options.content, options.extractionOptions);
+    // Keep track that we converted from HTML
+    originalFormat = ContentFormat.HTML;
   }
 
   // Extract structured data using LLM
   const { data, usage } = await extractWithLLM(
-    markdown,
+    content,
     options.schema,
     provider,
     modelName,
     apiKey,
-    options.temperature ?? 0
+    options.temperature ?? 0,
+    options.prompt,
+    options.format.toString() // Pass the format as a string
   );
 
   // Return the full result
   return {
     data,
-    markdown,
+    markdown: content,
     usage,
   };
 }

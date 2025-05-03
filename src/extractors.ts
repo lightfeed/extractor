@@ -1,7 +1,7 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { z } from "zod";
-import { LLMProvider, Usage } from "./types";
+import { LLMProvider, Usage, ContentFormat } from "./types";
 import { AIMessage } from "@langchain/core/messages";
 import { safeSanitizedParser } from "./utils/schemaUtils";
 
@@ -66,25 +66,59 @@ export function createLLM(
 }
 
 /**
+ * Generate the extraction prompt with or without a custom query
+ */
+function generateExtractionPrompt(
+  format: string,
+  content: string,
+  customPrompt?: string
+): string {
+  // Base prompt structure that's shared between default and custom prompts
+  const extractionTask = customPrompt
+    ? `${customPrompt}`
+    : "Please extract structured information from the provided context.";
+
+  return `Context information is below:
+------
+Format: ${format}
+---
+${content}
+------
+
+You are a data extraction assistant that extracts structured information from the abovecontext.
+Extract information exactly as presented in the context without adding any extra details or making assumptions.
+Only return data that matches the required schema.
+
+Your task is:${extractionTask}
+
+To format your answer:
+
+1. Extract ONLY information explicitly present in the context.
+2. It is okay to return null when information is not found.
+3. Omit any information that appears incomplete or cut off at the context boundaries.
+4. Do not attempt to guess or fill in missing information.
+5. Return only the structured data in valid JSON format and nothing else.
+`;
+}
+
+/**
  * Extract structured data from markdown using an LLM
  */
 export async function extractWithLLM<T extends z.ZodTypeAny>(
-  markdown: string,
+  content: string,
   schema: T,
   provider: LLMProvider,
   modelName: string,
   apiKey: string,
-  temperature: number = 0
+  temperature: number = 0,
+  customPrompt?: string,
+  format: string = ContentFormat.MARKDOWN
 ): Promise<{ data: z.infer<T>; usage: Usage }> {
   const llm = createLLM(provider, modelName, apiKey, temperature);
   let usage: Usage = {};
 
-  // Construct the prompt
-  const prompt = `Extract the structured data from the following markdown content according to the provided schema. 
-Return only the structured data in valid JSON format and nothing else.
-
-MARKDOWN CONTENT:
-${markdown}`;
+  // Generate the prompt using the unified template function
+  const prompt = generateExtractionPrompt(format, content, customPrompt);
 
   try {
     // Extract structured data with a withStructuredOutput chain
