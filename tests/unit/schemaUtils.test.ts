@@ -498,5 +498,92 @@ describe("safeSanitizedParser", () => {
       const result = safeSanitizedParser(userPreferencesSchema, data);
       expect(result).toEqual(expected);
     });
+
+    test("should handle product catalog with realistic validation issues", () => {
+      // Define a product catalog schema (from README example)
+      const productSchema = z.object({
+        products: z.array(
+          z.object({
+            id: z.number(),
+            name: z.string(), // Required field
+            price: z.number().optional(), // Optional number
+            inStock: z.boolean().optional(),
+            category: z.string().optional(),
+          })
+        ),
+        storeInfo: z.object({
+          name: z.string(),
+          location: z.string().optional(),
+          rating: z.number().min(0).max(5).optional(),
+        }),
+      });
+
+      // Example LLM output with realistic validation issues
+      const rawLLMOutput = {
+        products: [
+          {
+            id: 1,
+            name: "Laptop",
+            price: 999,
+            inStock: true,
+          }, // Valid product
+          {
+            id: 2,
+            name: "Headphones",
+            price: "N/A", // Non-convertible string for optional number
+            inStock: true,
+            category: "Audio",
+          },
+          {
+            id: 3,
+            // Missing required 'name' field
+            price: 45.99,
+            inStock: false,
+          },
+          {
+            id: 4,
+            name: "Keyboard",
+            price: 59.99,
+            inStock: true,
+          }, // Valid product
+        ],
+        storeInfo: {
+          name: "TechStore",
+          location: "123 Main St",
+          rating: "N/A", // Invalid: rating is not a number
+        },
+      };
+
+      // Expected sanitized result
+      const expected = {
+        products: [
+          {
+            id: 1,
+            name: "Laptop",
+            price: 999,
+            inStock: true,
+          },
+          {
+            id: 2,
+            name: "Headphones",
+            inStock: true,
+            category: "Audio",
+          },
+          {
+            id: 4,
+            name: "Keyboard",
+            price: 59.99,
+            inStock: true,
+          },
+        ],
+        storeInfo: {
+          name: "TechStore",
+          location: "123 Main St",
+        },
+      };
+
+      const result = safeSanitizedParser(productSchema, rawLLMOutput);
+      expect(result).toEqual(expected);
+    });
   });
 });

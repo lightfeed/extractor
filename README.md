@@ -7,6 +7,7 @@ A TypeScript/Node.js library for extracting structured data from HTML or markdow
 - Convert HTML to markdown using Turndown
 - Extract structured data using OpenAI or Google Gemini models
 - Define your extraction schema using Zod
+- Resilient data handling with `safeSanitizedParser` to sanitize and recover partial results from imperfect LLM outputs
 - Track token usage statistics
 - Option to extract only the main content from HTML, removing navigation, headers & footers
 
@@ -159,6 +160,106 @@ interface ExtractorResult<T> {
   }
 }
 ```
+
+### `safeSanitizedParser<T>(schema: ZodTypeAny, rawObject: unknown): z.infer<T> | null`
+
+Utility function to sanitize and recover partial data from LLM outputs that may not perfectly conform to your schema.
+
+```typescript
+import { safeSanitizedParser } from 'lightfeed-extract';
+import { z } from 'zod';
+
+// Define a product catalog schema
+const productSchema = z.object({
+  products: z.array(
+    z.object({
+      id: z.number(),
+      name: z.string(), // Required field
+      price: z.number().optional(), // Optional number
+      inStock: z.boolean().optional(),
+      category: z.string().optional()
+    })
+  ),
+  storeInfo: z.object({
+    name: z.string(),
+    location: z.string().optional(),
+    rating: z.number().optional()
+  })
+});
+
+// Example LLM output with realistic validation issues
+const rawLLMOutput = {
+  products: [
+    {
+      id: 1,
+      name: "Laptop",
+      price: 999,
+      inStock: true
+    }, // Valid product
+    {
+      id: 2,
+      name: "Headphones",
+      price: "N/A", // Non-convertible string for optional number
+      inStock: true,
+      category: "Audio"
+    },
+    {
+      id: 3,
+      // Missing required 'name' field
+      price: 45.99,
+      inStock: false
+    },
+    {
+      id: 4,
+      name: "Keyboard",
+      price: 59.99,
+      inStock: true
+    } // Valid product
+  ],
+  storeInfo: {
+    name: "TechStore",
+    location: "123 Main St",
+    rating: "N/A" // Invalid: rating is not a number
+  }
+};
+
+// Sanitize the data to recover what's valid
+const sanitizedData = safeSanitizedParser(productSchema, rawLLMOutput);
+
+// Result:
+// {
+//   products: [
+//     {
+//       id: 1,
+//       name: "Laptop",
+//       price: 999,
+//       inStock: true
+//     },
+//     {
+//       id: 2,
+//       name: "Headphones",
+//       inStock: true,
+//       category: "Audio"
+//     },
+//     {
+//       id: 4,
+//       name: "Keyboard",
+//       price: 59.99,
+//       inStock: true
+//     }
+//   ],
+//   storeInfo: {
+//     name: "TechStore",
+//     location: "123 Main St"
+//   }
+// }
+```
+
+This utility is especially useful when:
+- LLMs return non-convertible data for optional fields (like "N/A" for numbers)
+- Some objects in arrays are missing required fields
+- Objects contain invalid values that don't match constraints
+- You want to recover as much valid data as possible while safely removing problematic parts
 
 ## Development
 
