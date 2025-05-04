@@ -1,38 +1,37 @@
 import TurndownService from "turndown";
 import { ContentExtractionOptions } from "./types";
+import { DOMParser, XMLSerializer } from "xmldom";
+import { isNodeLike } from "xpath";
+
+var xpath = require("xpath");
+const cheerio = require("cheerio");
 
 /**
  * Extract the main content from an HTML string if requested
- * This is a simple implementation - for production,
- * consider using more advanced algorithms or libraries
  */
 function extractMainHtml(html: string): string {
-  // This is a simple implementation that looks for common content containers
-  // In a real implementation, you would want to use a more sophisticated
-  // algorithm or library like Readability
-  const mainContentSelectors = [
-    "article",
-    "main",
-    '[role="main"]',
-    ".content",
-    "#content",
-    ".post-content",
-    ".article-content",
-  ];
+  try {
+    const bodyDoc = new DOMParser().parseFromString(html, "text/html");
 
-  // Check if the selector exists in the HTML
-  for (const selector of mainContentSelectors) {
-    const regex = new RegExp(
-      `<${selector}[^>]*>(.*?)</${selector.replace(/\[.*?\]/g, "")}>`,
-      "is"
-    );
-    const match = html.match(regex);
-    if (match && match[1]) {
-      return match[1];
-    }
+    [...OVERALL_DISCARD_XPATH, ...PRECISION_DISCARD_XPATH].forEach((xPath) => {
+      const result = xpath.parse(xPath).select({ node: bodyDoc, isHtml: true });
+
+      // Ensure result is an array before calling forEach
+      const nodes = Array.isArray(result) ? result : [result];
+
+      nodes.forEach((node) => {
+        if (isNodeLike(node) && node.parentNode) {
+          node.parentNode.removeChild(node);
+        }
+      });
+    });
+
+    const refinedHtml = new XMLSerializer().serializeToString(bodyDoc);
+    return refinedHtml == "" ? html : refinedHtml;
+  } catch (error) {
+    console.error("error extracting main html", error);
+    return "";
   }
-
-  return html; // If no main content found, return the original HTML
 }
 
 /**
@@ -42,32 +41,114 @@ export function htmlToMarkdown(
   html: string,
   options?: ContentExtractionOptions
 ): string {
-  let processedHtml = html;
+  // First clean up the html
+  const tidiedHtml = tidyHtml(html);
 
-  // Extract main content if requested
-  if (options?.extractMainHtml) {
-    processedHtml = extractMainHtml(html);
-  }
-
-  // Convert to markdown using turndown
-  const turndownService = new TurndownService({
-    headingStyle: "atx",
-    codeBlockStyle: "fenced",
-    emDelimiter: "*",
+  // Turndown config
+  // Reference: https://github.com/jina-ai/reader/blob/1e3bae6aad9cf0005c14f0036b46b49390e63203/backend/functions/src/cloud-functions/crawler.ts#L134
+  const turnDownService = new TurndownService();
+  turnDownService.addRule("remove-irrelevant", {
+    filter: [
+      "meta",
+      "style",
+      "script",
+      "noscript",
+      "link",
+      "textarea",
+      "img",
+      "picture",
+      "figure",
+    ],
+    replacement: () => "",
   });
+  turnDownService.addRule("truncate-svg", {
+    filter: "svg" as any,
+    replacement: () => "",
+  });
+  turnDownService.addRule("title-as-h1", {
+    filter: ["title"],
+    replacement: (innerText: string) => `${innerText}\n===============\n`,
+  });
+  turnDownService.addRule("improved-paragraph", {
+    filter: "p",
+    replacement: (innerText: string) => {
+      const trimmed = innerText.trim();
+      if (!trimmed) {
+        return "";
+      }
 
-  // Add additional rules for better conversion
-  turndownService.addRule("preserveImages", {
-    filter: "img",
-    replacement: function (content, node) {
-      const element = node as HTMLElement;
-      const alt = element.getAttribute("alt") || "";
-      const src = element.getAttribute("src") || "";
-      return src ? `![${alt}](${src})` : "";
+      return `${trimmed.replace(/\n{3,}/g, "\n\n")}\n\n`;
+    },
+  });
+  turnDownService.addRule("improved-inline-link", {
+    filter: function (node: any, options: any) {
+      return Boolean(
+        options.linkStyle === "inlined" &&
+          node.nodeName === "A" &&
+          node.getAttribute("href")
+      );
+    },
+
+    replacement: function (content: string, node: any) {
+      let href = node.getAttribute("href");
+      if (href) href = href.replace(/([()])/g, "\\$1");
+      let title = cleanAttribute(node.getAttribute("title"));
+      if (title) title = ' "' + title.replace(/"/g, '\\"') + '"';
+
+      const fixedContent = content.replace(/\s+/g, " ").trim();
+      const fixedHref = href.replace(/\s+/g, "").trim();
+
+      return `[${fixedContent}](${fixedHref}${title || ""})`;
     },
   });
 
-  return turndownService.turndown(processedHtml);
+  const fullMarkdown = turnDownService.turndown(tidiedHtml).trim();
+  if (options?.extractMainHtml) {
+    const mainHtml = extractMainHtml(tidiedHtml);
+    const mainMarkdown = turnDownService.turndown(mainHtml).trim();
+    // Heristics:
+    // If main content is empty or is less than 20% of full content and not too short, use full content
+    if (
+      mainMarkdown.length == 0 ||
+      (mainMarkdown.length < fullMarkdown.length * 0.2 &&
+        mainMarkdown.length < 500)
+    ) {
+      return fullMarkdown;
+    } else {
+      return mainMarkdown;
+    }
+  } else {
+    return fullMarkdown;
+  }
+}
+
+// Clean up the html
+function tidyHtml(html: string): string {
+  const $ = cheerio.load(html);
+  $("*").each(function (this: any) {
+    const element = $(this);
+    const attributes = Object.keys(this.attribs);
+
+    for (let i = 0; i < attributes.length; i++) {
+      let attr = attributes[i];
+      // Check if the attribute value has an odd number of quotes
+      // If the attribute name has a quote, it might be a broken attribute. Remove it completely.
+      // (this occured at dealnews.com)
+      if (attr.includes('"')) {
+        element.remove();
+      }
+    }
+  });
+
+  // Further clean html
+  MANUALLY_CLEANED.forEach((element) => {
+    $(element).remove();
+  });
+  return $("body").html();
+}
+
+function cleanAttribute(attribute: string) {
+  return attribute ? attribute.replace(/(\n+\s*)+/g, "\n") : "";
 }
 
 // Adapted from https://github.com/adbar/trafilatura/blob/c7e00f3a31e436c7b6ce666b44712e16e30908c0/trafilatura/xpaths.py#L100
