@@ -1,6 +1,6 @@
 # lightfeed-extract
 
-Use LLM to **robustly** extract structured data from HTML and markdown, for Node.js and Typescript.
+Use LLM to **robustly** extract structured data from HTML and markdown, for Node.js and Typescript. Used in production for Lightfeed and successfully extracting 10M+ records.
 
 ## Why use LLM?
 - No need manual scraping. No more broken scripts due to website change.
@@ -9,7 +9,7 @@ Use LLM to **robustly** extract structured data from HTML and markdown, for Node
 
 ## Existing problems to LLM extractor
 - Extrating URLs can cause errors, e.g. LLM not good at extracting very long URL strings and relative links
-- Output does not comply to JSON schema, any invalid field will make the output JSON bad, one invalid item will make the entire list response bad.
+- LLMs fail to respond when output does not comply with input JSON schema or is not a valid JSON: e.g. any invalid field can make entire JSON response fail, one invalid item can make the entire list response bad.
 
 ## We are fixing these problems
 - Robustly extract link URLs, including extremely long links, relative links and fixing invalid links with escaped characters due to markdown.
@@ -22,6 +22,7 @@ Use LLM to **robustly** extract structured data from HTML and markdown, for Node
 - Support for custom extraction prompts
 - Track token usage statistics
 - Option to extract only the main content from HTML, removing navigation, headers & footers. Option to extract images.
+- Extensive unit tests and integration tests to guard production use
 
 ## Installation
 
