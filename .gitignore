@@ -31,4 +31,10 @@ coverage/
 
 # Temporary files
 tmp/
-temp/ 
+temp/
+
+# Optionally fetched test data submodule
+/test-data/
+
+# Keep the .gitmodules file that defines the submodule
+!/.gitmodules 

@@ -420,6 +420,29 @@ Integration tests require valid API keys to be provided in your `.env` file or e
 
 Each integration test runs with both Google Gemini and OpenAI to ensure compatibility across providers.
 
+#### HTML to Markdown Integration Tests
+
+This project includes comprehensive integration tests for the HTML to Markdown converter using real-world HTML samples. The tests validate three conversion types:
+
+1. Basic conversion (no images)
+2. Main content extraction (no images)
+3. Conversion with images included
+
+These tests use a Git submodule with HTML files and groundtruth markdown files. The submodule is not downloaded by default to keep the repository lightweight. To run these tests:
+
+```bash
+# First time: Initialize and download the test data submodule
+npm run test:html2md:update
+
+# Run the HTML to Markdown integration tests
+npm run test:html2md
+
+# Update test data if new test files are available
+npm run test:html2md:sync
+```
+
+The test suite automatically discovers all available test files and creates test cases for each conversion type that has a corresponding groundtruth file.
+
 #### Running Specific Tests
 
 You can run individual tests by using the `-t` flag with a pattern that matches the test description:
@@ -436,6 +459,9 @@ npm run test -- -t "OpenAI"
 
 # Run all unit tests for a specific utility
 npm run test -- -t "safeSanitizedParser"
+
+# Run specific HTML to Markdown tests
+npm run test -- -t "should convert forum/tech-0 to markdown"
 ```
 
 The `-t` flag uses pattern matching, so you can be as specific or general as needed to select the tests you want to run.
