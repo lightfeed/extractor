@@ -1,6 +1,6 @@
 # lightfeed-extract
 
-Use LLM to **robustly** extract structured data from HTML and markdown, for Node.js and Typescript. Used in production for Lightfeed and successfully extracting 10M+ records.
+Use LLM to **robustly** extract structured data from HTML and markdown, for Node.js and Typescript. Used in production of Lightfeed and successfully extracting 10M+ records.
 
 ## Why use LLM?
 - No need manual scraping. No more broken scripts due to website change.
