@@ -42,25 +42,32 @@ export function htmlToMarkdown(
   options?: ContentExtractionOptions
 ): string {
   // First clean up the html
-  const tidiedHtml = tidyHtml(html);
+  const tidiedHtml = tidyHtml(html, options?.includeImages ?? false);
 
   // Turndown config
   // Reference: https://github.com/jina-ai/reader/blob/1e3bae6aad9cf0005c14f0036b46b49390e63203/backend/functions/src/cloud-functions/crawler.ts#L134
   const turnDownService = new TurndownService();
+
+  // Define elements to remove - conditionally include or exclude images
+  const elementsToRemove: any[] = [
+    "meta",
+    "style",
+    "script",
+    "noscript",
+    "link",
+    "textarea",
+  ];
+
+  // Only remove image elements if includeImages is not enabled
+  if (!options?.includeImages) {
+    elementsToRemove.push("img", "picture", "figure");
+  }
+
   turnDownService.addRule("remove-irrelevant", {
-    filter: [
-      "meta",
-      "style",
-      "script",
-      "noscript",
-      "link",
-      "textarea",
-      "img",
-      "picture",
-      "figure",
-    ],
+    filter: elementsToRemove,
     replacement: () => "",
   });
+
   turnDownService.addRule("truncate-svg", {
     filter: "svg" as any,
     replacement: () => "",
@@ -123,7 +130,7 @@ export function htmlToMarkdown(
 }
 
 // Clean up the html
-function tidyHtml(html: string): string {
+function tidyHtml(html: string, includeImages: boolean): string {
   const $ = cheerio.load(html);
   $("*").each(function (this: any) {
     const element = $(this);
@@ -140,8 +147,72 @@ function tidyHtml(html: string): string {
     }
   });
 
+  // Adatpted from https://github.com/adbar/trafilatura/blob/c7e00f3a31e436c7b6ce666b44712e16e30908c0/trafilatura/settings.py#L55
+  // Removed (because user might want to extract them):
+  // - form
+  // - fieldset
+  // - footer (might contain company info)
+  // - img, picture, figure (if includeImages is false)
+  const manuallyCleanedElements = [
+    // important
+    "aside",
+    "embed",
+    // "footer",
+    // "form",
+    "head",
+    "iframe",
+    "menu",
+    "object",
+    "script",
+    // other content
+    "applet",
+    "audio",
+    "canvas",
+    "map",
+    "svg",
+    "video",
+    // secondary
+    "area",
+    "blink",
+    "button",
+    "datalist",
+    "dialog",
+    "frame",
+    "frameset",
+    // "fieldset",
+    "link",
+    "input",
+    "ins",
+    "label",
+    "legend",
+    "marquee",
+    "math",
+    "menuitem",
+    "nav",
+    "noscript",
+    "optgroup",
+    "option",
+    "output",
+    "param",
+    "progress",
+    "rp",
+    "rt",
+    "rtc",
+    "select",
+    "source",
+    "style",
+    "track",
+    "textarea",
+    "time",
+    "use",
+  ];
+
+  if (!includeImages) {
+    manuallyCleanedElements.push("img", "picture", "figure");
+  }
+
   // Further clean html
-  MANUALLY_CLEANED.forEach((element) => {
+  manuallyCleanedElements.forEach((element) => {
     $(element).remove();
   });
   return $("body").html();
@@ -240,65 +311,4 @@ const PRECISION_DISCARD_XPATH = [
       contains(@id, "bottom") or contains(@class, "bottom") or
       contains(@id, "link") or contains(@class, "link")
   ]`,
-];
-
-// Adatpted from https://github.com/adbar/trafilatura/blob/c7e00f3a31e436c7b6ce666b44712e16e30908c0/trafilatura/settings.py#L55
-// Removed (because user might want to extract them):
-// - form
-// - fieldset
-// - footer (might contain company info)
-const MANUALLY_CLEANED = [
-  // important
-  "aside",
-  "embed",
-  // "footer",
-  // "form",
-  "head",
-  "iframe",
-  "menu",
-  "object",
-  "script",
-  // other content
-  "applet",
-  "audio",
-  "canvas",
-  "figure",
-  "map",
-  "picture",
-  "svg",
-  "video",
-  // secondary
-  "area",
-  "blink",
-  "button",
-  "datalist",
-  "dialog",
-  "frame",
-  "frameset",
-  // "fieldset",
-  "link",
-  "input",
-  "ins",
-  "label",
-  "legend",
-  "marquee",
-  "math",
-  "menuitem",
-  "nav",
-  "noscript",
-  "optgroup",
-  "option",
-  "output",
-  "param",
-  "progress",
-  "rp",
-  "rt",
-  "rtc",
-  "select",
-  "source",
-  "style",
-  "track",
-  "textarea",
-  "time",
-  "use",
 ];

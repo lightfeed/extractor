@@ -37,11 +37,74 @@ describe("HTML to Markdown converter", () => {
     expect(markdown).toBe("[Example](https://example.com)");
   });
 
-  // TODO: Add test for images
   test("should discard images by default", () => {
     const html = '<img src="image.jpg" alt="An image">';
     const markdown = htmlToMarkdown(html);
     expect(markdown).toBe("");
+  });
+
+  test("should discard images when includeImages is false", () => {
+    const html = '<img src="image.jpg" alt="An image">';
+    const markdown = htmlToMarkdown(html, { includeImages: false });
+    expect(markdown).toBe("");
+  });
+
+  test("should include images when includeImages is true", () => {
+    const html =
+      '<p>Text with an image: <img src="https://example.com/image.jpg" alt="Example image"></p>';
+    const markdownWithImages = htmlToMarkdown(html, { includeImages: true });
+    const markdownWithoutImages = htmlToMarkdown(html);
+
+    // With includeImages, the image should be converted to markdown format
+    expect(markdownWithImages).toContain("Text with an image:");
+    expect(markdownWithImages).toContain(
+      "![Example image](https://example.com/image.jpg)"
+    );
+
+    // Without includeImages, the image should be removed
+    expect(markdownWithoutImages).toContain("Text with an image:");
+    expect(markdownWithoutImages).not.toContain("![Example image]");
+    expect(markdownWithoutImages).not.toContain(
+      "https://example.com/image.jpg"
+    );
+  });
+
+  test("should handle complex HTML with multiple images", () => {
+    const html = `
+      <article>
+        <h1>Test Article</h1>
+        <p>First paragraph with <img src="image1.jpg" alt="First image"> embedded.</p>
+        <figure>
+          <img src="image2.jpg" alt="Second image">
+          <figcaption>Figure caption</figcaption>
+        </figure>
+        <picture>
+          <source srcset="image3-large.jpg" media="(min-width: 800px)">
+          <source srcset="image3-medium.jpg" media="(min-width: 400px)">
+          <img src="image3.jpg" alt="Third image">
+        </picture>
+        <p>Final paragraph.</p>
+      </article>
+    `;
+
+    const markdownWithImages = htmlToMarkdown(html, { includeImages: true });
+
+    // Check that both images are included
+    expect(markdownWithImages).toContain("![First image](image1.jpg)");
+    expect(markdownWithImages).toContain("![Second image](image2.jpg)");
+    expect(markdownWithImages).toContain("![Third image](image3.jpg)");
+    expect(markdownWithImages).toContain("Figure caption");
+
+    // Verify the basic structure is preserved
+    expect(markdownWithImages).toContain("Test Article");
+    expect(markdownWithImages).toContain("First paragraph");
+    expect(markdownWithImages).toContain("Final paragraph");
+
+    // Check without images
+    const markdownWithoutImages = htmlToMarkdown(html);
+    expect(markdownWithoutImages).not.toContain("![First image]");
+    expect(markdownWithoutImages).not.toContain("![Second image]");
+    expect(markdownWithoutImages).not.toContain("![Third image]");
   });
 
   test("should extract main content when extractMainHtml is true", () => {

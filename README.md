@@ -155,6 +155,73 @@ const result = await extract({
 
 **Note:** The `extractMainHtml` option only applies to HTML format, not markdown. It uses simple heuristics to identify and extract what appears to be the main content area (like article or main tags). It's recommended to keep this option off (false) when extracting details about a single item (like a product listing) as it might remove important contextual elements.
 
+### Including Images
+
+By default, images are excluded from the extraction process to simplify the output. If you need to extract image URLs or references, you can enable the `includeImages` option:
+
+```typescript
+const result = await extract({
+  content: htmlContent,
+  format: ContentFormat.HTML,
+  schema: mySchema,
+  extractionOptions: {
+    includeImages: true // Includes images in the generated markdown
+  }
+});
+```
+
+This is particularly useful when:
+- You need to extract product images
+- You're analyzing content that contains relevant diagrams or charts
+- You want to retain image captions and context
+
+#### Example: Extracting Products with Images
+
+When scraping product listings, you'll often want to extract the product images along with other details:
+
+```typescript
+import { extract, ContentFormat, LLMProvider } from 'lightfeed-extract';
+import { z } from 'zod';
+
+// Define a schema that includes product images
+const productListSchema = z.object({
+  products: z.array(
+    z.object({
+      name: z.string(),
+      price: z.number(),
+      description: z.string().optional(),
+      // Include an array of images for each product
+      images: z.array(
+        z.object({
+          url: z.string(),
+          alt: z.string().optional(),
+        })
+      ).optional(),
+    })
+  ),
+});
+
+// Extract product data with images
+const result = await extract({
+  content: productPageHtml,
+  format: ContentFormat.HTML,
+  schema: productListSchema,
+  provider: LLMProvider.OPENAI,
+  openaiApiKey: process.env.OPENAI_API_KEY,
+  extractionOptions: {
+    includeImages: true // Enable image extraction
+  }
+});
+
+// Now you can access the product images
+for (const product of result.data.products) {
+  console.log(`${product.name}: ${product.price}`);
+  if (product.images && product.images.length > 0) {
+    console.log(`Primary image: ${product.images[0].url}`);
+  }
+}
+```
+
 ## API Keys
 
 The library will check for API keys in the following order:
@@ -189,7 +256,8 @@ Main function to extract structured data from content.
 
 | Option | Type | Description | Default |
 |--------|------|-------------|---------|
-| `extractMainHtml` | `boolean` | When enabled for HTML content, attempts to extract the main content area, removing navigation bars, headers, footers, etc. using heuristics. Should be kept off when extracting details about a single item. | `false` |
+| `extractMainHtml` | `boolean` | When enabled for HTML content, attempts to extract the main content area, removing navigation bars, headers, footers, sidebars etc. using heuristics. Should be kept off when extracting details about a single item. | `false` |
+| `includeImages` | `boolean` | When enabled, images in the HTML will be included in the markdown output. Enable this when you need to extract image URLs or related content. | `false` |
 
 #### Return Value
 

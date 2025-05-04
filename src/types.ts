@@ -31,6 +31,14 @@ export interface ContentExtractionOptions {
    * Only applies to HTML format, not markdown.
    */
   extractMainHtml?: boolean;
+
+  /**
+   * When enabled, images in the HTML will be included in the markdown output.
+   * By default, images are excluded to simplify the extraction process.
+   *
+   * Enable this option when you need to extract image information or URLs.
+   */
+  includeImages?: boolean;
 }
 
 /**
