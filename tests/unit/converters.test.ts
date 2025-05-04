@@ -5,6 +5,7 @@ describe("HTML to Markdown converter", () => {
     const html = "<h1>Hello World</h1><p>This is a test</p>";
     const markdown = htmlToMarkdown(html);
 
+    expect(markdown).toEqual("Hello World\n===========\n\nThis is a test");
     expect(markdown).toContain("Hello World");
     expect(markdown).toContain("This is a test");
   });
