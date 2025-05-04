@@ -154,6 +154,7 @@ function cleanAttribute(attribute: string) {
 // Adapted from https://github.com/adbar/trafilatura/blob/c7e00f3a31e436c7b6ce666b44712e16e30908c0/trafilatura/xpaths.py#L100
 // Added:
 // - Add contains(@id, "filter") to remove filter menus
+// - footer
 // Removed (because user might want to extract them):
 // - Commented out tags
 // - Commented out author
@@ -215,6 +216,7 @@ const OVERALL_DISCARD_XPATH = [
   or contains(@class, "yin") or contains(@class, "zlylin") or
   contains(@class, "xg1") or contains(@id, "bmdh")
   or @data-lp-replacement-content or @data-testid]`,
+  ".//footer",
 
   // comment debris + hidden parts
   // `.//*[@class="comments-title" or contains(@class, "comments-title") or
@@ -228,6 +230,7 @@ const OVERALL_DISCARD_XPATH = [
 ];
 
 // Adapted from https://github.com/adbar/trafilatura/blob/c7e00f3a31e436c7b6ce666b44712e16e30908c0/trafilatura/xpaths.py#L179
+
 // Removed:
 // - contains(@style, "border")
 const PRECISION_DISCARD_XPATH = [
@@ -243,11 +246,12 @@ const PRECISION_DISCARD_XPATH = [
 // Removed (because user might want to extract them):
 // - form
 // - fieldset
+// - footer (might contain company info)
 const MANUALLY_CLEANED = [
   // important
   "aside",
   "embed",
-  "footer",
+  // "footer",
   // "form",
   "head",
   "iframe",
