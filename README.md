@@ -13,7 +13,7 @@ Use LLM to **robustly** extract structured data from HTML and markdown, for Node
 
 ## We are fixing these problems
 - Robustly extract link URLs, including extremely long links, relative links and fixing invalid links with escaped characters due to markdown.
-- Sanitize and recover imperfect or failed LLM outputs into valid JSON object to your defined schema.
+- Sanitize and recover imperfect, failed or partial LLM outputs into valid JSON object to your defined schema.
 
 ## Other features
 - Convert HTML to LLM-ready markdown
