@@ -19,6 +19,7 @@ describe("HTML to Markdown converter", () => {
     expect(markdown).toContain("Paragraph");
   });
 
+  // TODO: Add test for end-to-end extraction
   test("should escape markdown characters", () => {
     const html =
       '<a href="https://example.com/meeting-(11-12-24)">Meeting [11-12-24]</a>';
@@ -29,7 +30,6 @@ describe("HTML to Markdown converter", () => {
     );
   });
 
-  // TODO: Add test for end-to-end extraction
   test("should convert links correctly", () => {
     const html = '<a href="https://example.com">Example</a>';
     const markdown = htmlToMarkdown(html);
