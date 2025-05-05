@@ -228,12 +228,14 @@ function cleanAttribute(attribute: string) {
 // - footer
 // Removed (because user might want to extract them):
 // - Commented out tags
+// - Commented out sidebar (sidebar sometimes can be too aggressive and can remove main content)
 // - Commented out author
 // - Commented out rating
 // - Commented out attachment
 // - Commented out timestamp
 // - Commented out user-info and user-profile
 // - Commented out comment or hidden section
+// - Not including @data-testid (it can remove dynamic product listings)
 const OVERALL_DISCARD_XPATH = [
   // navigation + footers, news outlets related posts, sharing, jp-post-flair jp-relatedposts
   `.//*[(self::div or self::item or self::list
@@ -253,7 +255,7 @@ const OVERALL_DISCARD_XPATH = [
   or contains(@class, "subnav") or
   contains(@id, "cookie") or contains(@class, "cookie") or ` +
     // `contains(@id, "tags") or contains(@class, "tags") or ` +
-    `contains(@id, "sidebar") or contains(@class, "sidebar") or ` +
+    // `contains(@id, "sidebar") or contains(@class, "sidebar") or ` +
     `contains(@id, "banner") or contains(@class, "banner")
   or contains(@class, "meta") or
   contains(@id, "menu") or contains(@class, "menu") or
@@ -286,7 +288,7 @@ const OVERALL_DISCARD_XPATH = [
   or contains(@class, "message-container") or contains(@id, "message_container")
   or contains(@class, "yin") or contains(@class, "zlylin") or
   contains(@class, "xg1") or contains(@id, "bmdh")
-  or @data-lp-replacement-content or @data-testid]`,
+  or @data-lp-replacement-content]`,
   ".//footer",
 
   // comment debris + hidden parts

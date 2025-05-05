@@ -66,36 +66,6 @@ describe("HTML to Markdown Integration Tests", () => {
     expect(actualMarkdown).toBe(expectedMarkdown);
   }
 
-  // Test basic conversion (no images)
-  describe("Basic Conversion", () => {
-    testOrSkip("should convert forum HTML to markdown", () => {
-      testConversion("forum", "tech-0");
-    });
-
-    // Add more test cases as needed for other categories
-  });
-
-  // Test main content extraction
-  describe("Main Content Extraction", () => {
-    testOrSkip(
-      "should extract and convert main content from forum HTML",
-      () => {
-        testConversion("forum", "tech-0", { extractMainHtml: true }, "main");
-      }
-    );
-
-    // Add more test cases as needed for other categories
-  });
-
-  // Test conversion with images
-  describe("Conversion with Images", () => {
-    testOrSkip("should convert forum HTML to markdown including images", () => {
-      testConversion("forum", "tech-0", { includeImages: true }, "images");
-    });
-
-    // Add more test cases as needed for other categories
-  });
-
   // Dynamic test generation - automatically test all files in the test-data directory
   if (testDataExists) {
     describe("Auto-discovered Tests", () => {
