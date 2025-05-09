@@ -20,7 +20,8 @@
     "test:html2md:update": "git submodule update --init --recursive test-data",
     "test:html2md:sync": "cd test-data && git pull origin main && cd ..",
     "lint": "tslint -p tsconfig.json",
-    "dev": "ts-node src/example.ts"
+    "dev": "ts-node src/example.ts",
+    "dev:html2md": "ts-node src/dev/testHtmlToMarkdown.ts"
   },
   "repository": {
     "type": "git",

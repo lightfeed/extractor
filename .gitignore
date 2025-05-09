@@ -36,5 +36,8 @@ temp/
 # Optionally fetched test data submodule
 /test-data/
 
+# Dev test output
+/dev-output/
+
 # Keep the .gitmodules file that defines the submodule
 !/.gitmodules 
