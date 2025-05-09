@@ -86,19 +86,19 @@ Format: ${format}
 ${content}
 ------
 
-You are a data extraction assistant that extracts structured information from the abovecontext.
-Extract information exactly as presented in the context without adding any extra details or making assumptions.
-Only return data that matches the required schema.
+You are a data extraction assistant that extracts structured information from the above context.
 
-Your task is:${extractionTask}
+Your task is: ${extractionTask}
 
-To format your answer:
+## Guidelines:
+1. Extract ONLY information explicitly stated in the context
+2. Do not make assumptions or infer missing data
+3. Leave fields empty when information is not present or you are uncertain
+4. Do not include information that appears incomplete or truncated
+5. Follow the required schema exactly
 
-1. Extract ONLY information explicitly present in the context.
-2. It is okay to return null when information is not found.
-3. Omit any information that appears incomplete or cut off at the context boundaries.
-4. Do not attempt to guess or fill in missing information.
-5. Return only the structured data in valid JSON format and nothing else.
+Return only the structured data in valid JSON format and nothing else.
+
 `;
 }
 
