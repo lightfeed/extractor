@@ -19,6 +19,7 @@
     "test:html2md": "jest tests/integration/html-to-markdown.test.ts",
     "test:html2md:update": "git submodule update --init --recursive test-data",
     "test:html2md:sync": "cd test-data && git pull origin main && cd ..",
+    "test:html2md:regenerate": "ts-node src/dev/regenerateGroundTruth.ts",
     "lint": "tslint -p tsconfig.json",
     "dev": "ts-node src/example.ts",
     "dev:html2md": "ts-node src/dev/testHtmlToMarkdown.ts"

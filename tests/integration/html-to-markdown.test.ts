@@ -6,11 +6,6 @@ import { ContentExtractionOptions } from "../../src/types";
 // Flag to check if the test-data submodule exists
 const testDataExists = fs.existsSync(path.join(__dirname, "../../test-data"));
 
-// Function to normalize line endings and whitespace for reliable comparison
-function normalizeText(text: string): string {
-  return text.replace(/\r\n/g, "\n").replace(/\n+/g, "\n").trim();
-}
-
 // Skip all tests if the test-data submodule is not available
 const testOrSkip = testDataExists ? test : test.skip;
 
@@ -55,12 +50,10 @@ describe("HTML to Markdown Integration Tests", () => {
 
     // Read files
     const html = fs.readFileSync(htmlFilePath, "utf8");
-    const expectedMarkdown = normalizeText(
-      fs.readFileSync(markdownFilePath, "utf8")
-    );
+    const expectedMarkdown = fs.readFileSync(markdownFilePath, "utf8");
 
     // Convert HTML to Markdown
-    const actualMarkdown = normalizeText(htmlToMarkdown(html, options));
+    const actualMarkdown = htmlToMarkdown(html, options);
 
     // Compare
     expect(actualMarkdown).toBe(expectedMarkdown);
