@@ -1,22 +1,21 @@
 # lightfeed-extract
 
-Use LLMs to **robustly** extract structured data from HTML and markdown, for Node.js and TypeScript. Used in production by Lightfeed and successfully extracting 10M+ records.
+Use LLMs to **robustly** extract structured data from HTML and markdown. Used in production by Lightfeed and successfully extracting 10M+ records. Written in Typescript/Node.js.
 
 ## Existing problems with LLM extraction
-- Failure to return valid JSON or comply with input JSON schema e.g., any invalid field can make the entire JSON response fail, one invalid item can make the entire list response unusable.
-- Extracting URLs can cause errors, e.g., invalid URLs or inability to handle relative or absolute paths.
+- ❌ Failure to return valid JSON or comply with input JSON schema e.g., any invalid field can make the entire JSON response fail, one invalid item can make the entire list response unusable.
+- ⛓️‍💥 Extracting URLs can cause errors, e.g., invalid URLs or inability to handle relative or absolute paths.
 
 ## We are fixing these problems
-- Robustly extract link URLs, including relative and absolute paths, and fixing invalid links with escaped characters due to markdown.
-- Sanitize and recover imperfect, failed, or partial LLM outputs into valid JSON objects that conform to your defined schema.
+- ✅ Sanitize and recover imperfect, failed, or partial LLM outputs into valid JSON objects that conform to your defined schema.
+- 🔗 Robustly extract link URLs, including relative and absolute paths, and fixing invalid links with escaped characters due to markdown.
 
 ## Other features
-- Convert HTML to LLM-ready markdown
-- Extract structured data using OpenAI or Google Gemini models
+- Convert HTML to LLM-ready markdown, option to extract only the main content from HTML, removing navigation, headers & footers, option to extract images
+- Extract structured data using OpenAI or Google Gemini models, option to truncate to max input token limit
 - Define your extraction schema using Zod
 - Support for custom extraction prompts
-- Track token usage statistics
-- Option to extract only the main content from HTML, removing navigation, headers & footers. Option to extract images.
+- Return token usage per each call
 - Extensive unit tests and integration tests to ensure production reliability
 
 ## Why use an LLM extractor?
@@ -50,7 +49,7 @@ import { extract, ContentFormat, LLMProvider } from 'lightfeed-extract';
 import { z } from 'zod';
 
 async function main() {
-  // Define your schema
+  // Define your schema. We will run one more sanitization process to recover imperfect, failed, or partial LLM outputs into this schema
   const schema = z.object({
     title: z.string(),
     author: z.string().optional(),
@@ -94,46 +93,9 @@ You can also extract structured data directly from markdown:
 
 ```typescript
 const result = await extract({
-  content: `
-# Product Catalog
-
-## Smart Home Products
-
-### Smart Speaker Pro
-- **Price:** $129.99
-- **Rating:** 4.2/5
-- **Features:**
-  - 360° sound with deep bass
-  - Multi-room audio support
-  - Compatible with most smart home devices
-  - Available in black, white, and gray
-- **Image:** ![Smart Speaker](https://example.com/images/speaker.jpg)
-- **Product Link:** [View Details](https://example.com/products/smart-speaker-pro)
-
-### Smart Thermostat
-- **Price:** $89.95
-- **Rating:** 4.8/5
-- **Features:**
-  - Easy installation
-  - Compatible with most HVAC systems
-  - Mobile app control
-  - Energy usage reports
-- **Image:** ![Smart Thermostat](https://example.com/images/thermostat.jpg)
-- **Product Link:** [View Details](https://example.com/products/smart-thermostat)
-  `,
+  content: markdownContent,
   format: ContentFormat.MARKDOWN,
-  schema: z.object({
-    products: z.array(
-      z.object({
-        name: z.string(),
-        price: z.number(),
-        rating: z.number(),
-        features: z.array(z.string()),
-        imageUrl: z.string(),
-        productUrl: z.string()
-      })
-    ),
-  }),
+  schema: mySchema,
   provider: LLMProvider.OPENAI,
   openaiApiKey: 'your-openai-api-key'
 });
@@ -188,11 +150,11 @@ const result = await extract({
 });
 ```
 
-**Note:** The `extractMainHtml` option only applies to HTML format, not markdown. It uses simple heuristics to identify and extract what appears to be the main content area (like article or main tags). It's recommended to keep this option off (false) when extracting details about a single item (like a product listing) as it might remove important contextual elements.
+**Note:** The `extractMainHtml` option only applies to HTML format. It uses heuristics to identify and extract what appears to be the main content area (like article or main tags). It's recommended to keep this option off (false) when extracting details about a single item (like a product listing) as it might remove important contextual elements.
 
 ### Including Images in HTML
 
-By default, images are excluded from the extraction process to simplify the output. If you need to extract image URLs or references, you can enable the `includeImages` option:
+By default, images are excluded from the HTML extraction process to simplify the output. If you need to extract image URLs or references, you can enable the `includeImages` option:
 
 ```typescript
 const result = await extract({
@@ -426,9 +388,6 @@ This utility is especially useful when:
 - `npm run build` - Build the library
 - `npm run clean` - Remove build artifacts
 - `npm run test` - Run all tests (requires API keys for integration tests)
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:cov` - Run tests with coverage report
-- `npm run test:local` - Run local development tests with real API calls
 - `npm run dev` - Run the example file
 
 ### Running Local Tests
