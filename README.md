@@ -44,15 +44,29 @@ async function main() {
     title: z.string(),
     author: z.string().optional(),
     date: z.string().optional(),
-    content: z.string()
+    tags: z.array(z.string()),
+    summary: z.string().describe("A brief summary of the article content within 500 characters"),
+    links: z.array(z.string()).describe("All URLs mentioned in the article")
   });
 
   // Extract from HTML
   const result = await extract({
-    content: '<article><h1>My Blog Post</h1><p>This is some content</p></article>',
+    content: `
+      <article>
+        <h1>Understanding Async/Await in JavaScript</h1>
+        <div class="meta">
+          <span class="author">John Doe</span> |
+          <span class="date">January 15, 2023</span> |
+          <span class="tags">#JavaScript #Programming</span>
+        </div>
+        <p>This article explains how async/await works in modern JavaScript.</p>
+        <p>Learn more at <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function">MDN</a>
+        or check our <a href="/blog/javascript-tutorials">tutorials</a>.</p>
+      </article>
+    `,
     format: ContentFormat.HTML,
     schema,
-    sourceUrl: 'https://example.com/blog/post.html', // Required for HTML format to handle relative URLs
+    sourceUrl: 'https://example.com/blog/async-await', // Required for HTML format to handle relative URLs
     googleApiKey: 'your-google-api-key' // API key must be provided explicitly
   });
 
@@ -63,15 +77,52 @@ async function main() {
 main().catch(console.error);
 ```
 
-### Using Plain Text Input
+### Using Markdown Input
 
-You can also extract structured data directly from plain text:
+You can also extract structured data directly from markdown:
 
 ```typescript
 const result = await extract({
-  content: "Product Name: Wireless Headphones\nPrice: $99.99\nRating: 4.5/5\nFeatures: Noise cancellation, 20-hour battery life",
-  format: ContentFormat.TXT,
-  schema: mySchema,
+  content: `
+# Product Catalog
+
+## Smart Home Products
+
+### Smart Speaker Pro
+- **Price:** $129.99
+- **Rating:** 4.2/5
+- **Features:**
+  - 360° sound with deep bass
+  - Multi-room audio support
+  - Compatible with most smart home devices
+  - Available in black, white, and gray
+- **Image:** ![Smart Speaker](https://example.com/images/speaker.jpg)
+- **Product Link:** [View Details](https://example.com/products/smart-speaker-pro)
+
+### Smart Thermostat
+- **Price:** $89.95
+- **Rating:** 4.8/5
+- **Features:**
+  - Easy installation
+  - Compatible with most HVAC systems
+  - Mobile app control
+  - Energy usage reports
+- **Image:** ![Smart Thermostat](https://example.com/images/thermostat.jpg)
+- **Product Link:** [View Details](https://example.com/products/smart-thermostat)
+  `,
+  format: ContentFormat.MARKDOWN,
+  schema: z.object({
+    products: z.array(
+      z.object({
+        name: z.string(),
+        price: z.number(),
+        rating: z.number(),
+        features: z.array(z.string()),
+        imageUrl: z.string(),
+        productUrl: z.string()
+      })
+    ),
+  }),
   provider: LLMProvider.OPENAI,
   openaiApiKey: 'your-openai-api-key'
 });
