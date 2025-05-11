@@ -2,13 +2,14 @@
 
 Use LLM to **robustly** extract structured data from HTML and markdown, for Node.js and Typescript. Used in production of Lightfeed and successfully extracting 10M+ records.
 
-## Why use LLM?
-- No need manual scraping. No more broken scripts due to website change.
-- LLMs are becoming more accurate and cost-effective.
-- Can reason from context and return structured answers in addition to extracting as-it-is.
+## Why use LLM extractor?
+- LLMs are becoming more accurate and cost-effective
+- Can reason from context and return structured answers in addition to extracting as-it-is
+- No need to manually create custom scraper code for each site
+- Resilient to website changes, e.g. HTML structure, CSS selectors or page layout
 
-## Existing problems to LLM extractor
-- LLMs fail to respond when output does not comply with input JSON schema or is not a valid JSON: e.g. any invalid field can make entire JSON response fail, one invalid item can make the entire list response bad.
+## Existing problems of LLM structured data response
+- LLM response is not valid JSON or does not comply with input JSON schema: e.g. any invalid field can make entire JSON response fail, one invalid item can make the entire list response bad.
 - Extrating URLs can cause errors, e.g. invalid URLs or unable to handle relative or absolute paths
 
 ## We are fixing these problems
