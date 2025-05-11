@@ -8,6 +8,7 @@ Use LLMs to **robustly** extract structured data from HTML and markdown. Used in
 
 ## We are fixing these problems
 ✅ Sanitize and recover imperfect, failed, or partial LLM outputs into valid JSON objects that conform to your defined schema.
+
 🔗 Robustly extract link URLs, including relative and absolute paths, and fixing invalid links with escaped characters due to markdown.
 
 ## Other features
@@ -20,8 +21,11 @@ Use LLMs to **robustly** extract structured data from HTML and markdown. Used in
 
 ## Why use an LLM extractor?
 🔎 Can reason from context, perform search and return structured answers in addition to extracting content as-is
+
 ⚡️ No need to manually create custom scraper code for each site
+
 🔁 Resilient to website changes, e.g., HTML structure, CSS selectors, or page layout
+
 💡 LLMs are becoming more accurate and cost-effective
 
 ## Installation
