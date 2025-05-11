@@ -1,14 +1,14 @@
 # lightfeed-extract
 
-Use LLM to **robustly** extract structured data from HTML and markdown, for Node.js and Typescript. Used in production of Lightfeed and successfully extracting 10M+ records.
+Use LLMs to **robustly** extract structured data from HTML and markdown, for Node.js and TypeScript. Used in production by Lightfeed and successfully extracting 10M+ records.
 
-## Existing problems of LLM structured data response
-- LLM response is not valid JSON or does not comply with input JSON schema: e.g. any invalid field can make entire JSON response fail, one invalid item can make the entire list response bad.
-- Extrating URLs can cause errors, e.g. invalid URLs or unable to handle relative or absolute paths
+## Existing problems with LLM extraction
+- Failure to return valid JSON or comply with input JSON schema e.g., any invalid field can make the entire JSON response fail, one invalid item can make the entire list response unusable.
+- Extracting URLs can cause errors, e.g., invalid URLs or inability to handle relative or absolute paths.
 
 ## We are fixing these problems
-- Robustly extract link URLs, including extremely long links, relative links and fixing invalid links with escaped characters due to markdown.
-- Sanitize and recover imperfect, failed or partial LLM outputs into valid JSON object to your defined schema.
+- Robustly extract link URLs, including relative and absolute paths, and fixing invalid links with escaped characters due to markdown.
+- Sanitize and recover imperfect, failed, or partial LLM outputs into valid JSON objects that conform to your defined schema.
 
 ## Other features
 - Convert HTML to LLM-ready markdown
@@ -17,12 +17,12 @@ Use LLM to **robustly** extract structured data from HTML and markdown, for Node
 - Support for custom extraction prompts
 - Track token usage statistics
 - Option to extract only the main content from HTML, removing navigation, headers & footers. Option to extract images.
-- Extensive unit tests and integration tests to guard production use
+- Extensive unit tests and integration tests to ensure production reliability
 
-## Why use LLM extractor?
-- Can reason from context and return structured answers in addition to extracting as-it-is
+## Why use an LLM extractor?
+- Can reason from context and return structured answers in addition to extracting content as-is
 - No need to manually create custom scraper code for each site
-- Resilient to website changes, e.g. HTML structure, CSS selectors or page layout
+- Resilient to website changes, e.g., HTML structure, CSS selectors, or page layout
 - LLMs are becoming more accurate and cost-effective
 
 ## Installation
@@ -30,6 +30,16 @@ Use LLM to **robustly** extract structured data from HTML and markdown, for Node
 ```bash
 npm install lightfeed-extract
 ```
+
+## Hosted Version
+
+While this library provides a robust foundation for data extraction, you might want to consider [Lightfeed.ai](https://lightfeed.ai) if you need:
+
+- **Persistent Storage**: Automatically store and manage extracted data in production-ready databases
+- **Deduplication**: Smart detection and handling of duplicate content across your sources
+- **Pagination and Multi-page Extraction**: Follow links to collect complete data from connected pages
+- **Real-time API and Integration**: Query your extracted data through robust API endpoints and integrations
+- **Research Portal**: Explore and analyze your data through an intuitive interface
 
 ## Usage
 
@@ -403,8 +413,6 @@ This utility is especially useful when:
 - Objects contain invalid values that don't match constraints
 - You want to recover as much valid data as possible while safely removing problematic parts
 
-
-
 ## Development
 
 ### Setup
@@ -499,4 +507,4 @@ The `-t` flag uses pattern matching, so you can be as specific or general as nee
 
 ## License
 
-MIT
+Apache 2.0
