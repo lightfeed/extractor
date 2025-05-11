@@ -199,7 +199,7 @@ describe("Extract Integration Tests", () => {
         provider: LLMProvider.GOOGLE_GEMINI,
         googleApiKey: process.env.GOOGLE_API_KEY,
         sourceUrl: "https://example.com/products",
-        extractionOptions: {
+        htmlExtractionOptions: {
           extractMainHtml: true,
           includeImages: true,
         },
@@ -215,7 +215,7 @@ describe("Extract Integration Tests", () => {
         provider: LLMProvider.OPENAI,
         openaiApiKey: process.env.OPENAI_API_KEY,
         sourceUrl: "https://example.com/products",
-        extractionOptions: {
+        htmlExtractionOptions: {
           extractMainHtml: true,
           includeImages: true,
         },
@@ -380,7 +380,7 @@ describe("Image Extraction Integration Tests", () => {
       schema: articleSchema,
       provider: LLMProvider.OPENAI,
       openaiApiKey: process.env.OPENAI_API_KEY,
-      extractionOptions: {
+      htmlExtractionOptions: {
         includeImages: true,
       },
       sourceUrl: "https://example.com/blog/async-await",
@@ -397,7 +397,7 @@ describe("Image Extraction Integration Tests", () => {
       schema: articleSchema,
       provider: LLMProvider.GOOGLE_GEMINI,
       googleApiKey: process.env.GOOGLE_API_KEY,
-      extractionOptions: {
+      htmlExtractionOptions: {
         includeImages: true,
       },
       sourceUrl: "https://example.com/blog/async-await",

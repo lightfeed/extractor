@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { htmlToMarkdown } from "../converters";
-import { ContentExtractionOptions } from "../types";
+import { HTMLExtractionOptions } from "../types";
 import * as cheerio from "cheerio";
 
 // Function to sanitize HTML content
@@ -122,7 +122,7 @@ function sanitizeHTML(html: string, originalSource: string): string {
 async function generateGroundTruth(
   htmlFilePath: string,
   groundtruthDir: string,
-  options?: ContentExtractionOptions,
+  options?: HTMLExtractionOptions,
   variant: string = ""
 ) {
   try {

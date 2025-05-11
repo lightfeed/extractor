@@ -62,7 +62,7 @@ export async function extract<T extends z.ZodTypeAny>(
   if (options.format === ContentFormat.HTML) {
     content = htmlToMarkdown(
       options.content,
-      options.extractionOptions,
+      options.htmlExtractionOptions,
       options.sourceUrl
     );
     // For the LLM, the content is now markdown

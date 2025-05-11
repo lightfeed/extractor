@@ -1,13 +1,13 @@
 import * as fs from "fs";
 import * as path from "path";
 import { htmlToMarkdown } from "../converters";
-import { ContentExtractionOptions } from "../types";
+import { HTMLExtractionOptions } from "../types";
 
 // Function to convert HTML to Markdown and save the result
 async function convertHtmlToMarkdown(
   htmlFilePath: string,
   outputDir: string,
-  options?: ContentExtractionOptions
+  options?: HTMLExtractionOptions
 ) {
   try {
     // Read the HTML file

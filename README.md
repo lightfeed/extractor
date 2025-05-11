@@ -2,12 +2,6 @@
 
 Use LLM to **robustly** extract structured data from HTML and markdown, for Node.js and Typescript. Used in production of Lightfeed and successfully extracting 10M+ records.
 
-## Why use LLM extractor?
-- LLMs are becoming more accurate and cost-effective
-- Can reason from context and return structured answers in addition to extracting as-it-is
-- No need to manually create custom scraper code for each site
-- Resilient to website changes, e.g. HTML structure, CSS selectors or page layout
-
 ## Existing problems of LLM structured data response
 - LLM response is not valid JSON or does not comply with input JSON schema: e.g. any invalid field can make entire JSON response fail, one invalid item can make the entire list response bad.
 - Extrating URLs can cause errors, e.g. invalid URLs or unable to handle relative or absolute paths
@@ -24,6 +18,12 @@ Use LLM to **robustly** extract structured data from HTML and markdown, for Node
 - Track token usage statistics
 - Option to extract only the main content from HTML, removing navigation, headers & footers. Option to extract images.
 - Extensive unit tests and integration tests to guard production use
+
+## Why use LLM extractor?
+- Can reason from context and return structured answers in addition to extracting as-it-is
+- No need to manually create custom scraper code for each site
+- Resilient to website changes, e.g. HTML structure, CSS selectors or page layout
+- LLMs are becoming more accurate and cost-effective
 
 ## Installation
 
@@ -171,7 +171,7 @@ const result = await extract({
   content: htmlContent,
   format: ContentFormat.HTML,
   schema: mySchema,
-  extractionOptions: {
+  htmlExtractionOptions: {
     extractMainHtml: true // Uses heuristics to remove navigation, headers, footers, etc.
   },
   sourceUrl: sourceUrl
@@ -189,7 +189,7 @@ const result = await extract({
   content: htmlContent,
   format: ContentFormat.HTML,
   schema: mySchema,
-  extractionOptions: {
+  htmlExtractionOptions: {
     includeImages: true // Includes images in the generated markdown
   },
   sourceUrl: sourceUrl,
@@ -234,7 +234,7 @@ const result = await extract({
   schema: productListSchema,
   provider: LLMProvider.OPENAI,
   openaiApiKey: process.env.OPENAI_API_KEY,
-  extractionOptions: {
+  htmlExtractionOptions: {
     includeImages: true // Enable image extraction
   },
   sourceUrl: sourceUrl,
@@ -277,11 +277,11 @@ Main function to extract structured data from content.
 | `googleApiKey` | `string` | Google API key (if using Google Gemini provider) | From env `GOOGLE_API_KEY` |
 | `openaiApiKey` | `string` | OpenAI API key (if using OpenAI provider) | From env `OPENAI_API_KEY` |
 | `temperature` | `number` | Temperature for the LLM (0-1) | `0` |
-| `extractionOptions` | `ContentExtractionOptions` | Options for content extraction (see below) | `{}` |
+| `htmlExtractionOptions` | `HTMLExtractionOptions` | HTML-specific options for content extraction (see below) | `{}` |
 | `sourceUrl` | `string` | URL of the HTML content, required when format is HTML to properly handle relative URLs | Required for HTML format |
 | `maxInputTokens` | `number` | Maximum number of input tokens to send to the LLM. Uses a rough conversion of 4 characters per token. When specified, content will be truncated if the total prompt size exceeds this limit. | `undefined` |
 
-#### Content Extraction Options
+#### HTML Extraction Options
 
 | Option | Type | Description | Default |
 |--------|------|-------------|---------|

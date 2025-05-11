@@ -20,7 +20,7 @@ export enum LLMProvider {
 /**
  * Options for HTML content processing
  */
-export interface ContentExtractionOptions {
+export interface HTMLExtractionOptions {
   /**
    * When enabled, attempts to extract the main content from HTML, removing navigation bars, headers, footers, etc.
    * This uses heuristics to identify the main content area.
@@ -69,8 +69,8 @@ export interface ExtractorOptions<T extends z.ZodTypeAny> {
   /** Temperature for the LLM (0-1), defaults to 0 */
   temperature?: number;
 
-  /** Content extraction options (for HTML) */
-  extractionOptions?: ContentExtractionOptions;
+  /** HTML-specific extraction options (only applies when format is HTML) */
+  htmlExtractionOptions?: HTMLExtractionOptions;
 
   /** Custom prompt for extraction (if not provided, a default prompt will be used) */
   prompt?: string;

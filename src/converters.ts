@@ -1,5 +1,5 @@
 import TurndownService from "turndown";
-import { ContentExtractionOptions } from "./types";
+import { HTMLExtractionOptions } from "./types";
 import { DOMParser, XMLSerializer } from "xmldom";
 import { isNodeLike } from "xpath";
 import * as url from "url";
@@ -40,7 +40,7 @@ function extractMainHtml(html: string): string {
  */
 export function htmlToMarkdown(
   html: string,
-  options?: ContentExtractionOptions,
+  options?: HTMLExtractionOptions,
   sourceUrl?: string
 ): string {
   // First clean up the html

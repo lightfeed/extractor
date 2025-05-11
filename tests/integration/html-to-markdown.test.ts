@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { htmlToMarkdown } from "../../src/converters";
-import { ContentExtractionOptions } from "../../src/types";
+import { HTMLExtractionOptions } from "../../src/types";
 
 // Flag to check if the test-data submodule exists
 const testDataExists = fs.existsSync(path.join(__dirname, "../../test-data"));
@@ -14,7 +14,7 @@ describe("HTML to Markdown Integration Tests", () => {
   function testConversion(
     category: string,
     filename: string,
-    options?: ContentExtractionOptions,
+    options?: HTMLExtractionOptions,
     variant: string = ""
   ) {
     // Construct file paths
