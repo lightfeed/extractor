@@ -5,7 +5,7 @@ Use LLMs to **robustly** extract structured data from HTML and markdown. Used in
 ## Core features
 ✅ **Sanitize and recover imperfect, failed, or partial LLM outputs into valid JSON** - Ensures outputs conform to your schema
 
-🔗 **Robust URL extraction** - Handles relative/absolute paths, skips invalid URLs and fixes markdown-escaped links automatically
+🔗 **Robust URL extraction for `z.string().url()`** - Handles relative/absolute paths, skips invalid URLs and fixes markdown-escaped links automatically
 
 ## Other features
 - [x] Convert HTML to LLM-ready markdown, option to extract only the main content from HTML, removing navigation, headers & footers, option to extract images
@@ -407,6 +407,38 @@ npm run test:local -- product
 npm run test:local -- blog openai   # Test blog extraction with OpenAI
 npm run test:local -- product gemini  # Test product extraction with Google Gemini
 ```
+
+### Handling Special URL Characters
+
+The library provides special handling for URLs with special characters (like parentheses) that may get escaped in markdown:
+
+```typescript
+const schema = z.object({
+  title: z.string(),
+  link: z.string().url(),      // Full URL validation works!
+  sources: z.array(z.string().url())  // Also works with arrays of URLs
+});
+
+const result = await extract({
+  content: markdownContent,
+  format: ContentFormat.MARKDOWN,
+  schema,
+  // ... other options
+});
+```
+
+Even if the URLs in your content contain special characters that get escaped in markdown (like `https://example.com/meeting-(2023)` becoming `https://example.com/meeting-\(2023\)`), the library will automatically fix these and ensure they pass URL validation.
+
+#### How URL Validation Works
+
+The library handles URL validation in a special way:
+
+1. It automatically detects fields with `z.string().url()` validation in your schema
+2. During extraction, it temporarily converts them to `z.string()` so the LLM can produce valid output
+3. After extraction, it fixes any escaped special characters in URLs (`\(` → `(`, etc.)
+4. The response is then validated against your original schema with URL validation
+
+This approach ensures you can fully use Zod's schema validation capabilities, including `url()`, while still getting reliable results from the LLM extraction process.
 
 ### Testing
 

@@ -1,4 +1,126 @@
-import { z, ZodArray, ZodObject, ZodOptional, ZodTypeAny } from "zod";
+import {
+  z,
+  ZodArray,
+  ZodObject,
+  ZodOptional,
+  ZodTypeAny,
+  ZodString,
+} from "zod";
+
+/**
+ * Checks if a schema is a ZodString with URL validation
+ */
+export function isUrlSchema(schema: ZodTypeAny): boolean {
+  if (!(schema instanceof ZodString)) return false;
+
+  // Check if schema has URL validation by checking for internal checks property
+  // This is a bit of a hack but necessary since Zod doesn't expose validation info
+  const checks = (schema as any)._def.checks;
+  if (!checks || !Array.isArray(checks)) return false;
+
+  return checks.some((check) => check.kind === "url");
+}
+
+/**
+ * Transforms a schema, replacing any URL validations with string validations
+ * for compatibility with LLM output
+ */
+export function transformSchemaForLLM<T extends ZodTypeAny>(
+  schema: T
+): ZodTypeAny {
+  if (isUrlSchema(schema)) {
+    // Create a clone of the original schema's definition
+    const originalDef = { ...(schema as any)._def };
+
+    // Filter out only URL checks, keep all other checks
+    if (originalDef.checks && Array.isArray(originalDef.checks)) {
+      originalDef.checks = originalDef.checks.filter(
+        (check: any) => check.kind !== "url"
+      );
+    }
+
+    // Create a new string schema with the modified definition
+    // This preserves everything from the original schema except URL validation
+    const newSchema = new z.ZodString({
+      ...originalDef,
+      typeName: z.ZodFirstPartyTypeKind.ZodString,
+    });
+
+    return newSchema;
+  }
+
+  if (schema instanceof ZodObject) {
+    const shape = schema.shape;
+    const newShape: Record<string, ZodTypeAny> = {};
+
+    for (const [key, propertySchema] of Object.entries(shape)) {
+      newShape[key] = transformSchemaForLLM(propertySchema as ZodTypeAny);
+    }
+
+    return z.object(newShape);
+  }
+
+  if (schema instanceof ZodArray) {
+    const elementSchema = schema.element as ZodTypeAny;
+    return z.array(transformSchemaForLLM(elementSchema));
+  }
+
+  if (schema instanceof ZodOptional) {
+    const innerSchema = schema.unwrap() as ZodTypeAny;
+    return z.optional(transformSchemaForLLM(innerSchema));
+  }
+
+  return schema;
+}
+
+/**
+ * Fix URL escape sequences in the object based on the original schema
+ */
+export function fixUrlEscapeSequences(data: any, schema: ZodTypeAny): any {
+  if (data === null || data === undefined) return data;
+
+  if (isUrlSchema(schema)) {
+    if (typeof data === "string") {
+      // Replace escaped parentheses with unescaped versions
+      return data.replace(/\\\(/g, "(").replace(/\\\)/g, ")");
+    }
+    return data;
+  }
+
+  if (
+    schema instanceof ZodObject &&
+    typeof data === "object" &&
+    !Array.isArray(data)
+  ) {
+    const shape = schema.shape;
+    const result: Record<string, any> = {};
+
+    for (const [key, propertySchema] of Object.entries(shape)) {
+      if (key in data) {
+        result[key] = fixUrlEscapeSequences(
+          data[key],
+          propertySchema as ZodTypeAny
+        );
+      } else {
+        result[key] = data[key];
+      }
+    }
+
+    return result;
+  }
+
+  if (schema instanceof ZodArray && Array.isArray(data)) {
+    const elementSchema = schema.element as ZodTypeAny;
+    return data.map((item) => fixUrlEscapeSequences(item, elementSchema));
+  }
+
+  if (schema instanceof ZodOptional) {
+    const innerSchema = schema.unwrap() as ZodTypeAny;
+    return fixUrlEscapeSequences(data, innerSchema);
+  }
+
+  return data;
+}
 
 /**
  * Sanitizes an object to conform to a Zod schema by removing invalid optional fields or array items.

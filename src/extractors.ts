@@ -3,7 +3,11 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { z } from "zod";
 import { LLMProvider, Usage, ContentFormat } from "./types";
 import { AIMessage } from "@langchain/core/messages";
-import { safeSanitizedParser } from "./utils/schemaUtils";
+import {
+  safeSanitizedParser,
+  transformSchemaForLLM,
+  fixUrlEscapeSequences,
+} from "./utils/schemaUtils";
 import { jsonrepair } from "jsonrepair";
 
 // Define LLMResult type here since direct import is problematic
@@ -176,8 +180,11 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
   });
 
   try {
+    // Transform schema to be compatible with LLM output (converting url() to string())
+    const llmSchema = transformSchemaForLLM(schema);
+
     // Extract structured data with a withStructuredOutput chain
-    const structuredOutputLLM = llm.withStructuredOutput(schema, {
+    const structuredOutputLLM = llm.withStructuredOutput(llmSchema, {
       includeRaw: true,
     });
 
@@ -195,6 +202,7 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
     const raw = response.raw as AIMessage;
 
     let data = response.parsed;
+
     // If structured output is not successful, try to parse the raw object.
     if (data == null) {
       // Note: this only works for OpenAI models.
@@ -202,20 +210,35 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
         // This is the raw object in JSON mode before structured output tool call.
         const rawObject = raw.tool_calls[0].args;
         // Manually sanitize the object and remove any unsafe but optional fields or unsafe items in arrays.
-        data = safeSanitizedParser(schema, rawObject);
+        data = safeSanitizedParser(llmSchema, rawObject);
       }
+
       // Note: this only works for Google Gemini models.
       if (raw.lc_kwargs && raw.lc_kwargs.content) {
         // Gemini does not return a JSON object, it returns a string that is a JSON object.
         // We use jsonrepair to fix the JSON string and then parse it.
         const rawJson = raw.lc_kwargs.content;
         const rawObject = JSON.parse(jsonrepair(rawJson));
-        data = safeSanitizedParser(schema, rawObject);
+        data = safeSanitizedParser(llmSchema, rawObject);
       }
       if (data == null) {
         throw new Error("No valid data was extracted");
       }
     }
+
+    // If structured output worked, we still need to fix URL escape sequences
+    // and validate against the original schema
+    const fixedData = fixUrlEscapeSequences(data, schema);
+    const validatedData = safeSanitizedParser(schema, fixedData);
+
+    // If validation fails, something went wrong with the URL validation
+    if (validatedData === null) {
+      throw new Error(
+        "Extracted data failed validation against original schema"
+      );
+    }
+
+    data = validatedData;
 
     // Return the parsed data and usage statistics
     return {

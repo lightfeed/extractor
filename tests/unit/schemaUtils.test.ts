@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { safeSanitizedParser } from "../../src/utils/schemaUtils";
+import {
+  safeSanitizedParser,
+  transformSchemaForLLM,
+  fixUrlEscapeSequences,
+} from "../../src/utils/schemaUtils";
 
 describe("safeSanitizedParser", () => {
   describe("Basic Functionality", () => {
@@ -584,6 +588,121 @@ describe("safeSanitizedParser", () => {
 
       const result = safeSanitizedParser(productSchema, rawLLMOutput);
       expect(result).toEqual(expected);
+    });
+  });
+});
+
+describe("transformSchemaForLLM", () => {
+  test("should convert z.string().url() to z.string() while preserving description exactly", () => {
+    const original = z.string().url().describe("Link to product");
+    const transformed = transformSchemaForLLM(original);
+
+    // Should still be a string schema
+    expect(transformed instanceof z.ZodString).toBe(true);
+
+    // Description should be preserved exactly
+    expect((transformed as any)._def.description).toBe("Link to product");
+
+    // URL check should be removed
+    const checks = (transformed as any)._def.checks || [];
+    const hasUrlCheck = checks.some((check: any) => check.kind === "url");
+    expect(hasUrlCheck).toBe(false);
+
+    // Test it accepts a string that's not a URL (which the original would reject)
+    expect(() => transformed.parse("not-a-url")).not.toThrow();
+  });
+
+  test("should handle nested objects with URL fields", () => {
+    const original = z.object({
+      user: z.object({
+        profile: z.string().url().describe("Profile URL"),
+      }),
+      website: z.string().url().optional(),
+    });
+
+    const transformed = transformSchemaForLLM(original);
+
+    // Check structure is preserved
+    expect(transformed instanceof z.ZodObject).toBe(true);
+
+    const shape = (transformed as any)._def.shape();
+    expect(shape.user).toBeDefined();
+    expect(shape.website).toBeDefined();
+
+    // Check nested URL is transformed but description is preserved exactly
+    const profileSchema = shape.user._def.shape().profile;
+    expect(profileSchema instanceof z.ZodString).toBe(true);
+    expect(profileSchema._def.description).toBe("Profile URL");
+
+    // Check optional URL is transformed but remains optional
+    expect(shape.website._def.innerType instanceof z.ZodString).toBe(true);
+    const websiteChecks = shape.website._def.innerType._def.checks || [];
+  });
+
+  test("should handle arrays of URL fields", () => {
+    const original = z.array(z.string().url().describe("Resource URL"));
+    const transformed = transformSchemaForLLM(original);
+
+    expect(transformed instanceof z.ZodArray).toBe(true);
+
+    // Element should be a string without URL validation
+    const elementSchema = (transformed as any).element;
+    expect(elementSchema instanceof z.ZodString).toBe(true);
+
+    // Description should be preserved exactly if provided
+    expect(elementSchema._def.description).toBe("Resource URL");
+
+    // Should accept non-URL strings now
+    const testArray = ["not-a-url", "also-not-a-url"];
+    expect(() => transformed.parse(testArray)).not.toThrow();
+  });
+});
+
+describe("fixUrlEscapeSequences", () => {
+  test("should unescape parentheses in URL strings", () => {
+    const schema = z.string().url();
+    const escapedUrl = "https://example.com/meeting-\\(2023\\)";
+    const fixed = fixUrlEscapeSequences(escapedUrl, schema);
+
+    expect(fixed).toBe("https://example.com/meeting-(2023)");
+  });
+
+  test("should handle arrays of URLs", () => {
+    const schema = z.array(z.string().url());
+    const escapedUrls = [
+      "https://example.com/path-\\(1\\)",
+      "https://example.com/path-\\(2\\)",
+    ];
+    const fixed = fixUrlEscapeSequences(escapedUrls, schema);
+
+    expect(fixed).toEqual([
+      "https://example.com/path-(1)",
+      "https://example.com/path-(2)",
+    ]);
+  });
+
+  test("should handle nested objects with URL fields", () => {
+    const schema = z.object({
+      profile: z.string().url(),
+      links: z.array(z.string().url()),
+    });
+
+    const data = {
+      profile: "https://example.com/user-\\(john\\)",
+      links: [
+        "https://example.com/article-\\(1\\)",
+        "https://example.com/article-\\(2\\)",
+      ],
+    };
+
+    const fixed = fixUrlEscapeSequences(data, schema);
+
+    expect(fixed).toEqual({
+      profile: "https://example.com/user-(john)",
+      links: [
+        "https://example.com/article-(1)",
+        "https://example.com/article-(2)",
+      ],
     });
   });
 });

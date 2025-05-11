@@ -273,13 +273,14 @@ describe("Extract Integration Tests", () => {
   });
 
   describe("Special Character Handling", () => {
-    test("should extract link with special characters from markdown", async () => {
+    test("should extract link with special characters from markdown and validate as URL", async () => {
       const markdownContent =
         "[Meeting \\[11-12-24\\]](https://example.com/meeting-\\(11-12-24\\))";
 
+      // Use string().url() validation
       const schema = z.object({
         title: z.string(),
-        link: z.string(),
+        link: z.string().url(), // Added URL validation
       });
 
       const result = await extract({
@@ -291,9 +292,44 @@ describe("Extract Integration Tests", () => {
       });
 
       // Verify the extracted data
-      console.log(result.data);
       expect(result.data.title).toBe("Meeting [11-12-24]");
       expect(result.data.link).toBe("https://example.com/meeting-(11-12-24)");
+    });
+
+    test("should extract an array of URLs with special characters", async () => {
+      const markdownContent = `
+# Meeting Links
+
+- [Q4 Planning \\(2023\\)](https://example.com/meetings/q4-planning-\\(2023\\))
+- [Budget Review \\[2024\\]](https://example.com/budget/review-\\[2024\\])
+- [Product Launch (May 2024)](https://example.com/products/launch-(may-2024))
+      `;
+
+      // Use array of string().url() validation
+      const schema = z.object({
+        title: z.string(),
+        links: z.array(z.string().url()),
+      });
+
+      const result = await extract({
+        content: markdownContent,
+        format: ContentFormat.MARKDOWN,
+        schema,
+        provider: LLMProvider.OPENAI,
+        openaiApiKey: process.env.OPENAI_API_KEY,
+      });
+
+      // Verify the extracted data
+      expect(result.data.title).toBe("Meeting Links");
+      expect(result.data.links).toContain(
+        "https://example.com/meetings/q4-planning-(2023)"
+      );
+      expect(result.data.links).toContain(
+        "https://example.com/budget/review-[2024]"
+      );
+      expect(result.data.links).toContain(
+        "https://example.com/products/launch-(may-2024)"
+      );
     });
   });
 });
