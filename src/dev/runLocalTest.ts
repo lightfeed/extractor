@@ -71,6 +71,7 @@ async function testBlogExtraction(provider = LLMProvider.GOOGLE_GEMINI) {
       extractionOptions: {
         extractMainHtml: false,
       },
+      sourceUrl: "https://www.example.com/blog/blog-post",
     });
 
     console.log("Extracted data:");
@@ -115,6 +116,7 @@ async function testProductExtraction(provider = LLMProvider.GOOGLE_GEMINI) {
       extractionOptions: {
         extractMainHtml: true,
       },
+      sourceUrl: "https://www.example.com/product/product-list",
     });
 
     console.log("Extracted data:");

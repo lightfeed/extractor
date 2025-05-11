@@ -137,4 +137,77 @@ describe("HTML to Markdown converter", () => {
     expect(markdownWithoutExtraction).toContain("Main Content");
     expect(markdownWithoutExtraction).toContain("Footer content");
   });
+
+  describe("URL handling", () => {
+    test("should convert relative URLs to absolute URLs when sourceUrl is provided", () => {
+      const html = `
+        <a href="/about">About Us</a>
+        <a href="products/item.html">Product</a>
+        <a href="../blog/post.html">Blog Post</a>
+        <img src="/images/logo.png" alt="Logo">
+        <img src="assets/photo.jpg" alt="Photo">
+      `;
+      const sourceUrl = "https://example.com/company/";
+      const markdown = htmlToMarkdown(html, { includeImages: true }, sourceUrl);
+
+      // Check that relative URLs are converted to absolute
+      expect(markdown).toContain("[About Us](https://example.com/about)");
+      expect(markdown).toContain(
+        "[Product](https://example.com/company/products/item.html)"
+      );
+      expect(markdown).toContain(
+        "[Blog Post](https://example.com/blog/post.html)"
+      );
+      expect(markdown).toContain(
+        "![Logo](https://example.com/images/logo.png)"
+      );
+      expect(markdown).toContain(
+        "![Photo](https://example.com/company/assets/photo.jpg)"
+      );
+    });
+
+    test("should not modify absolute URLs when sourceUrl is provided", () => {
+      const html = `
+        <a href="https://other-site.com/page">External Link</a>
+        <a href="mailto:user@example.com">Email</a>
+        <img src="https://cdn.example.com/image.jpg" alt="CDN Image">
+      `;
+      const sourceUrl = "https://example.com/";
+      const markdown = htmlToMarkdown(html, { includeImages: true }, sourceUrl);
+
+      // Check that absolute URLs remain unchanged
+      expect(markdown).toContain(
+        "[External Link](https://other-site.com/page)"
+      );
+      expect(markdown).toContain("[Email](mailto:user@example.com)");
+      expect(markdown).toContain(
+        "![CDN Image](https://cdn.example.com/image.jpg)"
+      );
+    });
+
+    test("should handle relative URLs without sourceUrl", () => {
+      const html = `
+        <a href="/about">About Us</a>
+        <img src="/images/logo.png" alt="Logo">
+      `;
+      const markdown = htmlToMarkdown(html, { includeImages: true });
+
+      // Check that relative URLs remain unchanged when no sourceUrl is provided
+      expect(markdown).toContain("[About Us](/about)");
+      expect(markdown).toContain("![Logo](/images/logo.png)");
+    });
+
+    test("should handle invalid URLs gracefully", () => {
+      const html = `
+        <a href="invalid:url">Invalid Link</a>
+        <img src="invalid:url" alt="Invalid Image">
+      `;
+      const sourceUrl = "https://example.com/";
+      const markdown = htmlToMarkdown(html, { includeImages: true }, sourceUrl);
+
+      // Check that invalid URLs are preserved as-is
+      expect(markdown).toContain("[Invalid Link](invalid:url)");
+      expect(markdown).toContain("![Invalid Image](invalid:url)");
+    });
+  });
 });

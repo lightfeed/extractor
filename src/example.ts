@@ -61,6 +61,7 @@ async function example() {
       schema,
       // Using Google Gemini by default
       googleApiKey: process.env.GOOGLE_API_KEY,
+      sourceUrl: "https://example.com/blog/typescript-generics",
       extractionOptions: {
         extractMainHtml: false,
       },

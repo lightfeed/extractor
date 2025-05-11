@@ -74,6 +74,9 @@ export interface ExtractorOptions<T extends z.ZodTypeAny> {
 
   /** Custom prompt for extraction (if not provided, a default prompt will be used) */
   prompt?: string;
+
+  /** URL of the HTML content, required only for HTML format */
+  sourceUrl?: string;
 }
 
 /**

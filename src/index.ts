@@ -45,6 +45,13 @@ export async function extract<T extends z.ZodTypeAny>(
     throw new Error(`Unsupported LLM provider: ${provider}`);
   }
 
+  // Validate sourceUrl for HTML format
+  if (options.format === ContentFormat.HTML && !options.sourceUrl) {
+    throw new Error(
+      "sourceUrl is required when format is HTML to properly handle relative URLs"
+    );
+  }
+
   // Get model name (use defaults if not provided)
   const modelName = options.modelName ?? DEFAULT_MODELS[provider];
 
@@ -53,7 +60,11 @@ export async function extract<T extends z.ZodTypeAny>(
   let formatToUse = options.format;
 
   if (options.format === ContentFormat.HTML) {
-    content = htmlToMarkdown(options.content, options.extractionOptions);
+    content = htmlToMarkdown(
+      options.content,
+      options.extractionOptions,
+      options.sourceUrl
+    );
     // For the LLM, the content is now markdown
     formatToUse = ContentFormat.MARKDOWN;
   }

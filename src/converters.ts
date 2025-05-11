@@ -2,6 +2,7 @@ import TurndownService from "turndown";
 import { ContentExtractionOptions } from "./types";
 import { DOMParser, XMLSerializer } from "xmldom";
 import { isNodeLike } from "xpath";
+import * as url from "url";
 
 var xpath = require("xpath");
 const cheerio = require("cheerio");
@@ -39,7 +40,8 @@ function extractMainHtml(html: string): string {
  */
 export function htmlToMarkdown(
   html: string,
-  options?: ContentExtractionOptions
+  options?: ContentExtractionOptions,
+  sourceUrl?: string
 ): string {
   // First clean up the html
   const tidiedHtml = tidyHtml(html, options?.includeImages ?? false);
@@ -72,10 +74,12 @@ export function htmlToMarkdown(
     filter: "svg" as any,
     replacement: () => "",
   });
+
   turnDownService.addRule("title-as-h1", {
     filter: ["title"],
     replacement: (innerText: string) => `${innerText}\n===============\n`,
   });
+
   turnDownService.addRule("improved-paragraph", {
     filter: "p",
     replacement: (innerText: string) => {
@@ -87,6 +91,7 @@ export function htmlToMarkdown(
       return `${trimmed.replace(/\n{3,}/g, "\n\n")}\n\n`;
     },
   });
+
   turnDownService.addRule("improved-inline-link", {
     filter: function (node: any, options: any) {
       return Boolean(
@@ -98,7 +103,24 @@ export function htmlToMarkdown(
 
     replacement: function (content: string, node: any) {
       let href = node.getAttribute("href");
-      if (href) href = href.replace(/([()])/g, "\\$1");
+      if (href) {
+        // Convert relative URLs to absolute if sourceUrl is provided
+        if (
+          sourceUrl &&
+          !href.startsWith("http") &&
+          !href.startsWith("mailto:")
+        ) {
+          try {
+            href = url.resolve(sourceUrl, href);
+          } catch (error) {
+            console.warn(
+              `Failed to resolve URL ${href} against ${sourceUrl}:`,
+              error
+            );
+          }
+        }
+        href = href.replace(/([()])/g, "\\$1");
+      }
       let title = cleanAttribute(node.getAttribute("title"));
       if (title) title = ' "' + title.replace(/"/g, '\\"') + '"';
 
@@ -106,6 +128,39 @@ export function htmlToMarkdown(
       const fixedHref = href.replace(/\s+/g, "").trim();
 
       return `[${fixedContent}](${fixedHref}${title || ""})`;
+    },
+  });
+
+  turnDownService.addRule("images", {
+    filter: "img",
+
+    replacement: function (content: string, node: any) {
+      let src = node.getAttribute("src");
+      if (src) {
+        // Convert relative URLs to absolute if sourceUrl is provided
+        if (sourceUrl && !src.startsWith("http") && !src.startsWith("data:")) {
+          try {
+            src = url.resolve(sourceUrl, src);
+          } catch (error) {
+            console.warn(
+              `Failed to resolve URL ${src} against ${sourceUrl}:`,
+              error
+            );
+          }
+        }
+        src = src.replace(/([()])/g, "\\$1");
+      } else {
+        return ""; // No source, no image
+      }
+
+      let alt = cleanAttribute(node.getAttribute("alt") || "");
+      let title = cleanAttribute(node.getAttribute("title"));
+
+      if (title) title = ' "' + title.replace(/"/g, '\\"') + '"';
+
+      const fixedSrc = src.replace(/\s+/g, "").trim();
+
+      return `![${alt}](${fixedSrc}${title || ""})`;
     },
   });
 

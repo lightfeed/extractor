@@ -8,8 +8,8 @@ Use LLM to **robustly** extract structured data from HTML and markdown, for Node
 - Can reason from context and return structured answers in addition to extracting as-it-is.
 
 ## Existing problems to LLM extractor
-- Extrating URLs can cause errors, e.g. LLM not good at extracting very long URL strings and relative links
 - LLMs fail to respond when output does not comply with input JSON schema or is not a valid JSON: e.g. any invalid field can make entire JSON response fail, one invalid item can make the entire list response bad.
+- Extrating URLs can cause errors, e.g. invalid URLs or unable to handle relative or absolute paths
 
 ## We are fixing these problems
 - Robustly extract link URLs, including extremely long links, relative links and fixing invalid links with escaped characters due to markdown.
@@ -52,6 +52,7 @@ async function main() {
     content: '<article><h1>My Blog Post</h1><p>This is some content</p></article>',
     format: ContentFormat.HTML,
     schema,
+    sourceUrl: 'https://example.com/blog/post.html', // Required for HTML format to handle relative URLs
     googleApiKey: 'your-google-api-key' // API key must be provided explicitly
   });
 
@@ -149,7 +150,8 @@ const result = await extract({
   schema: mySchema,
   extractionOptions: {
     extractMainHtml: true // Uses heuristics to remove navigation, headers, footers, etc.
-  }
+  },
+  sourceUrl: sourceUrl
 });
 ```
 
@@ -166,7 +168,8 @@ const result = await extract({
   schema: mySchema,
   extractionOptions: {
     includeImages: true // Includes images in the generated markdown
-  }
+  },
+  sourceUrl: sourceUrl,
 });
 ```
 
@@ -210,7 +213,8 @@ const result = await extract({
   openaiApiKey: process.env.OPENAI_API_KEY,
   extractionOptions: {
     includeImages: true // Enable image extraction
-  }
+  },
+  sourceUrl: sourceUrl,
 });
 
 // Now you can access the product images
@@ -251,6 +255,7 @@ Main function to extract structured data from content.
 | `openaiApiKey` | `string` | OpenAI API key (if using OpenAI provider) | From env `OPENAI_API_KEY` |
 | `temperature` | `number` | Temperature for the LLM (0-1) | `0` |
 | `extractionOptions` | `ContentExtractionOptions` | Options for content extraction (see below) | `{}` |
+| `sourceUrl` | `string` | URL of the HTML content, required when format is HTML to properly handle relative URLs | Required for HTML format |
 
 #### Content Extraction Options
 

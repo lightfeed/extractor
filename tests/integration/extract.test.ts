@@ -24,6 +24,10 @@ const blogSchema = z.object({
     .optional()
     .describe("Tags appear after the date. Do not include the # symbol."),
   summary: z.string(),
+  links: z
+    .array(z.string())
+    .optional()
+    .describe("Extract all URLs from the content"),
 });
 
 // Helper function to verify blog post extraction results
@@ -36,6 +40,17 @@ function verifyBlogPostExtraction(result: ExtractorResult<any>): void {
   expect(typeof result.data.summary).toBe("string");
   expect(result.data.summary.length).toBeGreaterThan(0);
   expect(result.data.tags).toEqual(["JavaScript", "Programming"]);
+
+  // Verify URLs are extracted and are absolute
+  expect(result.data.links).toBeDefined();
+  expect(Array.isArray(result.data.links)).toBe(true);
+  expect(result.data.links).toContain(
+    "https://example.com/blog/javascript-tutorials"
+  );
+  expect(result.data.links).toContain(
+    "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function"
+  );
+  expect(result.data.links).toContain("https://api.example.com/data");
 
   // Verify that usage statistics are returned
   expect(result.usage).toBeDefined();
@@ -52,6 +67,7 @@ describe("Extract Integration Tests", () => {
         schema: blogSchema,
         provider: LLMProvider.GOOGLE_GEMINI,
         googleApiKey: process.env.GOOGLE_API_KEY,
+        sourceUrl: "https://example.com/blog/async-await",
       });
 
       verifyBlogPostExtraction(result);
@@ -64,6 +80,7 @@ describe("Extract Integration Tests", () => {
         schema: blogSchema,
         provider: LLMProvider.OPENAI,
         openaiApiKey: process.env.OPENAI_API_KEY,
+        sourceUrl: "https://example.com/blog/async-await",
       });
 
       verifyBlogPostExtraction(result);
@@ -83,6 +100,8 @@ describe("Extract Integration Tests", () => {
         rating: z.number().optional(),
         description: z.string().optional(),
         features: z.array(z.string()).optional(),
+        imageUrl: z.string().optional(),
+        productUrl: z.string().optional(),
       })
     ),
   });
@@ -100,6 +119,8 @@ describe("Extract Integration Tests", () => {
         "Compatible with most smart home devices",
         "Available in black, white, and gray",
       ],
+      imageUrl: "https://example.com/images/products/speaker.jpg",
+      productUrl: "https://example.com/products/smart-speaker-pro",
     },
     {
       name: "Smart Thermostat",
@@ -113,6 +134,8 @@ describe("Extract Integration Tests", () => {
         "Mobile app control",
         "Energy usage reports",
       ],
+      imageUrl: "https://example.com/images/products/thermostat.jpg",
+      productUrl: "https://example.com/products/smart-thermostat",
     },
     {
       name: "Smart Security Camera",
@@ -126,6 +149,8 @@ describe("Extract Integration Tests", () => {
         "Weather-resistant",
         "Real-time alerts",
       ],
+      imageUrl: "https://example.com/images/products/camera.jpg",
+      productUrl: "https://example.com/products/smart-security-camera",
     },
   ];
 
@@ -149,10 +174,14 @@ describe("Extract Integration Tests", () => {
       expect(groundTruthProduct).toBeDefined();
 
       // Compare all product properties
-      expect(product.price).toBe(groundTruthProduct?.price);
-      expect(product.rating).toBe(groundTruthProduct?.rating);
-      expect(product.description).toBe(groundTruthProduct?.description);
-      expect(product.features).toEqual(groundTruthProduct?.features);
+      expect(product.price).toBe(groundTruthProduct!.price);
+      expect(product.rating).toBe(groundTruthProduct!.rating);
+      expect(product.description).toBe(groundTruthProduct!.description);
+      expect(product.features).toEqual(groundTruthProduct!.features);
+
+      // Verify URLs are absolute
+      expect(product.imageUrl).toBe(groundTruthProduct!.imageUrl);
+      expect(product.productUrl).toBe(groundTruthProduct!.productUrl);
     }
 
     // Verify that usage statistics are returned
@@ -169,8 +198,10 @@ describe("Extract Integration Tests", () => {
         schema: productSchema,
         provider: LLMProvider.GOOGLE_GEMINI,
         googleApiKey: process.env.GOOGLE_API_KEY,
+        sourceUrl: "https://example.com/products",
         extractionOptions: {
           extractMainHtml: true,
+          includeImages: true,
         },
       });
       verifyProductListExtraction(result);
@@ -183,8 +214,10 @@ describe("Extract Integration Tests", () => {
         schema: productSchema,
         provider: LLMProvider.OPENAI,
         openaiApiKey: process.env.OPENAI_API_KEY,
+        sourceUrl: "https://example.com/products",
         extractionOptions: {
           extractMainHtml: true,
+          includeImages: true,
         },
       });
       verifyProductListExtraction(result);
@@ -233,6 +266,7 @@ describe("Extract Integration Tests", () => {
         }),
         provider: LLMProvider.GOOGLE_GEMINI,
         googleApiKey: process.env.GOOGLE_API_KEY,
+        sourceUrl: "https://example.com/blog/async-await",
       });
       expect(result.data).toBeDefined();
     });
