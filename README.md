@@ -3,13 +3,11 @@
 Use LLMs to **robustly** extract structured data from HTML and markdown. Used in production by Lightfeed and successfully extracting 10M+ records. Written in Typescript/Node.js.
 
 ## Existing problems with LLM extraction
-❌ Failure to return valid JSON or comply with input JSON schema e.g., any invalid field can make the entire JSON response fail, one invalid item can make the entire list response unusable.
-
-⛓️‍💥 Extracting URLs can cause errors, e.g., invalid URLs or inability to handle relative or absolute paths.
+- Failure to return valid JSON or comply with input JSON schema e.g., any invalid field can make the entire JSON response fail, one invalid item can make the entire list response unusable.
+- Extracting URLs can cause errors, e.g., invalid URLs or inability to handle relative or absolute paths.
 
 ## We are fixing these problems
 ✅ Sanitize and recover imperfect, failed, or partial LLM outputs into valid JSON objects that conform to your defined schema.
-
 🔗 Robustly extract link URLs, including relative and absolute paths, and fixing invalid links with escaped characters due to markdown.
 
 ## Other features
@@ -21,10 +19,10 @@ Use LLMs to **robustly** extract structured data from HTML and markdown. Used in
 - Extensive unit tests and integration tests to ensure production reliability
 
 ## Why use an LLM extractor?
-- Can reason from context, perform search and return structured answers in addition to extracting content as-is
-- No need to manually create custom scraper code for each site
-- Resilient to website changes, e.g., HTML structure, CSS selectors, or page layout
-- LLMs are becoming more accurate and cost-effective
+🔎 Can reason from context, perform search and return structured answers in addition to extracting content as-is
+⚡️ No need to manually create custom scraper code for each site
+🔁 Resilient to website changes, e.g., HTML structure, CSS selectors, or page layout
+💡 LLMs are becoming more accurate and cost-effective
 
 ## Installation
 
@@ -34,7 +32,7 @@ npm install lightfeed-extract
 
 ## Hosted Version
 
-While this library provides a robust foundation for data extraction, you might want to consider [Lightfeed.ai](https://lightfeed.ai) if you need:
+While this library provides a robust foundation for data extraction, you might want to consider [lightfeed.ai](https://lightfeed.ai) if you need:
 
 - **Persistent Storage**: Automatically store and manage extracted data in production-ready databases
 - **Deduplication**: Smart detection and handling of duplicate content across your sources
