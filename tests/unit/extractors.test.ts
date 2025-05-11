@@ -1,9 +1,63 @@
-import { getUsage, createLLM } from "../../src/extractors";
-import { LLMProvider } from "../../src/types";
+import { ChatOpenAI } from "@langchain/openai";
+import {
+  getUsage,
+  createLLM,
+  extractWithLLM,
+  truncateContent,
+} from "../../src/extractors";
+import { LLMProvider, ContentFormat } from "../../src/types";
+import { z } from "zod";
 
-describe("Extractors", () => {
+// Mock the LLM providers
+jest.mock("@langchain/openai", () => ({
+  ChatOpenAI: jest.fn().mockImplementation(() => ({
+    constructor: { name: "ChatOpenAI" },
+    withStructuredOutput: jest.fn().mockImplementation(() => ({
+      invoke: jest.fn().mockResolvedValue({
+        parsed: { title: "Test Title", content: "Test Content" },
+        raw: {
+          tool_calls: [
+            {
+              args: { title: "Test Title", content: "Test Content" },
+            },
+          ],
+        },
+      }),
+    })),
+  })),
+}));
+
+jest.mock("@langchain/google-genai", () => ({
+  ChatGoogleGenerativeAI: jest.fn().mockImplementation(() => ({
+    constructor: { name: "ChatGoogleGenerativeAI" },
+    withStructuredOutput: jest.fn().mockImplementation(() => ({
+      invoke: jest.fn().mockResolvedValue({
+        parsed: { title: "Test Title", content: "Test Content" },
+        raw: {
+          lc_kwargs: {
+            content: '{"title":"Test Title","content":"Test Content"}',
+          },
+        },
+      }),
+    })),
+  })),
+}));
+
+describe("extractors", () => {
+  const mockSchema = z.object({
+    title: z.string(),
+    content: z.string(),
+  });
+
+  const mockContent = "Test content";
+  const mockApiKey = "test-api-key";
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe("getUsage", () => {
-    test("should extract usage statistics from LLM output", () => {
+    it("should extract usage statistics from LLM output", () => {
       const mockOutput = {
         llmOutput: {
           tokenUsage: {
@@ -20,7 +74,7 @@ describe("Extractors", () => {
       expect(usage.outputTokens).toBe(50);
     });
 
-    test("should handle missing token usage", () => {
+    it("should handle missing token usage", () => {
       const mockOutput = {
         llmOutput: {},
       };
@@ -31,7 +85,7 @@ describe("Extractors", () => {
       expect(usage.outputTokens).toBeUndefined();
     });
 
-    test("should handle missing llmOutput", () => {
+    it("should handle missing llmOutput", () => {
       const mockOutput = {};
 
       const usage = getUsage(mockOutput);
@@ -42,10 +96,7 @@ describe("Extractors", () => {
   });
 
   describe("createLLM", () => {
-    // These tests check the instantiation but not the actual API calls
-    // since we don't want to make real API calls in unit tests
-
-    test("should create ChatOpenAI instance for OPENAI provider", () => {
+    it("should create ChatOpenAI instance for OPENAI provider", () => {
       const llm = createLLM(
         LLMProvider.OPENAI,
         "gpt-4o-mini",
@@ -57,7 +108,7 @@ describe("Extractors", () => {
       expect(llm.constructor.name).toBe("ChatOpenAI");
     });
 
-    test("should create ChatGoogleGenerativeAI instance for GOOGLE_GEMINI provider", () => {
+    it("should create ChatGoogleGenerativeAI instance for GOOGLE_GEMINI provider", () => {
       const llm = createLLM(
         LLMProvider.GOOGLE_GEMINI,
         "gemini-2.5-flash-preview-04-17",
@@ -69,7 +120,7 @@ describe("Extractors", () => {
       expect(llm.constructor.name).toBe("ChatGoogleGenerativeAI");
     });
 
-    test("should throw error for unsupported provider", () => {
+    it("should throw error for unsupported provider", () => {
       expect(() => {
         // @ts-ignore - Testing invalid provider
         createLLM("unsupported-provider", "model", "api-key", 0);
@@ -77,6 +128,140 @@ describe("Extractors", () => {
     });
   });
 
-  // Note: We're not testing extractWithLLM here as it would require actual API calls
-  // Those should be in integration tests with API key checks
+  describe("extractWithLLM", () => {
+    it("should extract data using OpenAI", async () => {
+      const result = await extractWithLLM(
+        mockContent,
+        mockSchema,
+        LLMProvider.OPENAI,
+        "gpt-4o-mini",
+        mockApiKey
+      );
+
+      expect(result.data).toEqual({
+        title: "Test Title",
+        content: "Test Content",
+      });
+    });
+
+    it("should extract data using Google Gemini", async () => {
+      const result = await extractWithLLM(
+        mockContent,
+        mockSchema,
+        LLMProvider.GOOGLE_GEMINI,
+        "gemini-2.5-flash-preview-04-17",
+        mockApiKey
+      );
+
+      expect(result.data).toEqual({
+        title: "Test Title",
+        content: "Test Content",
+      });
+    });
+
+    it("should handle custom prompts", async () => {
+      const customPrompt = "Extract the main topic and summary";
+      const result = await extractWithLLM(
+        mockContent,
+        mockSchema,
+        LLMProvider.OPENAI,
+        "gpt-4o-mini",
+        mockApiKey,
+        0,
+        customPrompt
+      );
+
+      expect(result.data).toEqual({
+        title: "Test Title",
+        content: "Test Content",
+      });
+    });
+
+    it("should handle different content formats", async () => {
+      const result = await extractWithLLM(
+        mockContent,
+        mockSchema,
+        LLMProvider.OPENAI,
+        "gpt-4o-mini",
+        mockApiKey,
+        0,
+        undefined,
+        ContentFormat.TXT
+      );
+
+      expect(result.data).toEqual({
+        title: "Test Title",
+        content: "Test Content",
+      });
+    });
+  });
+
+  describe("truncateContent", () => {
+    it("should not truncate content within token limit", () => {
+      const content = "This is a short test content.";
+      const result = truncateContent(content, 10); // 40 chars limit
+      expect(result).toBe(content);
+    });
+
+    it("should truncate content at sentence boundary", () => {
+      const content = "First sentence. Second sentence. Third sentence.";
+      const result = truncateContent(content, 2); // 8 chars limit
+      expect(result).toBe("First sentence.");
+    });
+
+    it("should truncate content at paragraph boundary", () => {
+      const content = "First paragraph.\nSecond paragraph.\nThird paragraph.";
+      const result = truncateContent(content, 2); // 8 chars limit
+      expect(result).toBe("First paragraph.\n");
+    });
+
+    it("should truncate at max length if no good break point", () => {
+      const content = "ThisIsAVeryLongStringWithoutAnyNaturalBreakPoints";
+      const result = truncateContent(content, 2); // 8 chars limit
+      expect(result).toBe("ThisIsAV");
+    });
+
+    it("should handle empty content", () => {
+      const result = truncateContent("", 10);
+      expect(result).toBe("");
+    });
+  });
+
+  describe("extractWithLLM with token limit", () => {
+    it("should truncate content when maxInputTokens is specified", async () => {
+      const longContent = "First sentence. Second sentence. Third sentence.";
+      const result = await extractWithLLM(
+        longContent,
+        mockSchema,
+        LLMProvider.OPENAI,
+        "gpt-4",
+        mockApiKey,
+        0,
+        undefined,
+        ContentFormat.MARKDOWN,
+        2 // 8 chars limit
+      );
+
+      expect(result.data).toEqual({
+        title: "Test Title",
+        content: "Test Content",
+      });
+    });
+
+    it("should not truncate content when maxInputTokens is not specified", async () => {
+      const longContent = "First sentence. Second sentence. Third sentence.";
+      const result = await extractWithLLM(
+        longContent,
+        mockSchema,
+        LLMProvider.OPENAI,
+        "gpt-4",
+        mockApiKey
+      );
+
+      expect(result.data).toEqual({
+        title: "Test Title",
+        content: "Test Content",
+      });
+    });
+  });
 });

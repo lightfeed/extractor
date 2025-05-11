@@ -77,6 +77,9 @@ export interface ExtractorOptions<T extends z.ZodTypeAny> {
 
   /** URL of the HTML content, required only for HTML format */
   sourceUrl?: string;
+
+  /** Maximum number of input tokens to send to the LLM. Uses a rough conversion of 4 characters per token. */
+  maxInputTokens?: number;
 }
 
 /**

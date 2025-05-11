@@ -27,11 +27,9 @@ interface LLMResult {
 export function getUsage(output: LLMResult): Usage {
   const usage: Usage = {};
 
-  if (output.llmOutput) {
-    if (output.llmOutput.tokenUsage) {
-      usage.inputTokens = output.llmOutput.tokenUsage.promptTokens;
-      usage.outputTokens = output.llmOutput.tokenUsage.completionTokens;
-    }
+  if (output.llmOutput && output.llmOutput.tokenUsage) {
+    usage.inputTokens = output.llmOutput.tokenUsage.promptTokens;
+    usage.outputTokens = output.llmOutput.tokenUsage.completionTokens;
   }
 
   return usage;
@@ -64,6 +62,30 @@ export function createLLM(
     default:
       throw new Error(`Unsupported LLM provider: ${provider}`);
   }
+}
+
+/**
+ * Truncate content to fit within token limit
+ * Uses a rough conversion of 4 characters per token
+ */
+export function truncateContent(content: string, maxTokens: number): string {
+  const maxChars = maxTokens * 4;
+  if (content.length <= maxChars) {
+    return content;
+  }
+
+  // Try to find a good breaking point (end of sentence or paragraph)
+  const truncated = content.slice(0, maxChars);
+  const lastPeriod = truncated.lastIndexOf(".");
+  const lastNewline = truncated.lastIndexOf("\n");
+  const breakPoint = Math.max(lastPeriod, lastNewline);
+
+  if (breakPoint > maxChars * 0.8) {
+    // Only use break point if it's not too far from max
+    return truncated.slice(0, breakPoint + 1);
+  }
+
+  return truncated;
 }
 
 /**
@@ -113,13 +135,23 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
   apiKey: string,
   temperature: number = 0,
   customPrompt?: string,
-  format: string = ContentFormat.MARKDOWN
+  format: string = ContentFormat.MARKDOWN,
+  maxInputTokens?: number
 ): Promise<{ data: z.infer<T>; usage: Usage }> {
   const llm = createLLM(provider, modelName, apiKey, temperature);
   let usage: Usage = {};
 
+  // Truncate content if maxInputTokens is specified
+  const truncatedContent = maxInputTokens
+    ? truncateContent(content, maxInputTokens)
+    : content;
+
   // Generate the prompt using the unified template function
-  const prompt = generateExtractionPrompt(format, content, customPrompt);
+  const prompt = generateExtractionPrompt(
+    format,
+    truncatedContent,
+    customPrompt
+  );
 
   try {
     // Extract structured data with a withStructuredOutput chain
@@ -131,12 +163,7 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
     const callbacks = [
       {
         handleLLMEnd: (output: any) => {
-          if (output?.llmOutput?.tokenUsage) {
-            usage = {
-              inputTokens: output.llmOutput.tokenUsage.promptTokens,
-              outputTokens: output.llmOutput.tokenUsage.completionTokens,
-            };
-          }
+          usage = getUsage(output);
         },
       },
     ];

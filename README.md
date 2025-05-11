@@ -431,6 +431,34 @@ This utility is especially useful when:
 - Objects contain invalid values that don't match constraints
 - You want to recover as much valid data as possible while safely removing problematic parts
 
+## Token Limits
+
+The library supports limiting the input size to stay within token limits of LLM models. This is particularly useful when processing large documents or when you need to control API costs.
+
+### Character to Token Conversion
+
+The library uses a rough conversion of 4 characters per token. This is a conservative estimate that works well for most English text. For example:
+- 1000 tokens ≈ 4000 characters
+- 4000 tokens ≈ 16000 characters
+
+Note that this is an approximation and actual token counts may vary depending on:
+- Language (non-English text may use more tokens per character)
+- Special characters and symbols
+- Model-specific tokenization rules
+
+### Using Token Limits
+
+You can specify a maximum number of input tokens using the `maxInputTokens` option:
+
+```typescript
+const result = await extract(htmlContent, schema, {
+  maxInputTokens: 4000, // Limits input to roughly 16000 characters
+  // ... other options
+});
+```
+
+When the input exceeds the token limit, the content will be truncated at a natural break point (end of sentence or paragraph) to ensure the extracted data remains coherent.
+
 ## Development
 
 ### Setup
