@@ -383,6 +383,7 @@ describe("Image Extraction Integration Tests", () => {
       extractionOptions: {
         includeImages: true,
       },
+      sourceUrl: "https://example.com/blog/async-await",
     });
 
     verifyImageExtraction(result);
@@ -399,6 +400,7 @@ describe("Image Extraction Integration Tests", () => {
       extractionOptions: {
         includeImages: true,
       },
+      sourceUrl: "https://example.com/blog/async-await",
     });
 
     verifyImageExtraction(result);
