@@ -7,26 +7,22 @@ Use LLMs to **robustly** extract structured data from HTML and markdown. Used in
 - Extracting URLs can cause errors, e.g., invalid URLs or inability to handle relative or absolute paths.
 
 ## We are fixing these problems
-✅ Sanitize and recover imperfect, failed, or partial LLM outputs into valid JSON objects that conform to your defined schema.
-
-🔗 Robustly extract link URLs, including relative and absolute paths, and fixing invalid links with escaped characters due to markdown.
+- ✅ Sanitize and recover imperfect, failed, or partial LLM outputs into valid JSON objects that conform to your defined schema.
+- 🔗 Robustly extract link URLs, including relative and absolute paths, and fixing invalid links with escaped characters due to markdown.
 
 ## Other features
-- Convert HTML to LLM-ready markdown, option to extract only the main content from HTML, removing navigation, headers & footers, option to extract images
-- Extract structured data using OpenAI or Google Gemini models, option to truncate to max input token limit
-- Define your extraction schema using Zod
-- Support for custom extraction prompts
-- Return token usage per each call
-- Extensive unit tests and integration tests to ensure production reliability
+[x] Convert HTML to LLM-ready markdown, option to extract only the main content from HTML, removing navigation, headers & footers, option to extract images
+[x] Extract structured data using OpenAI or Google Gemini models, option to truncate to max input token limit
+[x] Define your extraction schema using Zod
+[x] Support for custom extraction prompts
+[x] Return token usage per each call
+[x] Extensive unit tests and integration tests to ensure production reliability
 
 ## Why use an LLM extractor?
-🔎 Can reason from context, perform search and return structured answers in addition to extracting content as-is
-
-⚡️ No need to manually create custom scraper code for each site
-
-🔁 Resilient to website changes, e.g., HTML structure, CSS selectors, or page layout
-
-💡 LLMs are becoming more accurate and cost-effective
+- 🔎 Can reason from context, perform search and return structured answers in addition to extracting content as-is
+- ⚡️ No need to manually create custom scraper code for each site
+- 🔁 Resilient to website changes, e.g., HTML structure, CSS selectors, or page layout
+- 💡 LLMs are becoming more accurate and cost-effective
 
 ## Installation
 
@@ -38,8 +34,8 @@ npm install lightfeed-extract
 
 While this library provides a robust foundation for data extraction, you might want to consider [lightfeed.ai](https://lightfeed.ai) if you need:
 
-- **Persistent Storage**: Automatically store and manage extracted data in production-ready databases
-- **Deduplication**: Smart detection and handling of duplicate content across your sources
+- **Persistent Searchable Databases**: Automatically store and manage extracted data in production-ready vector databases
+- **Scheduled Runs, Deduplication and Tracking**: Smart detection and handling of duplicate content across your sources, with automated change tracking
 - **Pagination and Multi-page Extraction**: Follow links to collect complete data from connected pages
 - **Real-time API and Integration**: Query your extracted data through robust API endpoints and integrations
 - **Research Portal**: Explore and analyze your data through an intuitive interface
