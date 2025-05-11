@@ -5,7 +5,7 @@ Use LLMs to **robustly** extract structured data from HTML and markdown. Used in
 ## Core features
 ✅ **Sanitize and recover imperfect, failed, or partial LLM outputs into valid JSON** - Ensures outputs conform to your schema
 
-🔗 **Robust URL extraction** - Handles relative/absolute paths and fixes markdown-escaped links automatically
+🔗 **Robust URL extraction** - Handles relative/absolute paths, skips invalid URLs and fixes markdown-escaped links automatically
 
 ## Other features
 - [x] Convert HTML to LLM-ready markdown, option to extract only the main content from HTML, removing navigation, headers & footers, option to extract images
@@ -34,7 +34,7 @@ npm install lightfeed-extract
 
 While this library provides a robust foundation for data extraction, you might want to consider [lightfeed.ai](https://lightfeed.ai) if you need:
 
-- **Persistent Searchable Databases**: Automatically store and manage extracted data in production-ready vector databases
+- **Persistent Searchable Databases**: Automatically store and manage extracted data in a production-ready vector database
 - **Scheduled Runs, Deduplication and Tracking**: Smart detection and handling of duplicate content across your sources, with automated change tracking
 - **Pagination and Multi-page Extraction**: Follow links to collect complete data from connected pages
 - **Real-time API and Integration**: Query your extracted data through robust API endpoints and integrations

@@ -271,6 +271,31 @@ describe("Extract Integration Tests", () => {
       expect(result.data).toBeDefined();
     });
   });
+
+  describe("Special Character Handling", () => {
+    test("should extract link with special characters from markdown", async () => {
+      const markdownContent =
+        "[Meeting \\[11-12-24\\]](https://example.com/meeting-\\(11-12-24\\))";
+
+      const schema = z.object({
+        title: z.string(),
+        link: z.string(),
+      });
+
+      const result = await extract({
+        content: markdownContent,
+        format: ContentFormat.MARKDOWN,
+        schema,
+        provider: LLMProvider.OPENAI,
+        openaiApiKey: process.env.OPENAI_API_KEY,
+      });
+
+      // Verify the extracted data
+      console.log(result.data);
+      expect(result.data.title).toBe("Meeting [11-12-24]");
+      expect(result.data.link).toBe("https://example.com/meeting-(11-12-24)");
+    });
+  });
 });
 
 // Read the sample HTML file with images
