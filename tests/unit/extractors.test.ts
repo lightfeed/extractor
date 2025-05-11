@@ -199,25 +199,31 @@ describe("extractors", () => {
 
   describe("truncateContent", () => {
     it("should not truncate content when full prompt is within limit", () => {
-      const prompt = generateExtractionPrompt(ContentFormat.TXT, "");
+      const prompt = generateExtractionPrompt({
+        format: ContentFormat.TXT,
+        content: "",
+      });
       const content = "This is a short test content.";
-      const result = truncateContent(
+      const result = truncateContent({
         content,
-        (prompt.length + content.length) / 4,
-        ContentFormat.TXT
-      );
+        maxTokens: (prompt.length + content.length) / 4,
+        format: ContentFormat.TXT,
+      });
       expect(result).toBe(content);
     });
 
     it("should truncate content by excess amount", () => {
-      const prompt = generateExtractionPrompt(ContentFormat.TXT, "");
+      const prompt = generateExtractionPrompt({
+        format: ContentFormat.TXT,
+        content: "",
+      });
       // Create a content that will make the full prompt exceed the limit
       const content = "This is a longer test content that should be truncated.";
-      const result = truncateContent(
+      const result = truncateContent({
         content,
-        (prompt.length + content.length) / 4 - 1,
-        ContentFormat.TXT
-      );
+        maxTokens: (prompt.length + content.length) / 4 - 1,
+        format: ContentFormat.TXT,
+      });
       expect(result.length).toBe(content.length - 4);
     });
   });

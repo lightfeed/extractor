@@ -138,7 +138,7 @@ const result = await extract({
   content: textContent,
   format: ContentFormat.TXT,
   schema: mySchema,
-  prompt: "Extract all product details including specifications and pricing information", 
+  prompt: "Extract only products that are on sale or have special discounts. Include their original prices, discounted prices, and all specifications.",
   provider: LLMProvider.GOOGLE_GEMINI,
   googleApiKey: 'your-google-api-key'
 });
@@ -146,49 +146,20 @@ const result = await extract({
 
 If no prompt is provided, a default extraction prompt will be used.
 
-### Advanced Example with OpenAI
+### Using Alternative Models with Input Token Limit
 
 ```typescript
-import { extract, ContentFormat, LLMProvider } from 'lightfeed-extract';
-import { z } from 'zod';
-
-async function main() {
-  // Define a more complex schema
-  const schema = z.object({
-    items: z.array(
-      z.object({
-        name: z.string(),
-        price: z.string(),
-        description: z.string().optional()
-      })
-    ),
-    totalItems: z.number()
-  });
-
-  // Extract from Markdown directly
-  const result = await extract({
-    content: `
-# Product List
-
-- Product A: $19.99
-  High-quality item with great features.
-- Product B: $24.99
-  Another excellent product.
-- Product C: $15.50
-    `,
-    format: ContentFormat.MARKDOWN,
-    schema,
-    provider: LLMProvider.OPENAI,
-    openaiApiKey: 'your-openai-api-key', // API key must be provided explicitly
-    modelName: 'gpt-4o-mini',
-    temperature: 0.2
-  });
-
-  console.log('Extracted Data:', result.data);
-  console.log('Token Usage:', result.usage);
-}
-
-main().catch(console.error);
+// Extract from Markdown with token limit
+const result = await extract({
+  content: markdownContent,
+  format: ContentFormat.MARKDOWN,
+  schema,
+  provider: LLMProvider.OPENAI,
+  openaiApiKey: 'your-openai-api-key',
+  modelName: 'gpt-4o-mini',
+  temperature: 0.2,
+  maxInputTokens: 128000 // Limit to roughly 128K tokens (max input for gpt-4o-mini)
+});
 ```
 
 ### HTML Content Extraction
@@ -209,7 +180,7 @@ const result = await extract({
 
 **Note:** The `extractMainHtml` option only applies to HTML format, not markdown. It uses simple heuristics to identify and extract what appears to be the main content area (like article or main tags). It's recommended to keep this option off (false) when extracting details about a single item (like a product listing) as it might remove important contextual elements.
 
-### Including Images
+### Including Images in HTML
 
 By default, images are excluded from the extraction process to simplify the output. If you need to extract image URLs or references, you can enable the `includeImages` option:
 
@@ -308,6 +279,7 @@ Main function to extract structured data from content.
 | `temperature` | `number` | Temperature for the LLM (0-1) | `0` |
 | `extractionOptions` | `ContentExtractionOptions` | Options for content extraction (see below) | `{}` |
 | `sourceUrl` | `string` | URL of the HTML content, required when format is HTML to properly handle relative URLs | Required for HTML format |
+| `maxInputTokens` | `number` | Maximum number of input tokens to send to the LLM. Uses a rough conversion of 4 characters per token. When specified, content will be truncated if the total prompt size exceeds this limit. | `undefined` |
 
 #### Content Extraction Options
 
@@ -431,39 +403,7 @@ This utility is especially useful when:
 - Objects contain invalid values that don't match constraints
 - You want to recover as much valid data as possible while safely removing problematic parts
 
-## Token Limits
 
-The library supports limiting the input size to stay within token limits of LLM models. This is particularly useful when processing large documents or when you need to control API costs.
-
-### Character to Token Conversion
-
-The library uses a rough conversion of 4 characters per token. This is a conservative estimate that works well for most English text. For example:
-- 1000 tokens ≈ 4000 characters
-- 4000 tokens ≈ 16000 characters
-
-Note that this is an approximation and actual token counts may vary depending on:
-- Language (non-English text may use more tokens per character)
-- Special characters and symbols
-- Model-specific tokenization rules
-
-### Using Token Limits
-
-You can specify a maximum number of input tokens using the `maxInputTokens` option:
-
-```typescript
-const result = await extract(htmlContent, schema, {
-  maxInputTokens: 128000, // Limits total prompt size to roughly 128K token or 512K characters
-  // ... other options
-});
-```
-
-The token limit applies to the entire prompt, including:
-- The extraction template and instructions
-- The format specification
-- The custom prompt (if provided)
-- The actual content to be processed
-
-When the total prompt size exceeds the token limit, the content portion will be truncated to ensure the entire prompt stays within the limit. This ensures that the total input size stays within the model's token limits.
 
 ## Development
 

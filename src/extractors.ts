@@ -64,14 +64,24 @@ export function createLLM(
   }
 }
 
+interface ExtractionPromptOptions {
+  format: string;
+  content: string;
+  customPrompt?: string;
+}
+
+interface TruncateContentOptions extends ExtractionPromptOptions {
+  maxTokens: number;
+}
+
 /**
  * Generate the extraction prompt with or without a custom query
  */
-export function generateExtractionPrompt(
-  format: string,
-  content: string,
-  customPrompt?: string
-): string {
+export function generateExtractionPrompt({
+  format,
+  content,
+  customPrompt,
+}: ExtractionPromptOptions): string {
   // Base prompt structure that's shared between default and custom prompts
   const extractionTask = customPrompt
     ? `${customPrompt}`
@@ -104,16 +114,20 @@ Return only the structured data in valid JSON format and nothing else.
  * Truncate content to fit within token limit
  * Uses a rough conversion of 4 characters per token
  */
-export function truncateContent(
-  content: string,
-  maxTokens: number,
-  format: string,
-  customPrompt?: string
-): string {
+export function truncateContent({
+  format,
+  content,
+  customPrompt,
+  maxTokens,
+}: TruncateContentOptions): string {
   const maxChars = maxTokens * 4;
 
   // First generate the full prompt
-  const fullPrompt = generateExtractionPrompt(format, content, customPrompt);
+  const fullPrompt = generateExtractionPrompt({
+    format,
+    content,
+    customPrompt,
+  });
 
   // If the full prompt is within limits, return original content
   if (fullPrompt.length <= maxChars) {
@@ -146,15 +160,20 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
 
   // Truncate content if maxInputTokens is specified
   const truncatedContent = maxInputTokens
-    ? truncateContent(content, maxInputTokens, format, customPrompt)
+    ? truncateContent({
+        format,
+        content,
+        customPrompt,
+        maxTokens: maxInputTokens,
+      })
     : content;
 
   // Generate the prompt using the unified template function
-  const prompt = generateExtractionPrompt(
+  const prompt = generateExtractionPrompt({
     format,
-    truncatedContent,
-    customPrompt
-  );
+    content: truncatedContent,
+    customPrompt,
+  });
 
   try {
     // Extract structured data with a withStructuredOutput chain
