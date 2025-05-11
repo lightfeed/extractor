@@ -65,33 +65,9 @@ export function createLLM(
 }
 
 /**
- * Truncate content to fit within token limit
- * Uses a rough conversion of 4 characters per token
- */
-export function truncateContent(content: string, maxTokens: number): string {
-  const maxChars = maxTokens * 4;
-  if (content.length <= maxChars) {
-    return content;
-  }
-
-  // Try to find a good breaking point (end of sentence or paragraph)
-  const truncated = content.slice(0, maxChars);
-  const lastPeriod = truncated.lastIndexOf(".");
-  const lastNewline = truncated.lastIndexOf("\n");
-  const breakPoint = Math.max(lastPeriod, lastNewline);
-
-  if (breakPoint > maxChars * 0.8) {
-    // Only use break point if it's not too far from max
-    return truncated.slice(0, breakPoint + 1);
-  }
-
-  return truncated;
-}
-
-/**
  * Generate the extraction prompt with or without a custom query
  */
-function generateExtractionPrompt(
+export function generateExtractionPrompt(
   format: string,
   content: string,
   customPrompt?: string
@@ -125,6 +101,33 @@ Return only the structured data in valid JSON format and nothing else.
 }
 
 /**
+ * Truncate content to fit within token limit
+ * Uses a rough conversion of 4 characters per token
+ */
+export function truncateContent(
+  content: string,
+  maxTokens: number,
+  format: string,
+  customPrompt?: string
+): string {
+  const maxChars = maxTokens * 4;
+
+  // First generate the full prompt
+  const fullPrompt = generateExtractionPrompt(format, content, customPrompt);
+
+  // If the full prompt is within limits, return original content
+  if (fullPrompt.length <= maxChars) {
+    return content;
+  }
+
+  // Calculate how much we need to reduce the content
+  const excessChars = fullPrompt.length - maxChars;
+
+  // Truncate content by the excess amount
+  return content.slice(0, content.length - excessChars);
+}
+
+/**
  * Extract structured data from markdown using an LLM
  */
 export async function extractWithLLM<T extends z.ZodTypeAny>(
@@ -143,7 +146,7 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
 
   // Truncate content if maxInputTokens is specified
   const truncatedContent = maxInputTokens
-    ? truncateContent(content, maxInputTokens)
+    ? truncateContent(content, maxInputTokens, format, customPrompt)
     : content;
 
   // Generate the prompt using the unified template function

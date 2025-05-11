@@ -452,12 +452,18 @@ You can specify a maximum number of input tokens using the `maxInputTokens` opti
 
 ```typescript
 const result = await extract(htmlContent, schema, {
-  maxInputTokens: 4000, // Limits input to roughly 16000 characters
+  maxInputTokens: 128000, // Limits total prompt size to roughly 128K token or 512K characters
   // ... other options
 });
 ```
 
-When the input exceeds the token limit, the content will be truncated at a natural break point (end of sentence or paragraph) to ensure the extracted data remains coherent.
+The token limit applies to the entire prompt, including:
+- The extraction template and instructions
+- The format specification
+- The custom prompt (if provided)
+- The actual content to be processed
+
+When the total prompt size exceeds the token limit, the content portion will be truncated to ensure the entire prompt stays within the limit. This ensures that the total input size stays within the model's token limits.
 
 ## Development
 

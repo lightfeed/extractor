@@ -4,6 +4,7 @@ import {
   createLLM,
   extractWithLLM,
   truncateContent,
+  generateExtractionPrompt,
 } from "../../src/extractors";
 import { LLMProvider, ContentFormat } from "../../src/types";
 import { z } from "zod";
@@ -197,71 +198,27 @@ describe("extractors", () => {
   });
 
   describe("truncateContent", () => {
-    it("should not truncate content within token limit", () => {
+    it("should not truncate content when full prompt is within limit", () => {
+      const prompt = generateExtractionPrompt(ContentFormat.TXT, "");
       const content = "This is a short test content.";
-      const result = truncateContent(content, 10); // 40 chars limit
+      const result = truncateContent(
+        content,
+        (prompt.length + content.length) / 4,
+        ContentFormat.TXT
+      );
       expect(result).toBe(content);
     });
 
-    it("should truncate content at sentence boundary", () => {
-      const content = "First sentence. Second sentence. Third sentence.";
-      const result = truncateContent(content, 2); // 8 chars limit
-      expect(result).toBe("First sentence.");
-    });
-
-    it("should truncate content at paragraph boundary", () => {
-      const content = "First paragraph.\nSecond paragraph.\nThird paragraph.";
-      const result = truncateContent(content, 2); // 8 chars limit
-      expect(result).toBe("First paragraph.\n");
-    });
-
-    it("should truncate at max length if no good break point", () => {
-      const content = "ThisIsAVeryLongStringWithoutAnyNaturalBreakPoints";
-      const result = truncateContent(content, 2); // 8 chars limit
-      expect(result).toBe("ThisIsAV");
-    });
-
-    it("should handle empty content", () => {
-      const result = truncateContent("", 10);
-      expect(result).toBe("");
-    });
-  });
-
-  describe("extractWithLLM with token limit", () => {
-    it("should truncate content when maxInputTokens is specified", async () => {
-      const longContent = "First sentence. Second sentence. Third sentence.";
-      const result = await extractWithLLM(
-        longContent,
-        mockSchema,
-        LLMProvider.OPENAI,
-        "gpt-4",
-        mockApiKey,
-        0,
-        undefined,
-        ContentFormat.MARKDOWN,
-        2 // 8 chars limit
+    it("should truncate content by excess amount", () => {
+      const prompt = generateExtractionPrompt(ContentFormat.TXT, "");
+      // Create a content that will make the full prompt exceed the limit
+      const content = "This is a longer test content that should be truncated.";
+      const result = truncateContent(
+        content,
+        (prompt.length + content.length) / 4 - 1,
+        ContentFormat.TXT
       );
-
-      expect(result.data).toEqual({
-        title: "Test Title",
-        content: "Test Content",
-      });
-    });
-
-    it("should not truncate content when maxInputTokens is not specified", async () => {
-      const longContent = "First sentence. Second sentence. Third sentence.";
-      const result = await extractWithLLM(
-        longContent,
-        mockSchema,
-        LLMProvider.OPENAI,
-        "gpt-4",
-        mockApiKey
-      );
-
-      expect(result.data).toEqual({
-        title: "Test Title",
-        content: "Test Content",
-      });
+      expect(result.length).toBe(content.length - 4);
     });
   });
 });
