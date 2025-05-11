@@ -2,27 +2,27 @@
 
 Use LLMs to **robustly** extract structured data from HTML and markdown. Used in production by Lightfeed and successfully extracting 10M+ records. Written in Typescript/Node.js.
 
-## Existing problems with LLM extraction
-- Failure to return valid JSON or comply with input JSON schema e.g., any invalid field can make the entire JSON response fail, one invalid item can make the entire list response unusable.
-- Extracting URLs can cause errors, e.g., invalid URLs or inability to handle relative or absolute paths.
+## Core features
+✅ **Sanitize and recover imperfect, failed, or partial LLM outputs into valid JSON** - Ensures outputs conform to your schema
 
-## We are fixing these problems
-- ✅ Sanitize and recover imperfect, failed, or partial LLM outputs into valid JSON objects that conform to your defined schema.
-- 🔗 Robustly extract link URLs, including relative and absolute paths, and fixing invalid links with escaped characters due to markdown.
+🔗 **Robust URL extraction** - Handles relative/absolute paths and fixes markdown-escaped links automatically
 
 ## Other features
-[x] Convert HTML to LLM-ready markdown, option to extract only the main content from HTML, removing navigation, headers & footers, option to extract images
-[x] Extract structured data using OpenAI or Google Gemini models, option to truncate to max input token limit
-[x] Define your extraction schema using Zod
-[x] Support for custom extraction prompts
-[x] Return token usage per each call
-[x] Extensive unit tests and integration tests to ensure production reliability
+- [x] Convert HTML to LLM-ready markdown, option to extract only the main content from HTML, removing navigation, headers & footers, option to extract images
+- [x] Extract structured data using OpenAI or Google Gemini models, option to truncate to max input token limit
+- [x] Define your extraction schema using Zod
+- [x] Support for custom extraction prompts
+- [x] Return token usage per each call
+- [x] Extensive unit tests and integration tests to ensure production reliability
 
 ## Why use an LLM extractor?
-- 🔎 Can reason from context, perform search and return structured answers in addition to extracting content as-is
-- ⚡️ No need to manually create custom scraper code for each site
-- 🔁 Resilient to website changes, e.g., HTML structure, CSS selectors, or page layout
-- 💡 LLMs are becoming more accurate and cost-effective
+🔎 Can reason from context, perform search and return structured answers in addition to extracting content as-is
+
+⚡️ No need to manually create custom scraper code for each site
+
+🔁 Resilient to website changes, e.g., HTML structure, CSS selectors, or page layout
+
+💡 LLMs are becoming more accurate and cost-effective
 
 ## Installation
 
@@ -150,7 +150,8 @@ const result = await extract({
 });
 ```
 
-**Note:** The `extractMainHtml` option only applies to HTML format. It uses heuristics to identify and extract what appears to be the main content area (like article or main tags). It's recommended to keep this option off (false) when extracting details about a single item (like a product listing) as it might remove important contextual elements.
+> [!NOTE]
+> The `extractMainHtml` option only applies to HTML format. It uses heuristics to identify and extract what appears to be the main content area (like article or main tags). It's recommended to keep this option off (false) when extracting details about a single item (like a product listing) as it might remove important contextual elements.
 
 ### Including Images in HTML
 
