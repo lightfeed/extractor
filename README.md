@@ -2,18 +2,17 @@
 
 Use LLMs to **robustly** extract structured data from HTML and markdown. Used in production by Lightfeed and successfully extracting 10M+ records. Written in Typescript/Node.js.
 
-## Core features
-✅ **Sanitize and recover imperfect, failed, or partial LLM outputs into valid JSON** - Ensures outputs conform to your schema
+## Key Features
+✅ **Sanitize and recover imperfect, failed, or partial LLM outputs into valid JSON** - Ensures outputs conform to your schema defined in Zod
 
 🔗 **Robust URL extraction for `z.string().url()`** - Handles relative/absolute paths, skips invalid URLs and fixes markdown-escaped links automatically
 
-## Other features
-- [x] Convert HTML to LLM-ready markdown, option to extract only the main content from HTML, removing navigation, headers & footers, option to extract images
-- [x] Extract structured data using OpenAI or Google Gemini models, option to truncate to max input token limit
-- [x] Define your extraction schema using Zod
-- [x] Support for custom extraction prompts
-- [x] Return token usage per each call
-- [x] Extensive unit tests and integration tests to ensure production reliability
+## Other Features
+- Convert HTML to LLM-ready markdown, with option to extract only the main content from HTML (e.g. removing navigation, headers & footers) and option to include images
+- Extract structured data using Google Gemini or OpenAI models (Gemini 2.5 flash and GPT-4o mini by default), option to truncate to max input token limit
+- Support for custom extraction prompts
+- Return token usage per each call
+- Extensive unit tests and integration tests to ensure production reliability
 
 ## Why use an LLM extractor?
 🔎 Can reason from context, perform search and return structured answers in addition to extracting content as-is

@@ -1,4 +1,5 @@
 import { htmlToMarkdown } from "../../src/converters";
+import { convertHtmlToMarkdown } from "../../src/index";
 
 describe("HTML to Markdown converter", () => {
   test("should convert simple HTML to markdown", () => {
@@ -209,5 +210,42 @@ describe("HTML to Markdown converter", () => {
       expect(markdown).toContain("[Invalid Link](invalid:url)");
       expect(markdown).toContain("![Invalid Image](invalid:url)");
     });
+  });
+});
+
+describe("convertHtmlToMarkdown", () => {
+  it("should convert HTML to markdown", () => {
+    const html = "<h1>Hello World</h1><p>This is a test</p>";
+    const markdown = convertHtmlToMarkdown(html);
+    expect(markdown).toContain("Hello World");
+    expect(markdown).toContain("This is a test");
+  });
+
+  it("should handle HTML extraction options", () => {
+    const html = `
+      <nav>Navigation</nav>
+      <main><h1>Main Content</h1><p>Important text</p></main>
+      <footer>Footer</footer>
+    `;
+    const markdown = convertHtmlToMarkdown(html, { extractMainHtml: true });
+    expect(markdown).toContain("Main Content");
+    expect(markdown).toContain("Important text");
+    // Navigation and footer might be removed by extractMainHtml
+  });
+
+  it("should process images when includeImages is true", () => {
+    const html = '<div><img src="image.jpg" alt="Test Image"></div>';
+    const markdown = convertHtmlToMarkdown(html, { includeImages: true });
+    expect(markdown).toContain("![Test Image]");
+  });
+
+  it("should handle source URL for relative links", () => {
+    const html = '<a href="/about">About</a>';
+    const markdown = convertHtmlToMarkdown(
+      html,
+      undefined,
+      "https://example.com"
+    );
+    expect(markdown).toContain("https://example.com/about");
   });
 });
