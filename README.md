@@ -87,9 +87,9 @@ async function main() {
 main().catch(console.error);
 ```
 
-### Using Markdown Input
+### Extracting from Markdown
 
-You can also extract structured data directly from markdown:
+You can also extract structured data directly from Markdown string:
 
 ```typescript
 const result = await extract({
@@ -118,7 +118,9 @@ const result = await extract({
 
 If no prompt is provided, a default extraction prompt will be used.
 
-### Specify Model Name with Input Token Limit
+### Customizing Model and Managing Token Limits
+
+You can customize the model and manage token limits to control costs and ensure your content fits within the model's maximum context window:
 
 ```typescript
 // Extract from Markdown with token limit
@@ -134,7 +136,7 @@ const result = await extract({
 });
 ```
 
-### HTML Content Extraction
+### Extracting from Main HTML
 
 For blog posts or articles with lots of navigation elements, headers, and footers, you can use the `extractMainHtml` option to focus on just the main content:
 
@@ -153,7 +155,7 @@ const result = await extract({
 > [!NOTE]
 > The `extractMainHtml` option only applies to HTML format. It uses heuristics to identify and extract what appears to be the main content area (like article or main tags). It's recommended to keep this option off (false) when extracting details about a single item (like a product listing) as it might remove important contextual elements.
 
-### Including Images in HTML
+### Extracting Images from HTML
 
 By default, images are excluded from the HTML extraction process to simplify the output. If you need to extract image URLs or references, you can enable the `includeImages` option:
 
