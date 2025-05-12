@@ -25,7 +25,7 @@ const blogSchema = z.object({
     .describe("Tags appear after the date. Do not include the # symbol."),
   summary: z.string(),
   links: z
-    .array(z.string())
+    .array(z.string().url())
     .optional()
     .describe("Extract all URLs from the content"),
 });
@@ -100,8 +100,8 @@ describe("Extract Integration Tests", () => {
         rating: z.number().optional(),
         description: z.string().optional(),
         features: z.array(z.string()).optional(),
-        imageUrl: z.string().optional(),
-        productUrl: z.string().optional(),
+        imageUrl: z.string().url().optional(),
+        productUrl: z.string().url().optional(),
       })
     ),
   });
@@ -353,7 +353,7 @@ const articleSchema = z.object({
   images: z
     .array(
       z.object({
-        url: z.string(),
+        url: z.string().url(),
         alt: z.string().optional(),
         caption: z.string().optional(),
       })

@@ -193,7 +193,7 @@ const productListSchema = z.object({
       // Include an array of images for each product
       images: z.array(
         z.object({
-          url: z.string(),
+          url: z.string().url(),
           alt: z.string().optional(),
         })
       ).optional(),
