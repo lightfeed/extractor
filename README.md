@@ -1,14 +1,40 @@
-# lightfeed-extract
+<p align="center">
+  <img src="https://www.lightfeed.ai/docs/img/logo.svg" width="128" height="128" alt="Lightfeed Logo" />
+</p>
+
+<div align="center">
+  <a href="https://www.npmjs.com/package/lightfeed-extract">
+    <img src="https://img.shields.io/npm/v/lightfeed-extract?logo=npm" alt="npm" /></a>
+  <a href="https://github.com/lightfeed/lightfeed-extract/actions/workflows/test.yml">
+      <img src="https://img.shields.io/github/actions/workflow/status/lightfeed/lightfeed-extract/test.yml"
+          alt="Test status"></a>
+  <a href="https://github.com/lightfeed/lightfeed-extract/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/lightfeed/lightfeed-extract" alt="License" /></a>
+</div>
+<div>
+  <p align="center">
+    <a href="https://lightfeed.ai/docs">
+      <img src="https://img.shields.io/badge/docs-lightfeed.ai-3E63DD" alt="Lightfeed Documentation" /></a>
+    <a href="https://discord.gg/txZ2s4pgQJ" alt="Discord">
+      <img src="https://img.shields.io/discord/1209342987008614501?label=chat&logo=discord&logoColor=white&color=5865F2" alt="Discord" /></a>
+    <a href="https://www.linkedin.com/company/lightfeed-ai">
+      <img src="https://img.shields.io/badge/Follow%20on%20LinkedIn-0A66C2?logo=linkedin&logoColor=white" alt="Follow on LinkedIn" /></a>
+    <a href="https://twitter.com/lightfeed_ai">
+      <img src="https://img.shields.io/badge/Follow%20on%20X-202020?logo=x&logoColor=white" alt="Follow on X" /></a>
+  </p>
+</div>
+
+# ⚡️ Lightfeed Extract
 
 Use LLMs to **robustly** extract structured data from HTML and markdown. Used in production by Lightfeed and successfully extracting 10M+ records. Written in Typescript/Node.js.
 
 ## Key Features
-✅ **Sanitize and recover imperfect, failed, or partial LLM outputs into valid JSON** - Ensures outputs conform to your schema defined in Zod
+✅ **Sanitize and recover imperfect, failed, or partial LLM outputs into valid JSON** - Ensures outputs conform to your schema defined in Zod, especially for complex schemas with deeply nested objects and arrays. See [JSON Sanitization](#json-sanitization) for details.
 
-🔗 **Robust URL extraction for `z.string().url()`** - Handles relative/absolute paths, skips invalid URLs and fixes markdown-escaped links automatically
+🔗 **Robust URL extraction for `z.string().url()`** - Validates URLs, handles relative/absolute paths, skips invalid URLs and fixes markdown-escaped links automatically. See [URL Validation](#url-validation) section for details.
 
 ## Other Features
-- Convert HTML to LLM-ready markdown, with option to extract only the main content from HTML (e.g. removing navigation, headers & footers) and option to include images
+- Convert HTML to LLM-ready markdown, with option to extract only the main content from HTML (e.g. removing navigation, headers & footers) and option to include images. The `convertHtmlToMarkdown` function is exposed as a top-level utility that can be used independently without running the full LLM extraction pipeline. See [HTML to Markdown Conversion](#html-to-markdown-conversion) section for details
 - Extract structured data using Google Gemini or OpenAI models (Gemini 2.5 flash and GPT-4o mini by default), option to truncate to max input token limit
 - Support for custom extraction prompts
 - Return token usage per each call
@@ -241,9 +267,14 @@ interface ExtractorResult<T> {
 }
 ```
 
-### `convertHtmlToMarkdown(html: string, options?: HTMLExtractionOptions, sourceUrl?: string): string`
+### HTML to Markdown Conversion
 
-Utility function to convert HTML content to markdown without performing extraction.
+The `convertHtmlToMarkdown` utility function allows you to convert HTML content to markdown without performing extraction.
+
+**Function signature:**
+```typescript
+convertHtmlToMarkdown(html: string, options?: HTMLExtractionOptions, sourceUrl?: string): string
+```
 
 #### Parameters
 
@@ -283,9 +314,14 @@ console.log(markdownWithOptions);
 // Output: "![Logo](https://example.com/images/logo.png)[About](https://example.com/about)"
 ```
 
-### `safeSanitizedParser<T>(schema: ZodTypeAny, rawObject: unknown): z.infer<T> | null`
+### JSON Sanitization
 
-Utility function to sanitize and recover partial data from LLM outputs that may not perfectly conform to your schema.
+The `safeSanitizedParser` utility function helps sanitize and recover partial data from LLM outputs that may not perfectly conform to your schema.
+
+**Function signature:**
+```typescript
+safeSanitizedParser<T>(schema: ZodTypeAny, rawObject: unknown): z.infer<T> | null
+```
 
 ```typescript
 import { safeSanitizedParser } from 'lightfeed-extract';
@@ -383,9 +419,9 @@ This utility is especially useful when:
 - Objects contain invalid values that don't match constraints
 - You want to recover as much valid data as possible while safely removing problematic parts
 
-### Handling Special URL Characters
+### URL Validation
 
-The library provides special handling for URLs with special characters (like parentheses) that may get escaped in markdown:
+The library provides robust URL validation and handling through Zod's `z.string().url()` validator:
 
 ```typescript
 const schema = z.object({
@@ -402,18 +438,16 @@ const result = await extract({
 });
 ```
 
-Even if the URLs in your content contain special characters that get escaped in markdown (like `https://example.com/meeting-(2023)` becoming `https://example.com/meeting-\(2023\)`), the library will automatically fix these and ensure they pass URL validation.
-
 #### How URL Validation Works
 
-The library handles URL validation in a special way:
+Our URL validation system provides several key benefits:
 
-1. It automatically detects fields with `z.string().url()` validation in your schema
-2. During extraction, it temporarily converts them to `z.string()` so the LLM can produce valid output
-3. After extraction, it fixes any escaped special characters in URLs (`\(` → `(`, etc.)
-4. The response is then validated against your original schema with URL validation
+1. **Validation**: Uses Zod's built-in `url()` validator to ensure URLs are properly formatted
+2. **Special Character Handling**: Automatically fixes URLs with escaped special characters in markdown (e.g., `https://example.com/meeting-\(2023\)` becomes `https://example.com/meeting-(2023)`)
+3. **Relative URL Resolution**: Converts relative URLs to absolute URLs when `sourceUrl` is provided
+4. **Invalid URL Handling**: Skips invalid URLs rather than failing the entire extraction using our `safeSanitizedParser`
 
-This approach ensures you can fully use Zod's schema validation capabilities, including `url()`, while still getting reliable results from the LLM extraction process.
+This approach ensures reliable URL extraction while maintaining the full power of Zod's schema validation.
 
 ## Development
 
@@ -503,6 +537,13 @@ npm run test -- -t "should convert forum/tech-0 to markdown"
 ```
 
 The `-t` flag uses pattern matching, so you can be as specific or general as needed to select the tests you want to run.
+
+## Support
+
+If you need direct assistance with your implementation:
+- Email us at support@lightfeed.ai
+- Open an issue in this repository
+- Post your question in our [Discord community](https://discord.gg/txZ2s4pgQJ)
 
 ## License
 

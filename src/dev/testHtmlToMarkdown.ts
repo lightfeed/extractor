@@ -4,7 +4,7 @@ import { htmlToMarkdown } from "../converters";
 import { HTMLExtractionOptions } from "../types";
 
 // Function to convert HTML to Markdown and save the result
-async function convertHtmlToMarkdown(
+async function testConvertHtmlToMarkdown(
   htmlFilePath: string,
   outputDir: string,
   options?: HTMLExtractionOptions
@@ -60,18 +60,20 @@ async function main() {
   );
 
   // 1. Basic conversion
-  await convertHtmlToMarkdown(htmlFilePath, outputDir);
+  await testConvertHtmlToMarkdown(htmlFilePath, outputDir);
 
   // 2. Conversion with images
-  await convertHtmlToMarkdown(htmlFilePath, outputDir, { includeImages: true });
+  await testConvertHtmlToMarkdown(htmlFilePath, outputDir, {
+    includeImages: true,
+  });
 
   // 3. Main content extraction
-  await convertHtmlToMarkdown(htmlFilePath, outputDir, {
+  await testConvertHtmlToMarkdown(htmlFilePath, outputDir, {
     extractMainHtml: true,
   });
 
   // 4. Both images and main content
-  await convertHtmlToMarkdown(htmlFilePath, outputDir, {
+  await testConvertHtmlToMarkdown(htmlFilePath, outputDir, {
     includeImages: true,
     extractMainHtml: true,
   });
