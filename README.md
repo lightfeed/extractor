@@ -31,7 +31,7 @@ Use LLMs to **robustly** extract structured data from HTML and markdown. Used in
 ## Key Features
 ✅ **Sanitize and recover imperfect, failed, or partial LLM outputs into valid JSON** - Ensures outputs conform to your schema defined in Zod, especially for complex schemas with deeply nested objects and arrays. See [JSON Sanitization](#json-sanitization) for details.
 
-🔗 **Robust URL extraction for `z.string().url()`** - Validates URLs, handles relative/absolute paths, skips invalid URLs and fixes markdown-escaped links automatically. See [URL Validation](#url-validation) section for details.
+🔗 **Robust URL extraction`** - Validates URLs, handles relative/absolute paths, skips invalid URLs and fixes markdown-escaped links automatically. See [URL Validation](#url-validation) section for details.
 
 ## Other Features
 - Convert HTML to LLM-ready markdown, with option to extract only the main content from HTML (e.g. removing navigation, headers & footers) and option to include images. The `convertHtmlToMarkdown` function is exposed as a top-level utility that can be used independently without running the full LLM extraction pipeline. See [HTML to Markdown Conversion](#html-to-markdown-conversion) section for details
@@ -103,7 +103,7 @@ async function main() {
     format: ContentFormat.HTML,
     schema,
     sourceUrl: 'https://example.com/blog/async-await', // Required for HTML format to handle relative URLs
-    googleApiKey: 'your-google-api-key' // API key must be provided explicitly
+    googleApiKey: 'your-google-api-key'
   });
 
   console.log('Extracted Data:', result.data);
@@ -156,8 +156,7 @@ const result = await extract({
   schema,
   provider: LLMProvider.OPENAI,
   openaiApiKey: 'your-openai-api-key',
-  modelName: 'gpt-4o-mini',
-  temperature: 0.2,
+  modelName: 'gpt-4o',
   maxInputTokens: 128000 // Limit to roughly 128K tokens (max input for gpt-4o-mini)
 });
 ```
@@ -281,7 +280,7 @@ convertHtmlToMarkdown(html: string, options?: HTMLExtractionOptions, sourceUrl?:
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | `html` | `string` | HTML content to convert to markdown | Required |
-| `options` | `HTMLExtractionOptions` | HTML-specific extraction options (see below) | `undefined` |
+| `options` | `HTMLExtractionOptions` | See [HTML Extraction Options](#html-extraction-options) | `undefined` |
 | `sourceUrl` | `string` | URL of the HTML content, used to properly convert relative URLs to absolute URLs | `undefined` |
 
 #### Return Value
