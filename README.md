@@ -28,17 +28,15 @@
 
 Use LLMs to **robustly** extract structured data from HTML and markdown. Used in production by Lightfeed and successfully extracting 10M+ records. Written in Typescript/Node.js.
 
-## Key Features
-✅ **Sanitize and recover imperfect, failed, or partial LLM outputs into valid JSON** - Ensures outputs conform to your schema defined in Zod, especially for complex schemas with deeply nested objects and arrays. See [JSON Sanitization](#json-sanitization) for details.
+## How It Works
 
-🔗 **Robust URL extraction** - Validates URLs, handles relative/absolute paths, skips invalid URLs and fixes markdown-escaped links automatically. See [URL Validation](#url-validation) section for details.
+1. **HTML to Markdown Conversion**: If the input is HTML, it's first converted to clean, LLM-friendly markdown. This step can optionally extract only the main content and include images. See [HTML to Markdown Conversion](#html-to-markdown-conversion) section for details. The `convertHtmlToMarkdown` function can also be used standalone.
 
-## Other Features
-- Convert HTML to LLM-ready markdown, with option to extract only the main content from HTML (e.g. removing navigation, headers & footers) and option to include images. The `convertHtmlToMarkdown` function is exposed as a top-level utility that can be used independently without running the full LLM extraction pipeline. See [HTML to Markdown Conversion](#html-to-markdown-conversion) section for details
-- Extract structured data using Google Gemini or OpenAI models (Gemini 2.5 flash and GPT-4o mini by default), option to truncate to max input token limit
-- Support for custom extraction prompts
-- Return token usage per each call
-- Extensive unit tests and integration tests to ensure production reliability
+2. **LLM Processing**: The markdown is sent to an LLM (Google Gemini 2.5 flash or OpenAI GPT-4o mini by default) with a prompt to extract structured data according to your Zod schema. You can set a maximum input token limit to control costs or avoid exceeding the model's context window, and the function will return token usage metrics for each LLM call.
+
+3. **JSON Sanitization**: If the LLM output isn't perfect JSON or doesn't fully match your schema, a sanitization process attempts to recover and fix the data. This makes complex schema extraction much more robust, especially with deeply nested objects and arrays. See [JSON Sanitization](#json-sanitization) for details.
+
+4. **URL Validation**: All extracted URLs are validated - handling relative URLs, removing invalid ones, and repairing markdown-escaped links. See [URL Validation](#url-validation) section for details.
 
 ## Why use an LLM extractor?
 🔎 Can reason from context, perform search and return structured answers in addition to extracting content as-is
