@@ -28,8 +28,8 @@ export function isUrlSchema(schema: ZodTypeAny): boolean {
 export function transformSchemaForLLM<T extends ZodTypeAny>(
   schema: T
 ): ZodTypeAny {
+  // For URL string schemas, remove the URL check but preserve everything else
   if (isUrlSchema(schema)) {
-    // Create a clone of the original schema's definition
     const originalDef = { ...(schema as any)._def };
 
     // Filter out only URL checks, keep all other checks
@@ -40,36 +40,61 @@ export function transformSchemaForLLM<T extends ZodTypeAny>(
     }
 
     // Create a new string schema with the modified definition
-    // This preserves everything from the original schema except URL validation
-    const newSchema = new z.ZodString({
+    return new z.ZodString({
       ...originalDef,
       typeName: z.ZodFirstPartyTypeKind.ZodString,
     });
-
-    return newSchema;
   }
 
+  // For object schemas, transform each property
   if (schema instanceof ZodObject) {
-    const shape = schema.shape;
+    const originalDef = { ...(schema as any)._def };
     const newShape: Record<string, ZodTypeAny> = {};
 
-    for (const [key, propertySchema] of Object.entries(shape)) {
+    // Transform each property in the shape
+    for (const [key, propertySchema] of Object.entries(schema.shape)) {
       newShape[key] = transformSchemaForLLM(propertySchema as ZodTypeAny);
     }
 
-    return z.object(newShape);
+    // Create a new object with the same definition but transformed shape
+    return new z.ZodObject({
+      ...originalDef,
+      shape: () => newShape,
+      typeName: z.ZodFirstPartyTypeKind.ZodObject,
+    });
   }
 
+  // For array schemas, transform the element schema
   if (schema instanceof ZodArray) {
-    const elementSchema = schema.element as ZodTypeAny;
-    return z.array(transformSchemaForLLM(elementSchema));
+    const originalDef = { ...(schema as any)._def };
+    const transformedElement = transformSchemaForLLM(
+      schema.element as ZodTypeAny
+    );
+
+    // Create a new array with the same definition but transformed element
+    return new z.ZodArray({
+      ...originalDef,
+      type: transformedElement,
+      typeName: z.ZodFirstPartyTypeKind.ZodArray,
+    });
   }
 
+  // For optional schemas, transform the inner schema
   if (schema instanceof ZodOptional) {
-    const innerSchema = schema.unwrap() as ZodTypeAny;
-    return z.optional(transformSchemaForLLM(innerSchema));
+    const originalDef = { ...(schema as any)._def };
+    const transformedInner = transformSchemaForLLM(
+      schema.unwrap() as ZodTypeAny
+    );
+
+    // Create a new optional with the same definition but transformed inner type
+    return new z.ZodOptional({
+      ...originalDef,
+      innerType: transformedInner,
+      typeName: z.ZodFirstPartyTypeKind.ZodOptional,
+    });
   }
 
+  // Return the original schema for all other types
   return schema;
 }
 

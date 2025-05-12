@@ -230,7 +230,6 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
     // and validate against the original schema
     const fixedData = fixUrlEscapeSequences(data, schema);
     const validatedData = safeSanitizedParser(schema, fixedData);
-
     // If validation fails, something went wrong with the URL validation
     if (validatedData === null) {
       throw new Error(

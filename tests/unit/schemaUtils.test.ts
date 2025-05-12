@@ -656,6 +656,161 @@ describe("transformSchemaForLLM", () => {
     const testArray = ["not-a-url", "also-not-a-url"];
     expect(() => transformed.parse(testArray)).not.toThrow();
   });
+
+  test("should preserve descriptions on array schemas", () => {
+    const original = z
+      .array(z.string().url())
+      .describe("Collection of resource URLs");
+    const transformed = transformSchemaForLLM(original);
+
+    // Should still be an array schema
+    expect(transformed instanceof z.ZodArray).toBe(true);
+
+    // Description should be preserved exactly
+    expect((transformed as any)._def.description).toBe(
+      "Collection of resource URLs"
+    );
+
+    // Element schema should be transformed but maintain its properties
+    const elementSchema = (transformed as any).element;
+    expect(elementSchema instanceof z.ZodString).toBe(true);
+
+    // Array should now accept non-URL strings
+    expect(() =>
+      transformed.parse(["not-a-url", "also-not-a-url"])
+    ).not.toThrow();
+  });
+
+  test("should preserve descriptions on object schemas", () => {
+    const original = z
+      .object({
+        link: z.string().url(),
+      })
+      .describe("Resource metadata");
+    const transformed = transformSchemaForLLM(original);
+
+    // Should still be an object schema
+    expect(transformed instanceof z.ZodObject).toBe(true);
+
+    // Description should be preserved exactly
+    expect((transformed as any)._def.description).toBe("Resource metadata");
+
+    // Properties should be transformed but maintain their properties
+    const props = (transformed as any)._def.shape();
+    expect(props.link instanceof z.ZodString).toBe(true);
+
+    // Object should now accept non-URL strings in properties
+    expect(() => transformed.parse({ link: "not-a-url" })).not.toThrow();
+  });
+
+  test("should preserve descriptions on optional schemas", () => {
+    const original = z
+      .optional(z.string().url())
+      .describe("Optional resource URL");
+    const transformed = transformSchemaForLLM(original);
+
+    // Should still be an optional schema
+    expect(transformed instanceof z.ZodOptional).toBe(true);
+
+    // Description should be preserved exactly
+    expect((transformed as any)._def.description).toBe("Optional resource URL");
+
+    // Inner schema should be transformed but maintain its properties
+    const innerSchema = (transformed as any)._def.innerType;
+    expect(innerSchema instanceof z.ZodString).toBe(true);
+
+    // Optional should now accept non-URL strings or undefined
+    expect(() => transformed.parse("not-a-url")).not.toThrow();
+    expect(() => transformed.parse(undefined)).not.toThrow();
+  });
+
+  test("should handle deeply nested schemas with descriptions at each level", () => {
+    // Create a complex schema with descriptions at multiple levels
+    const original = z
+      .object({
+        user: z
+          .object({
+            profile: z.string().url().describe("User profile URL"),
+          })
+          .describe("User information"),
+        resources: z
+          .array(
+            z
+              .object({
+                type: z.string(),
+                link: z.string().url().describe("Resource link"),
+              })
+              .describe("Resource item")
+          )
+          .describe("Available resources"),
+        metadata: z
+          .optional(
+            z
+              .object({
+                lastUpdated: z.string(),
+                mainLink: z.string().url().describe("Main resource"),
+              })
+              .describe("Metadata information")
+          )
+          .describe("Optional metadata"),
+      })
+      .describe("Complete resource object");
+
+    const transformed = transformSchemaForLLM(original);
+
+    // Verify top-level description
+    expect((transformed as any)._def.description).toBe(
+      "Complete resource object"
+    );
+
+    // Verify nested object description
+    const shape = (transformed as any)._def.shape();
+    expect(shape.user._def.description).toBe("User information");
+
+    // Verify array description
+    expect(shape.resources._def.description).toBe("Available resources");
+
+    // Verify description inside array elements
+    const resourceItemSchema = shape.resources._def.type.element;
+    expect(resourceItemSchema._def.description).toBe("Resource item");
+
+    // Verify optional description
+    expect(shape.metadata._def.description).toBe("Optional metadata");
+
+    // Verify description inside optional
+    const metadataSchema = shape.metadata._def.innerType;
+    expect(metadataSchema._def.description).toBe("Metadata information");
+
+    // Verify URL field descriptions are preserved
+    expect(shape.user._def.shape().profile._def.description).toBe(
+      "User profile URL"
+    );
+    expect(resourceItemSchema._def.shape().link._def.description).toBe(
+      "Resource link"
+    );
+    expect(metadataSchema._def.shape().mainLink._def.description).toBe(
+      "Main resource"
+    );
+
+    // Test that the schema accepts non-URL values now
+    const testObj = {
+      user: {
+        profile: "not-a-url",
+      },
+      resources: [
+        {
+          type: "document",
+          link: "not-a-url",
+        },
+      ],
+      metadata: {
+        lastUpdated: "2023-01-01",
+        mainLink: "not-a-url",
+      },
+    };
+
+    expect(() => transformed.parse(testObj)).not.toThrow();
+  });
 });
 
 describe("fixUrlEscapeSequences", () => {
