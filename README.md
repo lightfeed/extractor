@@ -6,8 +6,8 @@
   <a href="https://www.npmjs.com/package/lightfeed-extract">
     <img src="https://img.shields.io/npm/v/lightfeed-extract?logo=npm" alt="npm" /></a>
   <a href="https://github.com/lightfeed/lightfeed-extract/actions/workflows/test.yml">
-      <img src="https://img.shields.io/github/actions/workflow/status/lightfeed/lightfeed-extract/test.yml"
-          alt="Test status"></a>
+      <img src="https://img.shields.io/github/actions/workflow/status/lightfeed/lightfeed-extract/test.yml?branch=main"
+          alt="Test status (main branch)"></a>
   <a href="https://github.com/lightfeed/lightfeed-extract/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/lightfeed/lightfeed-extract" alt="License" /></a>
 </div>
