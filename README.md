@@ -56,7 +56,8 @@ async function main() {
     date: z.string().optional(),
     tags: z.array(z.string()),
     summary: z.string().describe("A brief summary of the article content within 500 characters"),
-    links: z.array(z.string()).describe("All URLs mentioned in the article")
+    // Use .url() to fix and validate URL field
+    links: z.array(z.string().url()).describe("All URLs mentioned in the article")
   });
 
   // Extract from HTML
