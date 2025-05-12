@@ -1,4 +1,30 @@
-# lightfeed-extract
+<p align="center">
+  <img src="https://www.lightfeed.ai/docs/img/logo.svg" width="128" height="128" alt="Lightfeed Logo" />
+</p>
+
+<div align="center">
+  <a href="https://www.npmjs.com/package/lightfeed-extract">
+    <img src="https://img.shields.io/npm/v/lightfeed-extract?logo=npm" alt="npm" /></a>
+  <a href="https://github.com/lightfeed/lightfeed-extract/actions/workflows/test.yml">
+      <img src="https://img.shields.io/github/actions/workflow/status/lightfeed/lightfeed-extract/test.yml"
+          alt="Test status"></a>
+  <a href="https://github.com/lightfeed/lightfeed-extract/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/lightfeed/lightfeed-extract" alt="License" /></a>
+</div>
+<div>
+  <p align="center">
+    <a href="https://lightfeed.ai/docs">
+      <img src="https://img.shields.io/badge/docs-lightfeed.ai-3E63DD" alt="Lightfeed Documentation" /></a>
+    <a href="https://discord.gg/txZ2s4pgQJ" alt="Discord">
+      <img src="https://img.shields.io/discord/1209342987008614501?label=chat&logo=discord&logoColor=white&color=5865F2" alt="Discord" /></a>
+    <a href="https://www.linkedin.com/company/lightfeed-ai">
+      <img src="https://img.shields.io/badge/Follow%20on%20LinkedIn-0A66C2?logo=linkedin&logoColor=white" alt="Follow on LinkedIn" /></a>
+    <a href="https://twitter.com/lightfeed_ai">
+      <img src="https://img.shields.io/badge/Follow%20on%20X-202020?logo=x&logoColor=white" alt="Follow on X" /></a>
+  </p>
+</div>
+
+# ⚡️ Lightfeed Extract
 
 Use LLMs to **robustly** extract structured data from HTML and markdown. Used in production by Lightfeed and successfully extracting 10M+ records. Written in Typescript/Node.js.
 
@@ -511,6 +537,13 @@ npm run test -- -t "should convert forum/tech-0 to markdown"
 ```
 
 The `-t` flag uses pattern matching, so you can be as specific or general as needed to select the tests you want to run.
+
+## Support
+
+If you need direct assistance with your implementation:
+- Email us at support@lightfeed.ai
+- Open an issue in this repository
+- Post your question in our [Discord community](https://discord.gg/txZ2s4pgQJ)
 
 ## License
 
