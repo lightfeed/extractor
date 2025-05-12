@@ -280,7 +280,7 @@ convertHtmlToMarkdown(html: string, options?: HTMLExtractionOptions, sourceUrl?:
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | `html` | `string` | HTML content to convert to markdown | Required |
-| `options` | `HTMLExtractionOptions` | HTML-specific extraction options (see below) | `undefined` |
+| `options` | `HTMLExtractionOptions` | See [HTML Extraction Options](#html-extraction-options) | `undefined` |
 | `sourceUrl` | `string` | URL of the HTML content, used to properly convert relative URLs to absolute URLs | `undefined` |
 
 #### Return Value
