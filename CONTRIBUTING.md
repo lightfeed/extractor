@@ -27,7 +27,7 @@ The testing workflow runs automatically:
 - Weekly on Monday at midnight UTC
 
 The workflow includes:
-1. Unit tests - Run across multiple Node.js versions (16.x, 18.x, 20.x)
+1. Unit tests - Run across multiple Node.js versions (18.x, 20.x)
 2. Integration tests - Run on Node.js 20.x using provided API secrets
 
 ### Setting up API keys for CI
