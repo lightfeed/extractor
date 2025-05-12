@@ -118,7 +118,7 @@ const result = await extract({
 
 If no prompt is provided, a default extraction prompt will be used.
 
-### Using Alternative Models with Input Token Limit
+### Specify Model Name with Input Token Limit
 
 ```typescript
 // Extract from Markdown with token limit
@@ -158,6 +158,22 @@ const result = await extract({
 By default, images are excluded from the HTML extraction process to simplify the output. If you need to extract image URLs or references, you can enable the `includeImages` option:
 
 ```typescript
+// Define a schema that includes product images
+const productListSchema = z.object({
+  products: z.array(
+    z.object({
+      name: z.string(),
+      price: z.number(),
+      description: z.string().optional(),
+      // Include an array of images for each product
+      image: z.object({
+        url: z.string().url(),
+        alt: z.string().optional(),
+      }).optional(),
+    })
+  ),
+});
+
 const result = await extract({
   content: htmlContent,
   format: ContentFormat.HTML,
@@ -167,59 +183,6 @@ const result = await extract({
   },
   sourceUrl: sourceUrl,
 });
-```
-
-This is particularly useful when:
-- You need to extract product images
-- You're analyzing content that contains relevant diagrams or charts
-- You want to retain image captions and context
-
-#### Example: Extracting Products with Images
-
-When scraping product listings, you'll often want to extract the product images along with other details:
-
-```typescript
-import { extract, ContentFormat, LLMProvider } from 'lightfeed-extract';
-import { z } from 'zod';
-
-// Define a schema that includes product images
-const productListSchema = z.object({
-  products: z.array(
-    z.object({
-      name: z.string(),
-      price: z.number(),
-      description: z.string().optional(),
-      // Include an array of images for each product
-      images: z.array(
-        z.object({
-          url: z.string().url(),
-          alt: z.string().optional(),
-        })
-      ).optional(),
-    })
-  ),
-});
-
-// Extract product data with images
-const result = await extract({
-  content: productPageHtml,
-  format: ContentFormat.HTML,
-  schema: productListSchema,
-  provider: LLMProvider.OPENAI,
-  openaiApiKey: process.env.OPENAI_API_KEY,
-  htmlExtractionOptions: {
-    includeImages: true // Enable image extraction
-  },
-  sourceUrl: sourceUrl,
-});
-
-// Now you can access the product images
-for (const product of result.data.products) {
-  console.log(`${product.name}: ${product.price}`);
-  if (product.images && product.images.length > 0) {
-    console.log(`Primary image: ${product.images[0].url}`);
-  }
-}
 ```
 
 ## API Keys
@@ -418,38 +381,6 @@ This utility is especially useful when:
 - Objects contain invalid values that don't match constraints
 - You want to recover as much valid data as possible while safely removing problematic parts
 
-## Development
-
-### Setup
-
-1. Clone the repository
-2. Install dependencies with `npm install`
-3. Create a `.env` file in the root directory with your API keys (see `.env.example`)
-
-### Scripts
-
-- `npm run build` - Build the library
-- `npm run clean` - Remove build artifacts
-- `npm run test` - Run all tests (requires API keys for integration tests)
-- `npm run dev` - Run the example file
-
-### Running Local Tests
-
-You can test the library with real API calls and sample HTML files:
-
-```bash
-# Run all local tests with both providers
-npm run test:local
-
-# Run specific test type with both providers
-npm run test:local -- blog
-npm run test:local -- product
-
-# Run tests with a specific provider
-npm run test:local -- blog openai   # Test blog extraction with OpenAI
-npm run test:local -- product gemini  # Test product extraction with Google Gemini
-```
-
 ### Handling Special URL Characters
 
 The library provides special handling for URLs with special characters (like parentheses) that may get escaped in markdown:
@@ -481,6 +412,38 @@ The library handles URL validation in a special way:
 4. The response is then validated against your original schema with URL validation
 
 This approach ensures you can fully use Zod's schema validation capabilities, including `url()`, while still getting reliable results from the LLM extraction process.
+
+## Development
+
+### Setup
+
+1. Clone the repository
+2. Install dependencies with `npm install`
+3. Create a `.env` file in the root directory with your API keys (see `.env.example`)
+
+### Scripts
+
+- `npm run build` - Build the library
+- `npm run clean` - Remove build artifacts
+- `npm run test` - Run all tests (requires API keys for integration tests)
+- `npm run dev` - Run the example file
+
+### Running Local Tests
+
+You can test the library with real API calls and sample HTML files:
+
+```bash
+# Run all local tests with both providers
+npm run test:local
+
+# Run specific test type with both providers
+npm run test:local -- blog
+npm run test:local -- product
+
+# Run tests with a specific provider
+npm run test:local -- blog openai   # Test blog extraction with OpenAI
+npm run test:local -- product gemini  # Test product extraction with Google Gemini
+```
 
 ### Testing
 
