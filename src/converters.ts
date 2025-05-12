@@ -358,7 +358,6 @@ const OVERALL_DISCARD_XPATH = [
 ];
 
 // Adapted from https://github.com/adbar/trafilatura/blob/c7e00f3a31e436c7b6ce666b44712e16e30908c0/trafilatura/xpaths.py#L179
-
 // Removed:
 // - contains(@style, "border")
 const PRECISION_DISCARD_XPATH = [

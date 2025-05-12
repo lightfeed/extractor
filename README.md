@@ -277,6 +277,48 @@ interface ExtractorResult<T> {
 }
 ```
 
+### `convertHtmlToMarkdown(html: string, options?: HTMLExtractionOptions, sourceUrl?: string): string`
+
+Utility function to convert HTML content to markdown without performing extraction.
+
+#### Parameters
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `html` | `string` | HTML content to convert to markdown | Required |
+| `options` | `HTMLExtractionOptions` | HTML-specific extraction options (see below) | `undefined` |
+| `sourceUrl` | `string` | URL of the HTML content, used to properly convert relative URLs to absolute URLs | `undefined` |
+
+#### Return Value
+
+The function returns a string containing the markdown conversion of the HTML content.
+
+#### Example
+
+```typescript
+import { convertHtmlToMarkdown, HTMLExtractionOptions } from 'lightfeed-extract';
+
+// Basic conversion
+const markdown = convertHtmlToMarkdown('<h1>Hello World</h1><p>This is a test</p>');
+console.log(markdown);
+// Output: "Hello World\n===========\n\nThis is a test"
+
+// With options to extract main content and include images
+const options: HTMLExtractionOptions = {
+  extractMainHtml: true,
+  includeImages: true
+};
+
+// With source URL to handle relative links
+const markdownWithOptions = convertHtmlToMarkdown(
+  '<div><img src="/images/logo.png" alt="Logo"><a href="/about">About</a></div>',
+  options,
+  'https://example.com'
+);
+console.log(markdownWithOptions);
+// Output: "![Logo](https://example.com/images/logo.png)[About](https://example.com/about)"
+```
+
 ### `safeSanitizedParser<T>(schema: ZodTypeAny, rawObject: unknown): z.infer<T> | null`
 
 Utility function to sanitize and recover partial data from LLM outputs that may not perfectly conform to your schema.

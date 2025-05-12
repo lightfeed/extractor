@@ -6,6 +6,7 @@ import {
   LLMProvider,
   ExtractorOptions,
   ExtractorResult,
+  HTMLExtractionOptions,
 } from "./types";
 
 // Default model names
@@ -78,7 +79,8 @@ export async function extract<T extends z.ZodTypeAny>(
     apiKey,
     options.temperature ?? 0,
     options.prompt,
-    formatToUse.toString() // Pass the correct format based on actual content
+    formatToUse.toString(), // Pass the correct format based on actual content
+    options.maxInputTokens
   );
 
   // Return the full result
@@ -87,6 +89,22 @@ export async function extract<T extends z.ZodTypeAny>(
     markdown: content,
     usage,
   };
+}
+
+/**
+ * Convert HTML to markdown
+ *
+ * @param html HTML content to convert
+ * @param options HTML extraction options
+ * @param sourceUrl Source URL for resolving relative links
+ * @returns Markdown content
+ */
+export function convertHtmlToMarkdown(
+  html: string,
+  options?: HTMLExtractionOptions,
+  sourceUrl?: string
+): string {
+  return htmlToMarkdown(html, options, sourceUrl);
 }
 
 // Re-export types and enums
