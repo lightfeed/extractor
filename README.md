@@ -59,7 +59,7 @@ While this library provides a robust foundation for data extraction, you might w
 
 - **Persistent Searchable Databases**: Automatically store and manage extracted data in a production-ready vector database
 - **Scheduled Runs, Deduplication and Tracking**: Smart detection and handling of duplicate content across your sources, with automated change tracking
-- **Pagination and Multi-page Extraction**: Follow links to collect complete data from connected pages
+- **Deep Link Extraction and Pagination**: Follow links to collect complete data from connected pages and handle pagination
 - **Real-time API and Integration**: Query your extracted data through robust API endpoints and integrations
 - **Research Portal**: Explore and analyze your data through an intuitive interface
 
@@ -68,8 +68,8 @@ While this library provides a robust foundation for data extraction, you might w
 ### Basic Example
 
 ```typescript
-import { extract, ContentFormat, LLMProvider } from 'lightfeed-extract';
-import { z } from 'zod';
+import { extract, ContentFormat, LLMProvider } from "lightfeed-extract";
+import { z } from "zod";
 
 async function main() {
   // Define your schema. We will run one more sanitization process to recover imperfect, failed, or partial LLM outputs into this schema
@@ -100,12 +100,12 @@ async function main() {
     `,
     format: ContentFormat.HTML,
     schema,
-    sourceUrl: 'https://example.com/blog/async-await', // Required for HTML format to handle relative URLs
-    googleApiKey: 'your-google-api-key'
+    sourceUrl: "https://example.com/blog/async-await", // Required for HTML format to handle relative URLs
+    googleApiKey: "your-google-api-key"
   });
 
-  console.log('Extracted Data:', result.data);
-  console.log('Token Usage:', result.usage);
+  console.log("Extracted Data:", result.data);
+  console.log("Token Usage:", result.usage);
 }
 
 main().catch(console.error);
@@ -121,7 +121,7 @@ const result = await extract({
   format: ContentFormat.MARKDOWN,
   schema: mySchema,
   provider: LLMProvider.OPENAI,
-  openaiApiKey: 'your-openai-api-key'
+  openaiApiKey: "your-openai-api-key"
 });
 ```
 
@@ -136,7 +136,7 @@ const result = await extract({
   schema: mySchema,
   prompt: "Extract only products that are on sale or have special discounts. Include their original prices, discounted prices, and all specifications.",
   provider: LLMProvider.GOOGLE_GEMINI,
-  googleApiKey: 'your-google-api-key'
+  googleApiKey: "your-google-api-key"
 });
 ```
 
@@ -153,8 +153,8 @@ const result = await extract({
   format: ContentFormat.MARKDOWN,
   schema,
   provider: LLMProvider.OPENAI,
-  openaiApiKey: 'your-openai-api-key',
-  modelName: 'gpt-4o',
+  openaiApiKey: "your-openai-api-key",
+  modelName: "gpt-4o" ,
   maxInputTokens: 128000 // Limit to roughly 128K tokens (max input for gpt-4o-mini)
 });
 ```
@@ -288,10 +288,10 @@ The function returns a string containing the markdown conversion of the HTML con
 #### Example
 
 ```typescript
-import { convertHtmlToMarkdown, HTMLExtractionOptions } from 'lightfeed-extract';
+import { convertHtmlToMarkdown, HTMLExtractionOptions } from "lightfeed-extract";
 
 // Basic conversion
-const markdown = convertHtmlToMarkdown('<h1>Hello World</h1><p>This is a test</p>');
+const markdown = convertHtmlToMarkdown("<h1>Hello World</h1><p>This is a test</p>");
 console.log(markdown);
 // Output: "Hello World\n===========\n\nThis is a test"
 
@@ -303,9 +303,9 @@ const options: HTMLExtractionOptions = {
 
 // With source URL to handle relative links
 const markdownWithOptions = convertHtmlToMarkdown(
-  '<div><img src="/images/logo.png" alt="Logo"><a href="/about">About</a></div>',
+  "<div><img src="/images/logo.png" alt="Logo"><a href="/about">About</a></div>",
   options,
-  'https://example.com'
+  "https://example.com"
 );
 console.log(markdownWithOptions);
 // Output: "![Logo](https://example.com/images/logo.png)[About](https://example.com/about)"
@@ -321,8 +321,8 @@ safeSanitizedParser<T>(schema: ZodTypeAny, rawObject: unknown): z.infer<T> | nul
 ```
 
 ```typescript
-import { safeSanitizedParser } from 'lightfeed-extract';
-import { z } from 'zod';
+import { safeSanitizedParser } from "lightfeed-extract";
+import { z } from "zod";
 
 // Define a product catalog schema
 const productSchema = z.object({
@@ -360,7 +360,7 @@ const rawLLMOutput = {
     },
     {
       id: 3,
-      // Missing required 'name' field
+      // Missing required "name" field
       price: 45.99,
       inStock: false
     },
