@@ -7,11 +7,17 @@
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "build": "tsc",
     "clean": "rimraf dist",
     "prepare": "npm run clean && npm run build",
+    "prepublishOnly": "npm run test:unit",
     "test": "jest",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:local": "ts-node src/dev/runLocalTest.ts",
@@ -37,8 +43,8 @@
     "openai",
     "gemini"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "Lightfeed",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/lightfeed/lightfeed-extract/issues"
   },
@@ -65,5 +71,8 @@
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
