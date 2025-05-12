@@ -610,6 +610,7 @@ describe("transformSchemaForLLM", () => {
 
     // Test it accepts a string that's not a URL (which the original would reject)
     expect(() => transformed.parse("not-a-url")).not.toThrow();
+    expect(() => original.parse("not-a-url")).toThrow();
   });
 
   test("should handle nested objects with URL fields", () => {
@@ -617,7 +618,7 @@ describe("transformSchemaForLLM", () => {
       user: z.object({
         profile: z.string().url().describe("Profile URL"),
       }),
-      website: z.string().url().optional(),
+      website: z.string().min(5).url().optional(),
     });
 
     const transformed = transformSchemaForLLM(original);
@@ -625,6 +626,7 @@ describe("transformSchemaForLLM", () => {
     // Check structure is preserved
     expect(transformed instanceof z.ZodObject).toBe(true);
 
+    // Access shape correctly based on internal Zod structure
     const shape = (transformed as any)._def.shape();
     expect(shape.user).toBeDefined();
     expect(shape.website).toBeDefined();
@@ -635,8 +637,15 @@ describe("transformSchemaForLLM", () => {
     expect(profileSchema._def.description).toBe("Profile URL");
 
     // Check optional URL is transformed but remains optional
-    expect(shape.website._def.innerType instanceof z.ZodString).toBe(true);
-    const websiteChecks = shape.website._def.innerType._def.checks || [];
+    expect(shape.website instanceof z.ZodOptional).toBe(true);
+    const innerType = shape.website._def.innerType;
+    expect(innerType instanceof z.ZodString).toBe(true);
+
+    // Verify min check is preserved
+    const hasMinCheck = innerType._def.checks.some(
+      (check: any) => check.kind === "min"
+    );
+    expect(hasMinCheck).toBe(true);
   });
 
   test("should handle arrays of URL fields", () => {
@@ -646,7 +655,7 @@ describe("transformSchemaForLLM", () => {
     expect(transformed instanceof z.ZodArray).toBe(true);
 
     // Element should be a string without URL validation
-    const elementSchema = (transformed as any).element;
+    const elementSchema = (transformed as any)._def.type;
     expect(elementSchema instanceof z.ZodString).toBe(true);
 
     // Description should be preserved exactly if provided
@@ -655,6 +664,7 @@ describe("transformSchemaForLLM", () => {
     // Should accept non-URL strings now
     const testArray = ["not-a-url", "also-not-a-url"];
     expect(() => transformed.parse(testArray)).not.toThrow();
+    expect(() => original.parse(testArray)).toThrow();
   });
 
   test("should preserve descriptions on array schemas", () => {
@@ -679,6 +689,7 @@ describe("transformSchemaForLLM", () => {
     expect(() =>
       transformed.parse(["not-a-url", "also-not-a-url"])
     ).not.toThrow();
+    expect(() => original.parse(["not-a-url", "also-not-a-url"])).toThrow();
   });
 
   test("should preserve descriptions on object schemas", () => {
@@ -701,6 +712,7 @@ describe("transformSchemaForLLM", () => {
 
     // Object should now accept non-URL strings in properties
     expect(() => transformed.parse({ link: "not-a-url" })).not.toThrow();
+    expect(() => original.parse({ link: "not-a-url" })).toThrow();
   });
 
   test("should preserve descriptions on optional schemas", () => {
@@ -722,6 +734,8 @@ describe("transformSchemaForLLM", () => {
     // Optional should now accept non-URL strings or undefined
     expect(() => transformed.parse("not-a-url")).not.toThrow();
     expect(() => transformed.parse(undefined)).not.toThrow();
+    expect(() => original.parse("not-a-url")).toThrow();
+    expect(() => original.parse(undefined)).not.toThrow();
   });
 
   test("should handle deeply nested schemas with descriptions at each level", () => {
@@ -771,8 +785,9 @@ describe("transformSchemaForLLM", () => {
     expect(shape.resources._def.description).toBe("Available resources");
 
     // Verify description inside array elements
-    const resourceItemSchema = shape.resources._def.type.element;
-    expect(resourceItemSchema._def.description).toBe("Resource item");
+    // Access element schema correctly based on internal Zod structure
+    const resourceElement = (shape.resources as any)._def.type;
+    expect(resourceElement._def.description).toBe("Resource item");
 
     // Verify optional description
     expect(shape.metadata._def.description).toBe("Optional metadata");
@@ -785,7 +800,7 @@ describe("transformSchemaForLLM", () => {
     expect(shape.user._def.shape().profile._def.description).toBe(
       "User profile URL"
     );
-    expect(resourceItemSchema._def.shape().link._def.description).toBe(
+    expect(resourceElement._def.shape().link._def.description).toBe(
       "Resource link"
     );
     expect(metadataSchema._def.shape().mainLink._def.description).toBe(
@@ -810,6 +825,7 @@ describe("transformSchemaForLLM", () => {
     };
 
     expect(() => transformed.parse(testObj)).not.toThrow();
+    expect(() => original.parse(testObj)).toThrow();
   });
 });
 
