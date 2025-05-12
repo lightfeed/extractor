@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*' # Run workflow on version tags, e.g. v1.0.0
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
@@ -44,18 +48,15 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           # Extract changes from git log or CHANGELOG if available
-          CHANGES=$(git log --pretty=format:"* %s (%h)" $(git describe --tags --abbrev=0 HEAD^)..HEAD)
+          CHANGES=$(git log --pretty=format:"* %s (%h)" $(git describe --tags --abbrev=0 HEAD^)..HEAD || echo "Initial release")
           echo "CHANGES<<EOF" >> $GITHUB_ENV
           echo "$CHANGES" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
           
       - name: Create GitHub Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ steps.release.outputs.version }}
+          name: Release ${{ steps.release.outputs.version }}
           body: |
             ## Changes in this release
             
