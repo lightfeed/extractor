@@ -1,7 +1,7 @@
 {
   "name": "lightfeed-extract",
   "version": "0.1.0",
-  "description": "A library to extract structured data from HTML/markdown using LLMs",
+  "description": "Use LLMs to robustly extract structured data from HTML and markdown",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [

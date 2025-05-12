@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2025-05-11
+
 ### Added
 - Initial release with core functionality
 - HTML to Markdown conversion with main content extraction
@@ -14,8 +16,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for OpenAI and Google Gemini API
 - URL validation and fixing
 - Comprehensive test suite
-
-## [1.0.0] - YYYY-MM-DD
-
-### Added
-- Initial public release 
