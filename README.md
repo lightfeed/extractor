@@ -101,7 +101,7 @@ async function main() {
     format: ContentFormat.HTML,
     schema,
     sourceUrl: "https://example.com/blog/async-await", // Required for HTML format to handle relative URLs
-    googleApiKey: "your-google-api-key"
+    googleApiKey: "your-google-gemini-api-key",
   });
 
   console.log("Extracted Data:", result.data);
@@ -111,17 +111,17 @@ async function main() {
 main().catch(console.error);
 ```
 
-### Extracting from Markdown
+### Extracting from Markdown or Plain Text
 
 You can also extract structured data directly from Markdown string:
 
 ```typescript
 const result = await extract({
   content: markdownContent,
+  // Specify content is Markdown. In addition to HTML and Markdown, you can also extract plain text by ContentFormat.TXT
   format: ContentFormat.MARKDOWN,
   schema: mySchema,
-  provider: LLMProvider.OPENAI,
-  openaiApiKey: "your-openai-api-key"
+  googleApiKey: "your-google-gemini-api-key",
 });
 ```
 
@@ -131,20 +131,21 @@ You can provide a custom prompt to guide the extraction process:
 
 ```typescript
 const result = await extract({
-  content: textContent,
-  format: ContentFormat.TXT,
+  content: htmlContent,
+  format: ContentFormat.HTML,
   schema: mySchema,
-  prompt: "Extract only products that are on sale or have special discounts. Include their original prices, discounted prices, and all specifications.",
-  provider: LLMProvider.GOOGLE_GEMINI,
-  googleApiKey: "your-google-api-key"
+  sourceUrl: "https://example.com/products",
+  // Provide custom prompt to guide LLM's extraction process. Define what data should be retrieved
+  prompt: "Extract ONLY products that are on sale or have special discounts. Include their original prices, discounted prices, and product URL.",
+  googleApiKey: "your-google-gemini-api-key",
 });
 ```
 
 If no prompt is provided, a default extraction prompt will be used.
 
-### Customizing Model and Managing Token Limits
+### Customizing LLM Provider and Managing Token Limits
 
-You can customize the model and manage token limits to control costs and ensure your content fits within the model's maximum context window:
+You can customize LLM and manage token limits to control costs and ensure your content fits within the model's maximum context window:
 
 ```typescript
 // Extract from Markdown with token limit
@@ -152,10 +153,12 @@ const result = await extract({
   content: markdownContent,
   format: ContentFormat.MARKDOWN,
   schema,
+  // Provide model provider and model name
   provider: LLMProvider.OPENAI,
+  modelName: "gpt-4o-mini",
   openaiApiKey: "your-openai-api-key",
-  modelName: "gpt-4o" ,
-  maxInputTokens: 128000 // Limit to roughly 128K tokens (max input for gpt-4o-mini)
+  // Limit to roughly 128K tokens (max input for gpt-4o-mini)
+  maxInputTokens: 128000,
 });
 ```
 
@@ -171,7 +174,7 @@ const result = await extract({
   htmlExtractionOptions: {
     extractMainHtml: true // Uses heuristics to remove navigation, headers, footers, etc.
   },
-  sourceUrl: sourceUrl
+  sourceUrl,
 });
 ```
 
@@ -234,8 +237,8 @@ Main function to extract structured data from content.
 | `schema` | `z.ZodTypeAny` | Zod schema defining the structure to extract | Required |
 | `prompt` | `string` | Custom prompt to guide the extraction process | Internal default prompt |
 | `provider` | `LLMProvider` | LLM provider (GOOGLE_GEMINI or OPENAI) | `LLMProvider.GOOGLE_GEMINI` |
-| `modelName` | `string` | Model name to use | Provider-specific default |
-| `googleApiKey` | `string` | Google API key (if using Google Gemini provider) | From env `GOOGLE_API_KEY` |
+| `modelName` | `string` | Model name to use | Provider-specific default, Google Gemini 2.5 flash or OpenAI GPT-4o mini  |
+| `googleApiKey` | `string` | Google Gemini API key (if using Google Gemini provider) | From env `GOOGLE_API_KEY` |
 | `openaiApiKey` | `string` | OpenAI API key (if using OpenAI provider) | From env `OPENAI_API_KEY` |
 | `temperature` | `number` | Temperature for the LLM (0-1) | `0` |
 | `htmlExtractionOptions` | `HTMLExtractionOptions` | HTML-specific options for content extraction (see below) | `{}` |
