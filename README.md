@@ -31,7 +31,7 @@ Use LLMs to **robustly** extract structured data from HTML and markdown. Used in
 ## Key Features
 ✅ **Sanitize and recover imperfect, failed, or partial LLM outputs into valid JSON** - Ensures outputs conform to your schema defined in Zod, especially for complex schemas with deeply nested objects and arrays. See [JSON Sanitization](#json-sanitization) for details.
 
-🔗 **Robust URL extraction`** - Validates URLs, handles relative/absolute paths, skips invalid URLs and fixes markdown-escaped links automatically. See [URL Validation](#url-validation) section for details.
+🔗 **Robust URL extraction** - Validates URLs, handles relative/absolute paths, skips invalid URLs and fixes markdown-escaped links automatically. See [URL Validation](#url-validation) section for details.
 
 ## Other Features
 - Convert HTML to LLM-ready markdown, with option to extract only the main content from HTML (e.g. removing navigation, headers & footers) and option to include images. The `convertHtmlToMarkdown` function is exposed as a top-level utility that can be used independently without running the full LLM extraction pipeline. See [HTML to Markdown Conversion](#html-to-markdown-conversion) section for details
