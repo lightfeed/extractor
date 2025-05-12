@@ -34,7 +34,7 @@ Use LLMs to **robustly** extract structured data from HTML and markdown. Used in
 
 2. **LLM Processing**: The markdown is sent to an LLM (Google Gemini 2.5 flash or OpenAI GPT-4o mini by default) with a prompt to extract structured data according to your Zod schema. You can set a maximum input token limit to control costs or avoid exceeding the model's context window, and the function will return token usage metrics for each LLM call.
 
-3. **JSON Sanitization**: If the LLM output isn't perfect JSON or doesn't fully match your schema, a sanitization process attempts to recover and fix the data. This makes complex schema extraction much more robust, especially with deeply nested objects and arrays. See [JSON Sanitization](#json-sanitization) for details.
+3. **JSON Sanitization**: If the LLM structured output fails or doesn't fully match your schema, a sanitization process attempts to recover and fix the data. This makes complex schema extraction much more robust, especially with deeply nested objects and arrays. See [JSON Sanitization](#json-sanitization) for details.
 
 4. **URL Validation**: All extracted URLs are validated - handling relative URLs, removing invalid ones, and repairing markdown-escaped links. See [URL Validation](#url-validation) section for details.
 
