@@ -302,11 +302,11 @@ The function returns a Promise that resolves to an `ExtractorResult<T>` object:
 ```typescript
 interface ExtractorResult<T> {
   data: T;             // Extracted structured data
-  markdown: string;    // The markdown content that was processed
   usage: {             // Token usage statistics
     inputTokens?: number;
     outputTokens?: number;
-  }
+  };
+  processedContent: string;    // Processed content that was sent to the LLM. Markdown if the input was HTML (after conversion)
 }
 ```
 
