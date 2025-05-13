@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2025-05-12
+
+### Added
+- Support enriching data
+- Handle nullable instead of optional. This is required for schema in OpenAI models
+
 ## [0.1.1] - 2025-05-11
 
 ### Added
