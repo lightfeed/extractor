@@ -95,6 +95,82 @@ describe("safeSanitizedParser", () => {
 
       expect(result).toBeNull();
     });
+
+    test("should keep valid required properties with nullable fields", () => {
+      const schema = z.object({
+        required: z.string(),
+        nullable: z.number().nullable(),
+      });
+
+      const data = { required: "value", nullable: 123 };
+      const result = safeSanitizedParser(schema, data);
+
+      expect(result).toEqual(data);
+    });
+
+    test("should handle null values in nullable properties", () => {
+      const schema = z.object({
+        required: z.string(),
+        nullable: z.number().nullable(),
+      });
+
+      const data = { required: "value", nullable: null };
+      const expected = { required: "value", nullable: null };
+
+      const result = safeSanitizedParser(schema, data);
+      expect(result).toEqual(expected);
+    });
+
+    test("should set invalid nullable properties to null", () => {
+      const schema = z.object({
+        required: z.string(),
+        nullable: z.number().nullable(),
+      });
+
+      const data = { required: "value", nullable: "not a number" };
+      const expected = { required: "value", nullable: null };
+
+      const result = safeSanitizedParser(schema, data);
+      expect(result).toEqual(expected);
+    });
+
+    test("should return null if required property is invalid with nullable fields", () => {
+      const schema = z.object({
+        required: z.string(),
+        nullable: z.number().nullable(),
+      });
+
+      const data = { required: 123, nullable: 456 };
+      const result = safeSanitizedParser(schema, data);
+
+      expect(result).toBeNull();
+    });
+
+    test("should handle nested objects with nullable fields", () => {
+      const schema = z.object({
+        nested: z.object({
+          required: z.string(),
+          nullable: z.number().nullable(),
+        }),
+      });
+
+      const data = {
+        nested: {
+          required: "value",
+          nullable: "not a number",
+        },
+      };
+
+      const expected = {
+        nested: {
+          required: "value",
+          nullable: null,
+        },
+      };
+
+      const result = safeSanitizedParser(schema, data);
+      expect(result).toEqual(expected);
+    });
   });
 
   describe("Array Schemas", () => {
@@ -228,6 +304,88 @@ describe("safeSanitizedParser", () => {
           metadata: {
             created: "2023-01-01T10:00:00Z",
           },
+        };
+
+        const result = safeSanitizedParser(schema, data);
+        expect(result).toEqual(expected);
+      });
+    });
+
+    describe("Unsafe Nullable Fields", () => {
+      test("should set unsafe nullable fields with constraints to null", () => {
+        const schema = z.object({
+          id: z.number(),
+          name: z.string(),
+          email: z.string().email().nullable(),
+          age: z.number().min(0).max(120).nullable(),
+          tags: z.array(z.string()).nullable(),
+        });
+
+        const data = {
+          id: 1,
+          name: "Test User",
+          email: "not-an-email", // invalid email format
+          age: 200, // exceeds max
+          tags: ["tag1", "tag2"],
+        };
+
+        const expected = {
+          id: 1,
+          name: "Test User",
+          email: null,
+          age: null,
+          tags: ["tag1", "tag2"],
+        };
+
+        const result = safeSanitizedParser(schema, data);
+        expect(result).toEqual(expected);
+      });
+
+      test("should set invalid nullable nested objects to null", () => {
+        const schema = z.object({
+          user: z.object({
+            id: z.number(),
+            name: z.string(),
+          }),
+          metadata: z
+            .object({
+              created: z.string().datetime(),
+              lastUpdated: z.string().datetime().nullable(),
+            })
+            .nullable(),
+          settings: z
+            .object({
+              theme: z.enum(["light", "dark"]),
+              notifications: z.boolean(),
+            })
+            .nullable(),
+        });
+
+        const data = {
+          user: {
+            id: 1,
+            name: "Test User",
+          },
+          metadata: {
+            created: "2023-01-01T10:00:00Z",
+            lastUpdated: "not-a-date", // invalid
+          },
+          settings: {
+            theme: "blue", // invalid enum
+            notifications: true,
+          },
+        };
+
+        const expected = {
+          user: {
+            id: 1,
+            name: "Test User",
+          },
+          metadata: {
+            created: "2023-01-01T10:00:00Z",
+            lastUpdated: null,
+          },
+          settings: null,
         };
 
         const result = safeSanitizedParser(schema, data);
@@ -827,6 +985,117 @@ describe("transformSchemaForLLM", () => {
     expect(() => transformed.parse(testObj)).not.toThrow();
     expect(() => original.parse(testObj)).toThrow();
   });
+
+  test("should preserve descriptions on nullable schemas", () => {
+    const original = z
+      .nullable(z.string().url())
+      .describe("Nullable resource URL");
+    const transformed = transformSchemaForLLM(original);
+
+    // Should still be a nullable schema
+    expect(transformed instanceof z.ZodNullable).toBe(true);
+
+    // Description should be preserved exactly
+    expect((transformed as any)._def.description).toBe("Nullable resource URL");
+
+    // Inner schema should be transformed but maintain its properties
+    const innerSchema = (transformed as any)._def.innerType;
+    expect(innerSchema instanceof z.ZodString).toBe(true);
+
+    // Nullable should now accept non-URL strings or null
+    expect(() => transformed.parse("not-a-url")).not.toThrow();
+    expect(() => transformed.parse(null)).not.toThrow();
+    expect(() => original.parse("not-a-url")).toThrow();
+    expect(() => original.parse(null)).not.toThrow();
+  });
+
+  test("should handle deeply nested schemas with nullable fields and descriptions", () => {
+    // Create a complex schema with descriptions at multiple levels and nullable fields
+    const original = z
+      .object({
+        user: z
+          .object({
+            profile: z.string().url().nullable().describe("User profile URL"),
+          })
+          .describe("User information"),
+        resources: z
+          .array(
+            z
+              .object({
+                type: z.string(),
+                link: z.string().url().nullable().describe("Resource link"),
+              })
+              .describe("Resource item")
+          )
+          .describe("Available resources"),
+        metadata: z
+          .nullable(
+            z
+              .object({
+                lastUpdated: z.string(),
+                mainLink: z.string().url().describe("Main resource"),
+              })
+              .describe("Metadata information")
+          )
+          .describe("Optional metadata"),
+      })
+      .describe("Complete resource object");
+
+    const transformed = transformSchemaForLLM(original);
+
+    // Verify top-level description
+    expect((transformed as any)._def.description).toBe(
+      "Complete resource object"
+    );
+
+    // Verify nested object description
+    const shape = (transformed as any)._def.shape();
+    expect(shape.user._def.description).toBe("User information");
+
+    // Verify array description
+    expect(shape.resources._def.description).toBe("Available resources");
+
+    // Verify description inside array elements
+    const resourceElement = (shape.resources as any)._def.type;
+    expect(resourceElement._def.description).toBe("Resource item");
+
+    // Verify nullable description
+    expect(shape.metadata._def.description).toBe("Optional metadata");
+
+    // Verify description inside nullable
+    const metadataSchema = shape.metadata._def.innerType;
+    expect(metadataSchema._def.description).toBe("Metadata information");
+
+    // Verify URL field descriptions are preserved
+    const profileSchema = shape.user._def.shape().profile;
+    expect(profileSchema instanceof z.ZodNullable).toBe(true);
+    expect(profileSchema._def.description).toBe("User profile URL");
+
+    const linkSchema = resourceElement._def.shape().link;
+    expect(linkSchema instanceof z.ZodNullable).toBe(true);
+    expect(linkSchema._def.description).toBe("Resource link");
+
+    expect(metadataSchema._def.shape().mainLink._def.description).toBe(
+      "Main resource"
+    );
+
+    // Test that the schema accepts non-URL values and null values now
+    const testObj = {
+      user: {
+        profile: "not-a-url",
+      },
+      resources: [
+        {
+          type: "document",
+          link: null,
+        },
+      ],
+      metadata: null,
+    };
+
+    expect(() => transformed.parse(testObj)).not.toThrow();
+    expect(() => original.parse(testObj)).toThrow();
+  });
 });
 
 describe("fixUrlEscapeSequences", () => {
@@ -872,6 +1141,49 @@ describe("fixUrlEscapeSequences", () => {
       profile: "https://example.com/user-(john)",
       links: [
         "https://example.com/article-(1)",
+        "https://example.com/article-(2)",
+      ],
+    });
+  });
+
+  test("should handle nullable URL fields", () => {
+    const schema = z.string().url().nullable();
+    const escapedUrl = "https://example.com/meeting-\\(2023\\)";
+    const fixed = fixUrlEscapeSequences(escapedUrl, schema);
+
+    expect(fixed).toBe("https://example.com/meeting-(2023)");
+  });
+
+  test("should handle null values in nullable URL fields", () => {
+    const schema = z.string().url().nullable();
+    const nullValue = null;
+    const fixed = fixUrlEscapeSequences(nullValue, schema);
+
+    expect(fixed).toBeNull();
+  });
+
+  test("should handle nested objects with nullable URL fields", () => {
+    const schema = z.object({
+      profile: z.string().url().nullable(),
+      links: z.array(z.string().url().nullable()),
+    });
+
+    const data = {
+      profile: "https://example.com/user-\\(john\\)",
+      links: [
+        "https://example.com/article-\\(1\\)",
+        null,
+        "https://example.com/article-\\(2\\)",
+      ],
+    };
+
+    const fixed = fixUrlEscapeSequences(data, schema);
+
+    expect(fixed).toEqual({
+      profile: "https://example.com/user-(john)",
+      links: [
+        "https://example.com/article-(1)",
+        null,
         "https://example.com/article-(2)",
       ],
     });
