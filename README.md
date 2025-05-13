@@ -41,8 +41,6 @@ Use LLMs to **robustly** extract or enrich structured data from HTML and markdow
 ## Why use an LLM extractor?
 💡 Understands natural language criteria and context to extract the data you need, not just raw content as displayed
 
-🔎 Enriches existing data from external sources - filling gaps in your data regardless of source format or structure
-
 ⚡️ No need to manually create custom scraper code for each site
 
 🔁 Resilient to website changes, e.g., HTML structure, CSS selectors, or page layout
