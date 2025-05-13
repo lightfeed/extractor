@@ -201,6 +201,9 @@ const result = await extract({
 });
 ```
 
+> [!WARNING]
+> For OpenAI models, optional schema is not supported. You need to change `.optional()` to `.nullable()`.
+
 ### Extracting from Main HTML
 
 For blog posts or articles with lots of navigation elements, headers, and footers, you can use the `extractMainHtml` option to focus on just the main content:
