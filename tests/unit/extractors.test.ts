@@ -315,7 +315,7 @@ describe("extractors", () => {
         "Enrich the original JSON object with information from the context"
       );
       expect(prompt).toContain(
-        "Fill additional fields based on relevant information in the context"
+        "Only update existing fields and fill in additional fields if new and relevant information is available in the context"
       );
       expect(prompt).toContain(
         "Return only the structured data in valid JSON format"
