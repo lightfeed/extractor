@@ -59,7 +59,7 @@ While this library provides a robust foundation for data extraction, you might w
 
 - **Persistent Searchable Databases**: Automatically store and manage extracted data in a production-ready vector database
 - **Scheduled Runs, Deduplication and Tracking**: Smart detection and handling of duplicate content across your sources, with automated change tracking
-- **Deep Link Extraction and Pagination**: Follow links to collect complete data from connected pages and handle pagination
+- **Deep Link Extraction**: Follow links to collect complete data from connected pages
 - **Real-time API and Integration**: Query your extracted data through robust API endpoints and integrations
 - **Research Portal**: Explore and analyze your data through an intuitive interface
 
@@ -118,7 +118,7 @@ You can also extract structured data directly from Markdown string:
 ```typescript
 const result = await extract({
   content: markdownContent,
-  // Specify content is Markdown. In addition to HTML and Markdown, you can also extract plain text by ContentFormat.TXT
+  // Specify that content is Markdown. In addition to HTML and Markdown, you can also extract plain text by ContentFormat.TXT
   format: ContentFormat.MARKDOWN,
   schema: mySchema,
   googleApiKey: "your-google-gemini-api-key",
@@ -135,7 +135,7 @@ const result = await extract({
   format: ContentFormat.HTML,
   schema: mySchema,
   sourceUrl: "https://example.com/products",
-  // Provide custom prompt to guide LLM's extraction process. Define what data should be retrieved
+  // In custom prompt, defined what data should be retrieved
   prompt: "Extract ONLY products that are on sale or have special discounts. Include their original prices, discounted prices, and product URL.",
   googleApiKey: "your-google-gemini-api-key",
 });
