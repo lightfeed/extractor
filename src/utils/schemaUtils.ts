@@ -302,7 +302,12 @@ function sanitizeOptional(schema: ZodOptional<any>, rawValue: unknown): any {
   try {
     // Try to sanitize using the inner schema
     const innerSchema = schema.unwrap();
-    return safeSanitizedParser(innerSchema, rawValue);
+    const parsed = safeSanitizedParser(innerSchema, rawValue);
+    // If the parsed value is not valid, return undefined for optional values
+    if (parsed === null) {
+      return undefined;
+    }
+    return parsed;
   } catch {
     // If sanitization fails, return undefined for optional values
     return undefined;

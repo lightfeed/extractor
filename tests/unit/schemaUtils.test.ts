@@ -18,6 +18,40 @@ describe("safeSanitizedParser", () => {
       const result = safeSanitizedParser(schema, "not a number");
       expect(result).toBeNull();
     });
+
+    test("should preserve descriptions on optional schemas", () => {
+      const schema = z
+        .optional(z.string().url())
+        .describe("Optional resource URL");
+
+      const validData = "https://example.com";
+      const result1 = safeSanitizedParser(schema, validData);
+      expect(result1).toBe(validData);
+
+      const result2 = safeSanitizedParser(schema, undefined);
+      expect(result2).toBe(undefined);
+
+      const invalidData = "not-a-url";
+      const result3 = safeSanitizedParser(schema, invalidData);
+      expect(result3).toBe(undefined);
+    });
+
+    test("should preserve descriptions on nullable schemas", () => {
+      const schema = z
+        .nullable(z.string().url())
+        .describe("Nullable resource URL");
+
+      const validData = "https://example.com";
+      const result1 = safeSanitizedParser(schema, validData);
+      expect(result1).toBe(validData);
+
+      const result2 = safeSanitizedParser(schema, null);
+      expect(result2).toBeNull();
+
+      const invalidData = "not-a-url";
+      const result3 = safeSanitizedParser(schema, invalidData);
+      expect(result3).toBeNull();
+    });
   });
 
   describe("Object Schemas", () => {
