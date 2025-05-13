@@ -100,7 +100,7 @@ export async function extract<T extends z.ZodTypeAny>(
   // Return the full result
   return {
     data,
-    markdown: content,
+    processedContent: content,
     usage,
   };
 }

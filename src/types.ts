@@ -100,8 +100,12 @@ export interface ExtractorResult<T> {
   /** Extracted data according to the schema */
   data: T;
 
-  /** Raw markdown content that was processed */
-  markdown: string;
+  /**
+   * Processed content that was sent to the LLM.
+   * This will be markdown if the input was HTML (after conversion),
+   * or the original content if the input was already markdown or plain text.
+   */
+  processedContent: string;
 
   /** Usage statistics */
   usage: Usage;

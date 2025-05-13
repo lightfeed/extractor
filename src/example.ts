@@ -71,7 +71,7 @@ async function example() {
     console.log(JSON.stringify(result.data, null, 2));
 
     console.log("\nMarkdown Content:");
-    console.log(result.markdown);
+    console.log(result.processedContent);
 
     console.log("\nToken Usage:");
     console.log(result.usage);
