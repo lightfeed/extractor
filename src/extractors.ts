@@ -104,7 +104,7 @@ ${content}
 `;
 
   if (dataToEnrich) {
-    promptTemplate += `Format: JSON
+    promptTemplate += `Original JSON object:
 ---
 ${JSON.stringify(dataToEnrich, null, 2)}
 ------
@@ -116,9 +116,9 @@ Your task is: ${extractionTask}
 ## Guidelines:
 1. Extract ONLY information explicitly stated in the context
 2. Enrich the original JSON object with information from the context
-3. Fill additional fields based on relevant information in the context
-4. Do not make assumptions or infer missing data
-5. Leave fields empty when information is not present or you are uncertain
+3. Do not remove any fields from the original JSON object
+4. Only update existing fields and fill in additional fields if new and relevant information is available in the context
+5. Do not make assumptions or infer missing data
 6. Do not include information that appears incomplete or truncated
 
 `;
