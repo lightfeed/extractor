@@ -39,9 +39,7 @@ Use LLMs to **robustly** extract or enrich structured data from HTML and markdow
 4. **URL Validation**: All extracted URLs are validated - handling relative URLs, removing invalid ones, and repairing markdown-escaped links. See [URL Validation](#url-validation) section for details.
 
 ## Why use an LLM extractor?
-💡 Can reason from context and return structured answers in addition to extracting content as-is
-
-🔎 Can search from additional context and enrich existing data objects
+💡 Understands natural language criteria and context to extract the data you need, not just raw content as displayed
 
 ⚡️ No need to manually create custom scraper code for each site
 
@@ -202,6 +200,9 @@ const result = await extract({
   maxInputTokens: 128000,
 });
 ```
+
+> [!WARNING]
+> For OpenAI models, optional schema is not supported. You need to change `.optional()` to `.nullable()`.
 
 ### Extracting from Main HTML
 
@@ -377,13 +378,13 @@ const productSchema = z.object({
       name: z.string(), // Required field
       price: z.number().optional(), // Optional number
       inStock: z.boolean().optional(),
-      category: z.string().optional()
+      category: z.string().optional(),
     })
   ),
   storeInfo: z.object({
     name: z.string(),
     location: z.string().optional(),
-    rating: z.number().optional()
+    rating: z.number().optional(),
   })
 });
 
@@ -394,14 +395,14 @@ const rawLLMOutput = {
       id: 1,
       name: "Laptop",
       price: 999,
-      inStock: true
+      inStock: true,
     }, // Valid product
     {
       id: 2,
       name: "Headphones",
       price: "N/A", // Non-convertible string for optional number
       inStock: true,
-      category: "Audio"
+      category: "Audio",
     },
     {
       id: 3,
@@ -433,24 +434,24 @@ const sanitizedData = safeSanitizedParser(productSchema, rawLLMOutput);
 //       id: 1,
 //       name: "Laptop",
 //       price: 999,
-//       inStock: true
+//       inStock: true,
 //     },
 //     {
 //       id: 2,
 //       name: "Headphones",
 //       inStock: true,
-//       category: "Audio"
+//       category: "Audio",
 //     },
 //     {
 //       id: 4,
 //       name: "Keyboard",
 //       price: 59.99,
-//       inStock: true
+//       inStock: true,
 //     }
 //   ],
 //   storeInfo: {
 //     name: "TechStore",
-//     location: "123 Main St"
+//     location: "123 Main St",
 //   }
 // }
 ```

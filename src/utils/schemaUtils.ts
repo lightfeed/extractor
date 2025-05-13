@@ -5,6 +5,7 @@ import {
   ZodOptional,
   ZodTypeAny,
   ZodString,
+  ZodNullable,
 } from "zod";
 
 /**
@@ -94,6 +95,21 @@ export function transformSchemaForLLM<T extends ZodTypeAny>(
     });
   }
 
+  // For nullable schemas, transform the inner schema
+  if (schema instanceof ZodNullable) {
+    const originalDef = { ...(schema as any)._def };
+    const transformedInner = transformSchemaForLLM(
+      schema.unwrap() as ZodTypeAny
+    );
+
+    // Create a new nullable with the same definition but transformed inner type
+    return new z.ZodNullable({
+      ...originalDef,
+      innerType: transformedInner,
+      typeName: z.ZodFirstPartyTypeKind.ZodNullable,
+    });
+  }
+
   // Return the original schema for all other types
   return schema;
 }
@@ -144,6 +160,11 @@ export function fixUrlEscapeSequences(data: any, schema: ZodTypeAny): any {
     return fixUrlEscapeSequences(data, innerSchema);
   }
 
+  if (schema instanceof ZodNullable) {
+    const innerSchema = schema.unwrap() as ZodTypeAny;
+    return fixUrlEscapeSequences(data, innerSchema);
+  }
+
   return data;
 }
 
@@ -172,6 +193,8 @@ export function safeSanitizedParser<T extends ZodTypeAny>(
       return sanitizeArray(schema, rawObject);
     } else if (schema instanceof ZodOptional) {
       return sanitizeOptional(schema, rawObject);
+    } else if (schema instanceof ZodNullable) {
+      return sanitizeNullable(schema, rawObject);
     } else {
       // For primitive values, try to parse directly
       return schema.parse(rawObject);
@@ -215,6 +238,18 @@ function sanitizeObject(schema: ZodObject<any>, rawObject: unknown): any {
         result[key] = sanitized;
       }
       // If sanitization fails, just skip the optional property
+    } else if (propertySchema instanceof ZodNullable) {
+      // For nullable properties, try to sanitize or set to null
+      try {
+        const sanitized = safeSanitizedParser(
+          propertySchema as ZodTypeAny,
+          rawObjectRecord[key]
+        );
+        result[key] = sanitized;
+      } catch {
+        // If sanitization fails, set to null for nullable properties
+        result[key] = null;
+      }
     } else {
       // For required properties, try to sanitize and throw if it fails
       const sanitized = safeSanitizedParser(
@@ -267,9 +302,40 @@ function sanitizeOptional(schema: ZodOptional<any>, rawValue: unknown): any {
   try {
     // Try to sanitize using the inner schema
     const innerSchema = schema.unwrap();
-    return safeSanitizedParser(innerSchema, rawValue);
+    const parsed = safeSanitizedParser(innerSchema, rawValue);
+    // If the parsed value is not valid, return undefined for optional values
+    if (parsed === null) {
+      return undefined;
+    }
+    return parsed;
   } catch {
     // If sanitization fails, return undefined for optional values
     return undefined;
+  }
+}
+
+/**
+ * Sanitizes a value against a nullable Zod schema
+ */
+function sanitizeNullable(schema: ZodNullable<any>, rawValue: unknown): any {
+  // If the value is null, return null directly
+  if (rawValue === null) {
+    return null;
+  }
+
+  try {
+    // Try to sanitize using the inner schema
+    const innerSchema = schema.unwrap();
+    const sanitized = safeSanitizedParser(innerSchema, rawValue);
+
+    // If sanitization of inner schema fails, return null
+    if (sanitized === null) {
+      return null;
+    }
+
+    return sanitized;
+  } catch {
+    // If sanitization fails, return null for nullable values
+    return null;
   }
 }

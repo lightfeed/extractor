@@ -30,6 +30,22 @@ const blogSchema = z.object({
     .describe("Extract all URLs from the content"),
 });
 
+// Define a separate schema for OpenAI tests using nullable instead of optional
+const blogSchemaOpenAI = z.object({
+  title: z.string(),
+  author: z.string(),
+  date: z.string(),
+  tags: z
+    .array(z.string())
+    .nullable()
+    .describe("Tags appear after the date. Do not include the # symbol."),
+  summary: z.string(),
+  links: z
+    .array(z.string().url())
+    .nullable()
+    .describe("Extract all URLs from the content"),
+});
+
 // Helper function to verify blog post extraction results
 function verifyBlogPostExtraction(result: ExtractorResult<any>): void {
   // Check the data is extracted correctly
@@ -77,7 +93,7 @@ describe("Extract Integration Tests", () => {
       const result = await extract({
         content: blogPostHtml,
         format: ContentFormat.HTML,
-        schema: blogSchema,
+        schema: blogSchemaOpenAI,
         provider: LLMProvider.OPENAI,
         openaiApiKey: process.env.OPENAI_API_KEY,
         sourceUrl: "https://example.com/blog/async-await",
@@ -102,6 +118,21 @@ describe("Extract Integration Tests", () => {
         features: z.array(z.string()).optional(),
         imageUrl: z.string().url().optional(),
         productUrl: z.string().url().optional(),
+      })
+    ),
+  });
+
+  // Define a separate schema for OpenAI tests using nullable instead of optional
+  const productSchemaOpenAI = z.object({
+    products: z.array(
+      z.object({
+        name: z.string(),
+        price: z.number(),
+        rating: z.number().nullable(),
+        description: z.string().nullable(),
+        features: z.array(z.string()).nullable(),
+        imageUrl: z.string().url().nullable(),
+        productUrl: z.string().url().nullable(),
       })
     ),
   });
@@ -211,7 +242,7 @@ describe("Extract Integration Tests", () => {
       const result = await extract({
         content: productListHtml,
         format: ContentFormat.HTML,
-        schema: productSchema,
+        schema: productSchemaOpenAI,
         provider: LLMProvider.OPENAI,
         openaiApiKey: process.env.OPENAI_API_KEY,
         sourceUrl: "https://example.com/products",
@@ -236,13 +267,13 @@ describe("Extract Integration Tests", () => {
           // For this test, force the price to be N/A and break the schema so we can test the
           // structured output error handling. In real life, this could happen if the LLM returns
           // a value that is not expected by the schema.
-          price: z.number().describe("Use 'N/A' if not available").optional(),
+          price: z.number().describe("Use 'N/A' if not available").nullable(),
         }),
         provider: LLMProvider.OPENAI,
         openaiApiKey: process.env.OPENAI_API_KEY,
         modelName: "gpt-3.5-turbo",
       });
-      expect(result.data).toEqual({ product: "Apple" });
+      expect(result.data).toEqual({ product: "Apple", price: null });
     });
 
     test("should handle structured output errors using Google Gemini", async () => {
@@ -367,7 +398,7 @@ describe("Extract Integration Tests", () => {
       const result = await extract({
         content: blogPostHtml,
         format: ContentFormat.HTML,
-        schema: blogSchema,
+        schema: blogSchemaOpenAI,
         provider: LLMProvider.OPENAI,
         openaiApiKey: process.env.OPENAI_API_KEY,
         sourceUrl: "https://example.com/blog/async-await",
@@ -465,6 +496,30 @@ const articleSchema = z.object({
     ),
 });
 
+// Define a separate schema for OpenAI tests using nullable instead of optional
+const articleSchemaOpenAI = z.object({
+  title: z.string(),
+  author: z.string(),
+  date: z.string(),
+  tags: z
+    .array(z.string())
+    .nullable()
+    .describe("Tags appear after the date. Do not include the # symbol."),
+  summary: z.string(),
+  images: z
+    .array(
+      z.object({
+        url: z.string().url(),
+        alt: z.string().nullable(),
+        caption: z.string().nullable(),
+      })
+    )
+    .nullable()
+    .describe(
+      "Extract all images from the article with their URLs and alt text"
+    ),
+});
+
 // Function to verify that images are correctly extracted
 function verifyImageExtraction(result: ExtractorResult<any>): void {
   // Check the data is extracted correctly
@@ -539,7 +594,7 @@ describe("Image Extraction Integration Tests", () => {
     const result = await extract({
       content: articleWithImages,
       format: ContentFormat.HTML,
-      schema: articleSchema,
+      schema: articleSchemaOpenAI,
       provider: LLMProvider.OPENAI,
       openaiApiKey: process.env.OPENAI_API_KEY,
       htmlExtractionOptions: {
