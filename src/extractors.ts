@@ -72,6 +72,7 @@ interface ExtractionPromptOptions {
   format: string;
   content: string;
   customPrompt?: string;
+  dataToEnrich?: Record<string, any>;
 }
 
 interface TruncateContentOptions extends ExtractionPromptOptions {
@@ -85,20 +86,44 @@ export function generateExtractionPrompt({
   format,
   content,
   customPrompt,
+  dataToEnrich,
 }: ExtractionPromptOptions): string {
   // Base prompt structure that's shared between default and custom prompts
   const extractionTask = customPrompt
     ? `${customPrompt}`
     : "Please extract structured information from the provided context.";
 
-  return `Context information is below:
+  // If dataToEnrich is provided, include it in the prompt for enrichment
+  let promptTemplate = `Context information is below:
 ------
 Format: ${format}
 ---
 ${content}
 ------
 
-You are a data extraction assistant that extracts structured information from the above context.
+`;
+
+  if (dataToEnrich) {
+    promptTemplate += `Format: JSON
+---
+${JSON.stringify(dataToEnrich, null, 2)}
+------
+
+You are a data extraction assistant that extracts structured information from the above context in ${format} and JSON.
+
+Your task is: ${extractionTask}
+
+## Guidelines:
+1. Extract ONLY information explicitly stated in the context
+2. Enrich the original JSON object with information from the context
+3. Fill additional fields based on relevant information in the context
+4. Do not make assumptions or infer missing data
+5. Leave fields empty when information is not present or you are uncertain
+6. Do not include information that appears incomplete or truncated
+
+`;
+  } else {
+    promptTemplate += `You are a data extraction assistant that extracts structured information from the above context.
 
 Your task is: ${extractionTask}
 
@@ -109,9 +134,12 @@ Your task is: ${extractionTask}
 4. Do not include information that appears incomplete or truncated
 5. Follow the required schema exactly
 
-Return only the structured data in valid JSON format and nothing else.
-
 `;
+  }
+
+  promptTemplate += `Return only the structured data in valid JSON format and nothing else.`;
+
+  return promptTemplate;
 }
 
 /**
@@ -122,6 +150,7 @@ export function truncateContent({
   format,
   content,
   customPrompt,
+  dataToEnrich,
   maxTokens,
 }: TruncateContentOptions): string {
   const maxChars = maxTokens * 4;
@@ -131,6 +160,7 @@ export function truncateContent({
     format,
     content,
     customPrompt,
+    dataToEnrich,
   });
 
   // If the full prompt is within limits, return original content
@@ -157,7 +187,8 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
   temperature: number = 0,
   customPrompt?: string,
   format: string = ContentFormat.MARKDOWN,
-  maxInputTokens?: number
+  maxInputTokens?: number,
+  dataToEnrich?: Record<string, any>
 ): Promise<{ data: z.infer<T>; usage: Usage }> {
   const llm = createLLM(provider, modelName, apiKey, temperature);
   let usage: Usage = {};
@@ -168,6 +199,7 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
         format,
         content,
         customPrompt,
+        dataToEnrich,
         maxTokens: maxInputTokens,
       })
     : content;
@@ -177,6 +209,7 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
     format,
     content: truncatedContent,
     customPrompt,
+    dataToEnrich,
   });
 
   try {

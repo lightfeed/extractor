@@ -19,6 +19,19 @@ const DEFAULT_MODELS = {
  * Extract structured data from HTML, markdown, or plain text content using an LLM
  *
  * @param options Configuration options for extraction
+ * @param options.content HTML, markdown, or plain text content to extract from
+ * @param options.format Content format (HTML, MARKDOWN, or TXT)
+ * @param options.schema Zod schema defining the structure to extract
+ * @param options.provider LLM provider (GOOGLE_GEMINI or OPENAI)
+ * @param options.modelName Model name to use (provider-specific)
+ * @param options.googleApiKey Google API key (if using Google Gemini provider)
+ * @param options.openaiApiKey OpenAI API key (if using OpenAI provider)
+ * @param options.temperature Temperature for the LLM (0-1)
+ * @param options.prompt Custom prompt to guide the extraction process
+ * @param options.sourceUrl URL of the HTML content (required for HTML format)
+ * @param options.htmlExtractionOptions HTML-specific options for content extraction
+ * @param options.maxInputTokens Maximum number of input tokens to send to the LLM
+ * @param options.dataToEnrich Original data object to enrich with information from the content
  * @returns The extracted data, original content, and usage statistics
  */
 export async function extract<T extends z.ZodTypeAny>(
@@ -80,7 +93,8 @@ export async function extract<T extends z.ZodTypeAny>(
     options.temperature ?? 0,
     options.prompt,
     formatToUse.toString(), // Pass the correct format based on actual content
-    options.maxInputTokens
+    options.maxInputTokens,
+    options.dataToEnrich
   );
 
   // Return the full result

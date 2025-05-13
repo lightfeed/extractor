@@ -332,6 +332,107 @@ describe("Extract Integration Tests", () => {
       );
     });
   });
+
+  describe("Data Enrichment", () => {
+    test("should enrich existing data with blog post content using Google Gemini", async () => {
+      // Create partial data to be enriched
+      const partialData = {
+        title: "A Different Title",
+        date: "February 1, 2022", // This might be updated based on content
+        summary: "",
+      };
+
+      const result = await extract({
+        content: blogPostHtml,
+        format: ContentFormat.HTML,
+        schema: blogSchema,
+        provider: LLMProvider.GOOGLE_GEMINI,
+        googleApiKey: process.env.GOOGLE_API_KEY,
+        sourceUrl: "https://example.com/blog/async-await",
+        dataToEnrich: partialData,
+      });
+
+      // Verify the enriched data has the correct values
+      verifyBlogPostExtraction(result);
+    });
+
+    test("should enrich existing data with blog post content using OpenAI", async () => {
+      // Create partial data with some existing values
+      const partialData = {
+        title: "A Different Title", // This should be updated
+        date: "February 1, 2022", // This might be updated based on content
+        summary: "",
+      };
+
+      const result = await extract({
+        content: blogPostHtml,
+        format: ContentFormat.HTML,
+        schema: blogSchema,
+        provider: LLMProvider.OPENAI,
+        openaiApiKey: process.env.OPENAI_API_KEY,
+        sourceUrl: "https://example.com/blog/async-await",
+        dataToEnrich: partialData,
+      });
+
+      // Verify the enriched data has the correct values
+      verifyBlogPostExtraction(result);
+    });
+
+    test("should enrich product list data with custom prompt using Google Gemini", async () => {
+      // Create partial product data with missing information
+      const partialData = {
+        products: [
+          {
+            name: "Smart Speaker Pro",
+            price: 0, // Missing price
+            features: [], // Missing features
+          },
+          {
+            name: "Smart Thermostat",
+            price: 0, // Missing price
+            features: [], // Missing features
+          },
+          {
+            name: "Smart Security Camera",
+            price: 0, // Missing price
+            features: [], // Missing features
+          },
+        ],
+      };
+
+      const result = await extract({
+        content: productListHtml,
+        format: ContentFormat.HTML,
+        schema: productSchema,
+        provider: LLMProvider.GOOGLE_GEMINI,
+        googleApiKey: process.env.GOOGLE_API_KEY,
+        sourceUrl: "https://example.com/products",
+        dataToEnrich: partialData,
+        prompt:
+          "Focus on enriching the product data with accurate prices and feature lists from the context.",
+      });
+
+      // Verify that prices and features were enriched correctly
+      expect(result.data).toBeDefined();
+      expect(Array.isArray(result.data.products)).toBe(true);
+      expect(result.data.products.length).toBe(3);
+
+      // Check prices were updated
+      expect(result.data.products[0].price).toBe(129.99);
+      expect(result.data.products[1].price).toBe(89.95);
+      expect(result.data.products[2].price).toBe(74.5);
+
+      // Check features were populated
+      expect(result.data.products[0].features?.length).toBeGreaterThan(0);
+      expect(result.data.products[1].features?.length).toBeGreaterThan(0);
+      expect(result.data.products[2].features?.length).toBeGreaterThan(0);
+
+      // Verify usage stats
+      expect(result.usage).toBeDefined();
+      expect(result.usage.inputTokens).toBeGreaterThan(0);
+      expect(result.usage.outputTokens).toBeGreaterThan(0);
+    });
+  });
 });
 
 // Read the sample HTML file with images

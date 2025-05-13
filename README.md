@@ -26,26 +26,28 @@
 
 # ⚡️ Lightfeed Extract
 
-Use LLMs to **robustly** extract structured data from HTML and markdown. Used in production by Lightfeed and successfully extracting 10M+ records. Written in Typescript/Node.js.
+Use LLMs to **robustly** extract or enrich structured data from HTML and markdown. Used in production by Lightfeed and successfully extracting 10M+ records. Written in Typescript/Node.js.
 
 ## How It Works
 
 1. **HTML to Markdown Conversion**: If the input is HTML, it's first converted to clean, LLM-friendly markdown. This step can optionally extract only the main content and include images. See [HTML to Markdown Conversion](#html-to-markdown-conversion) section for details. The `convertHtmlToMarkdown` function can also be used standalone.
 
-2. **LLM Processing**: The markdown is sent to an LLM (Google Gemini 2.5 flash or OpenAI GPT-4o mini by default) with a prompt to extract structured data according to your Zod schema. You can set a maximum input token limit to control costs or avoid exceeding the model's context window, and the function will return token usage metrics for each LLM call.
+2. **LLM Processing**: The markdown is sent to an LLM (Google Gemini 2.5 flash or OpenAI GPT-4o mini by default) with a prompt to extract structured data according to your Zod schema or enrich existing data objects. You can set a maximum input token limit to control costs or avoid exceeding the model's context window, and the function will return token usage metrics for each LLM call.
 
-3. **JSON Sanitization**: If the LLM output isn't perfect JSON or doesn't fully match your schema, a sanitization process attempts to recover and fix the data. This makes complex schema extraction much more robust, especially with deeply nested objects and arrays. See [JSON Sanitization](#json-sanitization) for details.
+3. **JSON Sanitization**: If the LLM structured output fails or doesn't fully match your schema, a sanitization process attempts to recover and fix the data. This makes complex schema extraction much more robust, especially with deeply nested objects and arrays. See [JSON Sanitization](#json-sanitization) for details.
 
 4. **URL Validation**: All extracted URLs are validated - handling relative URLs, removing invalid ones, and repairing markdown-escaped links. See [URL Validation](#url-validation) section for details.
 
 ## Why use an LLM extractor?
-🔎 Can reason from context, perform search and return structured answers in addition to extracting content as-is
+💡 Can reason from context and return structured answers in addition to extracting content as-is
+
+🔎 Can search from additional context and enrich existing data objects
 
 ⚡️ No need to manually create custom scraper code for each site
 
 🔁 Resilient to website changes, e.g., HTML structure, CSS selectors, or page layout
 
-💡 LLMs are becoming more accurate and cost-effective
+✅ LLMs are becoming more accurate and cost-effective
 
 ## Installation
 
@@ -59,7 +61,7 @@ While this library provides a robust foundation for data extraction, you might w
 
 - **Persistent Searchable Databases**: Automatically store and manage extracted data in a production-ready vector database
 - **Scheduled Runs, Deduplication and Tracking**: Smart detection and handling of duplicate content across your sources, with automated change tracking
-- **Pagination and Multi-page Extraction**: Follow links to collect complete data from connected pages
+- **Deep Link Extraction**: Follow links to collect complete data from connected pages
 - **Real-time API and Integration**: Query your extracted data through robust API endpoints and integrations
 - **Research Portal**: Explore and analyze your data through an intuitive interface
 
@@ -68,8 +70,8 @@ While this library provides a robust foundation for data extraction, you might w
 ### Basic Example
 
 ```typescript
-import { extract, ContentFormat, LLMProvider } from 'lightfeed-extract';
-import { z } from 'zod';
+import { extract, ContentFormat, LLMProvider } from "lightfeed-extract";
+import { z } from "zod";
 
 async function main() {
   // Define your schema. We will run one more sanitization process to recover imperfect, failed, or partial LLM outputs into this schema
@@ -100,28 +102,28 @@ async function main() {
     `,
     format: ContentFormat.HTML,
     schema,
-    sourceUrl: 'https://example.com/blog/async-await', // Required for HTML format to handle relative URLs
-    googleApiKey: 'your-google-api-key'
+    sourceUrl: "https://example.com/blog/async-await", // Required for HTML format to handle relative URLs
+    googleApiKey: "your-google-gemini-api-key",
   });
 
-  console.log('Extracted Data:', result.data);
-  console.log('Token Usage:', result.usage);
+  console.log("Extracted Data:", result.data);
+  console.log("Token Usage:", result.usage);
 }
 
 main().catch(console.error);
 ```
 
-### Extracting from Markdown
+### Extracting from Markdown or Plain Text
 
 You can also extract structured data directly from Markdown string:
 
 ```typescript
 const result = await extract({
   content: markdownContent,
+  // Specify that content is Markdown. In addition to HTML and Markdown, you can also extract plain text by ContentFormat.TXT
   format: ContentFormat.MARKDOWN,
   schema: mySchema,
-  provider: LLMProvider.OPENAI,
-  openaiApiKey: 'your-openai-api-key'
+  googleApiKey: "your-google-gemini-api-key",
 });
 ```
 
@@ -131,20 +133,60 @@ You can provide a custom prompt to guide the extraction process:
 
 ```typescript
 const result = await extract({
-  content: textContent,
-  format: ContentFormat.TXT,
+  content: htmlContent,
+  format: ContentFormat.HTML,
   schema: mySchema,
-  prompt: "Extract only products that are on sale or have special discounts. Include their original prices, discounted prices, and all specifications.",
-  provider: LLMProvider.GOOGLE_GEMINI,
-  googleApiKey: 'your-google-api-key'
+  sourceUrl: "https://example.com/products",
+  // In custom prompt, defined what data should be retrieved
+  prompt: "Extract ONLY products that are on sale or have special discounts. Include their original prices, discounted prices, and product URL.",
+  googleApiKey: "your-google-gemini-api-key",
 });
 ```
 
 If no prompt is provided, a default extraction prompt will be used.
 
-### Customizing Model and Managing Token Limits
+### Data Enrichment
 
-You can customize the model and manage token limits to control costs and ensure your content fits within the model's maximum context window:
+You can use the `dataToEnrich` option to provide an existing data object that will be enriched with additional information from the content. This is particularly useful for:
+
+- Updating incomplete records with missing information
+- Enhancing existing data with new details from content
+- Merging data from multiple sources
+
+The LLM will be instructed to enrich the provided object rather than creating a completely new one:
+
+```typescript
+// Example of enriching a product record with missing information
+const productToEnrich = {
+  productUrl: "https://example.com/products/smart-security-camera",
+  name: "",
+  price: 0,
+  reviews: [],
+};
+
+const result = await extract({
+  content: htmlContent,
+  format: ContentFormat.HTML,
+  schema: productSchema,
+  sourceUrl: "https://example.com/products/smart-security-camera",
+  prompt: "Enrich the product data with complete details from the product page.",
+  dataToEnrich: productToEnrich,
+  googleApiKey: "your-google-gemini-api-key",
+});
+
+// Result will contain the original data enriched with information from the content
+console.log(result.data);
+// {
+//   productUrl: "https://example.com/products/smart-security-camera" // Preserved from original object
+//   name: "Smart Security Camera", // Enriched from the product page
+//   price: 74.50, // Enriched from the product page
+//   reviews: ["I really like this camera", ...] // Reviews enriched from the product page
+// }
+```
+
+### Customizing LLM Provider and Managing Token Limits
+
+You can customize LLM and manage token limits to control costs and ensure your content fits within the model's maximum context window:
 
 ```typescript
 // Extract from Markdown with token limit
@@ -152,10 +194,12 @@ const result = await extract({
   content: markdownContent,
   format: ContentFormat.MARKDOWN,
   schema,
+  // Provide model provider and model name
   provider: LLMProvider.OPENAI,
-  openaiApiKey: 'your-openai-api-key',
-  modelName: 'gpt-4o',
-  maxInputTokens: 128000 // Limit to roughly 128K tokens (max input for gpt-4o-mini)
+  modelName: "gpt-4o-mini",
+  openaiApiKey: "your-openai-api-key",
+  // Limit to roughly 128K tokens (max input for gpt-4o-mini)
+  maxInputTokens: 128000,
 });
 ```
 
@@ -171,7 +215,7 @@ const result = await extract({
   htmlExtractionOptions: {
     extractMainHtml: true // Uses heuristics to remove navigation, headers, footers, etc.
   },
-  sourceUrl: sourceUrl
+  sourceUrl,
 });
 ```
 
@@ -234,13 +278,14 @@ Main function to extract structured data from content.
 | `schema` | `z.ZodTypeAny` | Zod schema defining the structure to extract | Required |
 | `prompt` | `string` | Custom prompt to guide the extraction process | Internal default prompt |
 | `provider` | `LLMProvider` | LLM provider (GOOGLE_GEMINI or OPENAI) | `LLMProvider.GOOGLE_GEMINI` |
-| `modelName` | `string` | Model name to use | Provider-specific default |
-| `googleApiKey` | `string` | Google API key (if using Google Gemini provider) | From env `GOOGLE_API_KEY` |
+| `modelName` | `string` | Model name to use | Provider-specific default, Google Gemini 2.5 flash or OpenAI GPT-4o mini  |
+| `googleApiKey` | `string` | Google Gemini API key (if using Google Gemini provider) | From env `GOOGLE_API_KEY` |
 | `openaiApiKey` | `string` | OpenAI API key (if using OpenAI provider) | From env `OPENAI_API_KEY` |
 | `temperature` | `number` | Temperature for the LLM (0-1) | `0` |
 | `htmlExtractionOptions` | `HTMLExtractionOptions` | HTML-specific options for content extraction (see below) | `{}` |
 | `sourceUrl` | `string` | URL of the HTML content, required when format is HTML to properly handle relative URLs | Required for HTML format |
 | `maxInputTokens` | `number` | Maximum number of input tokens to send to the LLM. Uses a rough conversion of 4 characters per token. When specified, content will be truncated if the total prompt size exceeds this limit. | `undefined` |
+| `dataToEnrich` | `Record<string, any>` | Original data object to enrich with information from the content. When provided, the LLM will be instructed to update this object rather than creating a new one from scratch. | `undefined` |
 
 #### HTML Extraction Options
 
@@ -288,10 +333,10 @@ The function returns a string containing the markdown conversion of the HTML con
 #### Example
 
 ```typescript
-import { convertHtmlToMarkdown, HTMLExtractionOptions } from 'lightfeed-extract';
+import { convertHtmlToMarkdown, HTMLExtractionOptions } from "lightfeed-extract";
 
 // Basic conversion
-const markdown = convertHtmlToMarkdown('<h1>Hello World</h1><p>This is a test</p>');
+const markdown = convertHtmlToMarkdown("<h1>Hello World</h1><p>This is a test</p>");
 console.log(markdown);
 // Output: "Hello World\n===========\n\nThis is a test"
 
@@ -303,9 +348,9 @@ const options: HTMLExtractionOptions = {
 
 // With source URL to handle relative links
 const markdownWithOptions = convertHtmlToMarkdown(
-  '<div><img src="/images/logo.png" alt="Logo"><a href="/about">About</a></div>',
+  "<div><img src="/images/logo.png" alt="Logo"><a href="/about">About</a></div>",
   options,
-  'https://example.com'
+  "https://example.com"
 );
 console.log(markdownWithOptions);
 // Output: "![Logo](https://example.com/images/logo.png)[About](https://example.com/about)"
@@ -321,8 +366,8 @@ safeSanitizedParser<T>(schema: ZodTypeAny, rawObject: unknown): z.infer<T> | nul
 ```
 
 ```typescript
-import { safeSanitizedParser } from 'lightfeed-extract';
-import { z } from 'zod';
+import { safeSanitizedParser } from "lightfeed-extract";
+import { z } from "zod";
 
 // Define a product catalog schema
 const productSchema = z.object({
@@ -360,7 +405,7 @@ const rawLLMOutput = {
     },
     {
       id: 3,
-      // Missing required 'name' field
+      // Missing required "name" field
       price: 45.99,
       inStock: false
     },
