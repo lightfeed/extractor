@@ -143,6 +143,45 @@ const result = await extract({
 
 If no prompt is provided, a default extraction prompt will be used.
 
+### Data Enrichment
+
+You can use the `dataToEnrich` option to provide an existing data object that will be enriched with additional information from the content. This is particularly useful for:
+
+- Updating incomplete records with missing information
+- Enhancing existing data with new details from content
+- Merging data from multiple sources
+
+The LLM will be instructed to enrich the provided object rather than creating a completely new one:
+
+```typescript
+// Example of enriching a product record with missing information
+const productToEnrich = {
+  productUrl: "https://example.com/products/smart-security-camera",
+  name: "",
+  price: 0,
+  reviews: [],
+};
+
+const result = await extract({
+  content: htmlContent,
+  format: ContentFormat.HTML,
+  schema: productSchema,
+  sourceUrl: "https://example.com/products/smart-security-camera",
+  prompt: "Enrich the product data with complete details from the product page.",
+  dataToEnrich: productToEnrich,
+  googleApiKey: "your-google-gemini-api-key",
+});
+
+// Result will contain the original data enriched with information from the content
+console.log(result.data);
+// {
+//   productUrl: "https://example.com/products/smart-security-camera" // Preserved from original object
+//   name: "Smart Security Camera", // Enriched from the product page
+//   price: 74.50, // Enriched from the product page
+//   reviews: ["I really like this camera", ...] // Reviews enriched from the product page
+// }
+```
+
 ### Customizing LLM Provider and Managing Token Limits
 
 You can customize LLM and manage token limits to control costs and ensure your content fits within the model's maximum context window:
@@ -244,6 +283,7 @@ Main function to extract structured data from content.
 | `htmlExtractionOptions` | `HTMLExtractionOptions` | HTML-specific options for content extraction (see below) | `{}` |
 | `sourceUrl` | `string` | URL of the HTML content, required when format is HTML to properly handle relative URLs | Required for HTML format |
 | `maxInputTokens` | `number` | Maximum number of input tokens to send to the LLM. Uses a rough conversion of 4 characters per token. When specified, content will be truncated if the total prompt size exceeds this limit. | `undefined` |
+| `dataToEnrich` | `Record<string, any>` | Original data object to enrich with information from the content. When provided, the LLM will be instructed to update this object rather than creating a new one from scratch. | `undefined` |
 
 #### HTML Extraction Options
 
