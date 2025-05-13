@@ -75,8 +75,8 @@ async function main() {
   // Define your schema. We will run one more sanitization process to recover imperfect, failed, or partial LLM outputs into this schema
   const schema = z.object({
     title: z.string(),
-    author: z.string().optional(),
-    date: z.string().optional(),
+    author: z.string().nullable(),
+    date: z.string().nullable(),
     tags: z.array(z.string()),
     summary: z.string().describe("A brief summary of the article content within 500 characters"),
     // Use .url() to fix and validate URL field
@@ -231,12 +231,12 @@ const productListSchema = z.object({
     z.object({
       name: z.string(),
       price: z.number(),
-      description: z.string().optional(),
+      description: z.string().nullable(),
       // Include an array of images for each product
       image: z.object({
         url: z.string().url(),
-        alt: z.string().optional(),
-      }).optional(),
+        alt: z.string().nullable(),
+      }).nullable(),
     })
   ),
 });
@@ -375,13 +375,14 @@ const productSchema = z.object({
       name: z.string(), // Required field
       price: z.number().optional(), // Optional number
       inStock: z.boolean().optional(),
-      category: z.string().optional()
+      category: z.string().optional(),
+      description: z.string().nullable(), // Nullable field
     })
   ),
   storeInfo: z.object({
     name: z.string(),
     location: z.string().optional(),
-    rating: z.number().optional()
+    rating: z.number().nullable(), // Nullable rating
   })
 });
 
@@ -392,14 +393,16 @@ const rawLLMOutput = {
       id: 1,
       name: "Laptop",
       price: 999,
-      inStock: true
+      inStock: true,
+      description: null, // Valid null value
     }, // Valid product
     {
       id: 2,
       name: "Headphones",
       price: "N/A", // Non-convertible string for optional number
       inStock: true,
-      category: "Audio"
+      category: "Audio",
+      description: "Premium wireless headphones", // Valid string for nullable field
     },
     {
       id: 3,
@@ -417,7 +420,7 @@ const rawLLMOutput = {
   storeInfo: {
     name: "TechStore",
     location: "123 Main St",
-    rating: "N/A" // Invalid: rating is not a number
+    rating: "N/A" // Invalid value for nullable field - will be converted to null
   }
 };
 
@@ -431,13 +434,15 @@ const sanitizedData = safeSanitizedParser(productSchema, rawLLMOutput);
 //       id: 1,
 //       name: "Laptop",
 //       price: 999,
-//       inStock: true
+//       inStock: true,
+//       description: null
 //     },
 //     {
 //       id: 2,
 //       name: "Headphones",
 //       inStock: true,
-//       category: "Audio"
+//       category: "Audio",
+//       description: "Premium wireless headphones"
 //     },
 //     {
 //       id: 4,
@@ -448,7 +453,8 @@ const sanitizedData = safeSanitizedParser(productSchema, rawLLMOutput);
 //   ],
 //   storeInfo: {
 //     name: "TechStore",
-//     location: "123 Main St"
+//     location: "123 Main St",
+//     rating: null  // Converted to null
 //   }
 // }
 ```
@@ -457,6 +463,7 @@ This utility is especially useful when:
 - LLMs return non-convertible data for optional fields (like "N/A" for numbers)
 - Some objects in arrays are missing required fields
 - Objects contain invalid values that don't match constraints
+- You need to handle nullable fields where invalid values should be converted to null
 - You want to recover as much valid data as possible while safely removing problematic parts
 
 ### URL Validation

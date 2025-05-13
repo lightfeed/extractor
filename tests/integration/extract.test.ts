@@ -21,12 +21,12 @@ const blogSchema = z.object({
   date: z.string(),
   tags: z
     .array(z.string())
-    .optional()
+    .nullable()
     .describe("Tags appear after the date. Do not include the # symbol."),
   summary: z.string(),
   links: z
     .array(z.string().url())
-    .optional()
+    .nullable()
     .describe("Extract all URLs from the content"),
 });
 
@@ -97,11 +97,11 @@ describe("Extract Integration Tests", () => {
       z.object({
         name: z.string(),
         price: z.number(),
-        rating: z.number().optional(),
-        description: z.string().optional(),
-        features: z.array(z.string()).optional(),
-        imageUrl: z.string().url().optional(),
-        productUrl: z.string().url().optional(),
+        rating: z.number().nullable(),
+        description: z.string().nullable(),
+        features: z.array(z.string()).nullable(),
+        imageUrl: z.string().url().nullable(),
+        productUrl: z.string().url().nullable(),
       })
     ),
   });
