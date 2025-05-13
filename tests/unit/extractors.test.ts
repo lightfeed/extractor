@@ -306,7 +306,7 @@ describe("extractors", () => {
       expect(prompt).toContain("Context information is below:");
       expect(prompt).toContain("Format: markdown");
       expect(prompt).toContain("Some markdown content");
-      expect(prompt).toContain("Format: JSON");
+      expect(prompt).toContain("Original JSON object");
       expect(prompt).toContain(JSON.stringify(dataToEnrich, null, 2));
       expect(prompt).toContain(
         "You are a data extraction assistant that extracts structured information from the above context in markdown and JSON"
@@ -315,7 +315,7 @@ describe("extractors", () => {
         "Enrich the original JSON object with information from the context"
       );
       expect(prompt).toContain(
-        "Fill additional fields based on relevant information in the context"
+        "Only update existing fields and fill in additional fields if new and relevant information is available in the context"
       );
       expect(prompt).toContain(
         "Return only the structured data in valid JSON format"
