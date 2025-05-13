@@ -28,6 +28,19 @@ const blogSchema = z.object({
   content: z.string().optional(),
 });
 
+// OpenAI version with nullable instead of optional
+const blogSchemaOpenAI = z.object({
+  title: z.string(),
+  author: z.string().nullable(),
+  date: z.string().nullable(),
+  tags: z
+    .array(z.string())
+    .nullable()
+    .describe("Tags appear after the date. Do not include the # symbol."),
+  summary: z.string(),
+  content: z.string().nullable(),
+});
+
 const productSchema = z.object({
   products: z.array(
     z.object({
@@ -36,6 +49,19 @@ const productSchema = z.object({
       rating: z.string().optional(),
       description: z.string().optional(),
       features: z.array(z.string()).optional(),
+    })
+  ),
+});
+
+// OpenAI version with nullable instead of optional
+const productSchemaOpenAI = z.object({
+  products: z.array(
+    z.object({
+      name: z.string(),
+      price: z.string(),
+      rating: z.string().nullable(),
+      description: z.string().nullable(),
+      features: z.array(z.string()).nullable(),
     })
   ),
 });
@@ -64,7 +90,8 @@ async function testBlogExtraction(provider = LLMProvider.GOOGLE_GEMINI) {
     const result = await extract({
       content: html,
       format: ContentFormat.HTML,
-      schema: blogSchema,
+      schema:
+        provider === LLMProvider.GOOGLE_GEMINI ? blogSchema : blogSchemaOpenAI,
       provider,
       googleApiKey: provider === LLMProvider.GOOGLE_GEMINI ? apiKey : undefined,
       openaiApiKey: provider === LLMProvider.OPENAI ? apiKey : undefined,
@@ -109,7 +136,10 @@ async function testProductExtraction(provider = LLMProvider.GOOGLE_GEMINI) {
     const result = await extract({
       content: html,
       format: ContentFormat.HTML,
-      schema: productSchema,
+      schema:
+        provider === LLMProvider.GOOGLE_GEMINI
+          ? productSchema
+          : productSchemaOpenAI,
       provider,
       googleApiKey: provider === LLMProvider.GOOGLE_GEMINI ? apiKey : undefined,
       openaiApiKey: provider === LLMProvider.OPENAI ? apiKey : undefined,
