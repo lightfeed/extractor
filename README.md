@@ -39,9 +39,9 @@ Use LLMs to **robustly** extract or enrich structured data from HTML and markdow
 4. **URL Validation**: All extracted URLs are validated - handling relative URLs, removing invalid ones, and repairing markdown-escaped links. See [URL Validation](#url-validation) section for details.
 
 ## Why use an LLM extractor?
-💡 Can reason from context and return structured answers in addition to extracting content as-is
+💡 Understands natural language criteria and context to extract the data you need, not just raw content as displayed
 
-🔎 Can search from additional context and enrich existing data objects
+🔎 Enriches existing data from external sources - filling gaps in your data regardless of source format or structure
 
 ⚡️ No need to manually create custom scraper code for each site
 
