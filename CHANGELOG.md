@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2025-05-13
+
+### Added
+- Use processedContent instead of markdown in response
+- Improve enrich prompt to not remove any fields from the original JSON object
+
 ## [0.1.2] - 2025-05-12
 
 ### Added
