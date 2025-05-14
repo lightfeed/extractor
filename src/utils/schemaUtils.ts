@@ -41,7 +41,7 @@ export function isUrlSchema(schema: ZodTypeAny): boolean {
 export function transformSchemaForLLM<T extends ZodTypeAny>(
   schema: T
 ): ZodTypeAny {
-  console.log("Transforming schema:", schema.constructor.name);
+  console.log("Start of Transforming schema:");
   console.log("running transformSchemaForLLM", JSON.stringify(schema, null, 2));
 
   // For URL string schemas, remove the URL check but preserve everything else
@@ -69,6 +69,16 @@ export function transformSchemaForLLM<T extends ZodTypeAny>(
       typeName: z.ZodFirstPartyTypeKind.ZodString,
     });
   }
+
+  console.log(
+    "Transforming schema:",
+    JSON.stringify(zodToJsonSchema(schema), null, 2)
+  );
+  console.log("schema is not a URL schema, returning original schema");
+  console.log("schema is object?", schema instanceof ZodObject);
+  console.log("schema is array?", schema instanceof ZodArray);
+  console.log("schema is optional?", schema instanceof ZodOptional);
+  console.log("schema is nullable?", schema instanceof ZodNullable);
 
   // For object schemas, transform each property
   if (schema instanceof ZodObject) {

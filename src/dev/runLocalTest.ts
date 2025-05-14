@@ -42,13 +42,11 @@ const blogSchemaOpenAI = z.object({
 });
 
 const productSchema = z.object({
-  products: z.array(
+  items: z.array(
     z.object({
-      name: z.string(),
-      price: z.string(),
-      rating: z.string().optional(),
-      description: z.string().optional(),
-      features: z.array(z.string()).optional(),
+      article_title: z.string().describe("Title of the article"),
+      link_url: z.string().url().optional().describe("URL of the article"),
+      summary: z.string().optional().describe("Summary of the article"),
     })
   ),
 });
