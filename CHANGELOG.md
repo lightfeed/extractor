@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2025-05-14
+- Improve main html content extraction - preserve option, label and select (can be important for product detail pages)
+
 ## [0.1.4] - 2025-05-13
 
 ## Fixed
