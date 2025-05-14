@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2025-05-13
+
+## Fixed
+- Fixed schema conversion bug when input zod schema is from a different zod version
+
 ## [0.1.3] - 2025-05-13
 
 ### Added
@@ -17,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Support enriching data
-- Handle nullable instead of optional. This is required for schema in OpenAI models
+- Handle nullable instead of optional in schema. This is required for schema in OpenAI models
 
 ## [0.1.1] - 2025-05-11
 
