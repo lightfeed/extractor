@@ -349,7 +349,16 @@ const options: HTMLExtractionOptions = {
 
 // With source URL to handle relative links
 const markdownWithOptions = convertHtmlToMarkdown(
-  "<div><img src="/images/logo.png" alt="Logo"><a href="/about">About</a></div>",
+  `<html>
+    <body>
+      <header>Header</header>
+      <div>
+        <img src="/images/logo.png" alt="Logo">
+        <a href="/about">About</a>
+      </div>
+    </body>
+    <footer>Footer content</footer>
+  </html>`,
   options,
   "https://example.com"
 );
