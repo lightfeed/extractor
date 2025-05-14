@@ -58,8 +58,7 @@
     "turndown": "^7.2.0",
     "xmldom": "^0.6.0",
     "xpath": "^0.0.34",
-    "zod": "^3.24.3",
-    "zod-to-json-schema": "^3.24.5"
+    "zod": "^3.24.3"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",

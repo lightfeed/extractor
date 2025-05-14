@@ -4,34 +4,22 @@ import {
   ZodObject,
   ZodOptional,
   ZodTypeAny,
-  ZodString,
   ZodNullable,
   ZodFirstPartyTypeKind,
 } from "zod";
-import zodToJsonSchema from "zod-to-json-schema";
 
 /**
  * Checks if a schema is a ZodString with URL validation
  */
 export function isUrlSchema(schema: ZodTypeAny): boolean {
-  console.log(
-    "Checking if schema is URL schema:",
-    JSON.stringify(zodToJsonSchema(schema), null, 2)
-  );
   if (!isZodType(schema, ZodFirstPartyTypeKind.ZodString)) return false;
 
   // Check if schema has URL validation by checking for internal checks property
   // This is a bit of a hack but necessary since Zod doesn't expose validation info
   const checks = (schema as any)._def.checks;
-  console.log(
-    "Checking schema for URL validation:",
-    checks,
-    JSON.stringify(checks, null, 2)
-  );
   if (!checks || !Array.isArray(checks)) return false;
 
   const isUrl = checks.some((check) => check.kind === "url");
-  console.log("Is URL schema:", isUrl);
   return isUrl;
 }
 
@@ -52,25 +40,15 @@ export function isZodType(
 export function transformSchemaForLLM<T extends ZodTypeAny>(
   schema: T
 ): ZodTypeAny {
-  console.log("Start of Transforming schema:");
-  console.log("running transformSchemaForLLM", JSON.stringify(schema, null, 2));
-
   // For URL string schemas, remove the URL check but preserve everything else
   if (isUrlSchema(schema)) {
-    console.log("Found URL schema, transforming to string schema");
     const originalDef = { ...(schema as any)._def };
-    console.log("Original definition:", JSON.stringify(originalDef, null, 2));
 
     // Filter out only URL checks, keep all other checks
     if (originalDef.checks && Array.isArray(originalDef.checks)) {
       const originalChecks = [...originalDef.checks];
       originalDef.checks = originalDef.checks.filter(
         (check: any) => check.kind !== "url"
-      );
-      console.log(
-        "Removed URL checks:",
-        originalChecks.length - originalDef.checks.length,
-        "checks removed"
       );
     }
 
@@ -80,28 +58,6 @@ export function transformSchemaForLLM<T extends ZodTypeAny>(
       typeName: z.ZodFirstPartyTypeKind.ZodString,
     });
   }
-
-  console.log(
-    "Transforming schema:",
-    JSON.stringify(zodToJsonSchema(schema), null, 2)
-  );
-  console.log("schema is not a URL schema, returning original schema");
-  console.log(
-    "schema is object?",
-    isZodType(schema, ZodFirstPartyTypeKind.ZodObject)
-  );
-  console.log(
-    "schema is array?",
-    isZodType(schema, ZodFirstPartyTypeKind.ZodArray)
-  );
-  console.log(
-    "schema is optional?",
-    isZodType(schema, ZodFirstPartyTypeKind.ZodOptional)
-  );
-  console.log(
-    "schema is nullable?",
-    isZodType(schema, ZodFirstPartyTypeKind.ZodNullable)
-  );
 
   // For object schemas, transform each property
   if (isZodType(schema, ZodFirstPartyTypeKind.ZodObject)) {
