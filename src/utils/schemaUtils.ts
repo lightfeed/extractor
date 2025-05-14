@@ -19,8 +19,7 @@ export function isUrlSchema(schema: ZodTypeAny): boolean {
   const checks = (schema as any)._def.checks;
   if (!checks || !Array.isArray(checks)) return false;
 
-  const isUrl = checks.some((check) => check.kind === "url");
-  return isUrl;
+  return checks.some((check) => check.kind === "url");
 }
 
 /**
@@ -46,7 +45,6 @@ export function transformSchemaForLLM<T extends ZodTypeAny>(
 
     // Filter out only URL checks, keep all other checks
     if (originalDef.checks && Array.isArray(originalDef.checks)) {
-      const originalChecks = [...originalDef.checks];
       originalDef.checks = originalDef.checks.filter(
         (check: any) => check.kind !== "url"
       );
