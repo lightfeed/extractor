@@ -25,10 +25,7 @@ export function isUrlSchema(schema: ZodTypeAny): boolean {
 /**
  * Helper function to check schema type without using instanceof (can fail due to zod version differences)
  */
-export function isZodType(
-  schema: ZodTypeAny,
-  type: ZodFirstPartyTypeKind
-): boolean {
+function isZodType(schema: ZodTypeAny, type: ZodFirstPartyTypeKind): boolean {
   return (schema as any)._def.typeName === type;
 }
 
