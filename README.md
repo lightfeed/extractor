@@ -221,7 +221,7 @@ const result = await extract({
 ```
 
 > [!NOTE]
-> The `extractMainHtml` option only applies to HTML format. It uses heuristics to identify and extract what appears to be the main content area (like article or main tags). It's recommended to keep this option off (false) when extracting details about a single item (like a product listing) as it might remove important contextual elements.
+> The `extractMainHtml` option only applies to HTML format. It uses heuristics to identify and extract what appears to be the main content area (like article or main tags). It's recommended to keep this option off (false) when extracting details about a single item (like detail page for a product) as it might remove important contextual elements.
 
 ### Extracting Images from HTML
 

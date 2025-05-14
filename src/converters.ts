@@ -208,6 +208,7 @@ function tidyHtml(html: string, includeImages: boolean): string {
   // - fieldset
   // - footer (might contain company info)
   // - img, picture, figure (if includeImages is false)
+  // - option, label, select (this can present product options and titles)
   const manuallyCleanedElements = [
     // important
     "aside",
@@ -238,7 +239,7 @@ function tidyHtml(html: string, includeImages: boolean): string {
     "link",
     "input",
     "ins",
-    "label",
+    // "label",
     "legend",
     "marquee",
     "math",
@@ -246,14 +247,14 @@ function tidyHtml(html: string, includeImages: boolean): string {
     "nav",
     "noscript",
     "optgroup",
-    "option",
+    // "option",
     "output",
     "param",
     "progress",
     "rp",
     "rt",
     "rtc",
-    "select",
+    // "select",
     "source",
     "style",
     "track",
@@ -291,6 +292,7 @@ function cleanAttribute(attribute: string) {
 // - Commented out user-info and user-profile
 // - Commented out comment or hidden section
 // - Not including @data-testid (it can remove dynamic product listings)
+// - Commented out options
 const OVERALL_DISCARD_XPATH = [
   // navigation + footers, news outlets related posts, sharing, jp-post-flair jp-relatedposts
   `.//*[(self::div or self::item or self::list
@@ -331,8 +333,9 @@ const OVERALL_DISCARD_XPATH = [
   contains(translate(@class, "I", "i"), "infoline")
   or contains(@data-component, "MostPopularStories")
   or contains(@class, "outbrain") or contains(@class, "taboola")
-  or contains(@class, "criteo") or contains(@class, "options")
-  or contains(@class, "consent") or contains(@class, "modal-content")
+  or contains(@class, "criteo") ` +
+    // or contains(@class, "options")
+    `or contains(@class, "consent") or contains(@class, "modal-content")
   or contains(@class, "paid-content") or contains(@class, "paidcontent")
   or contains(@id, "premium-") or contains(@id, "paywall")
   or contains(@class, "obfuscated") or contains(@class, "blurred")
