@@ -9,6 +9,7 @@ import {
   fixUrlEscapeSequences,
 } from "./utils/schemaUtils";
 import { jsonrepair } from "jsonrepair";
+import zodToJsonSchema from "zod-to-json-schema";
 
 // Define LLMResult type here since direct import is problematic
 interface TokenUsage {
@@ -213,8 +214,13 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
   });
 
   try {
+    console.log("schema", JSON.stringify(zodToJsonSchema(schema), null, 2));
     // Transform schema to be compatible with LLM output (converting url() to string())
     const llmSchema = transformSchemaForLLM(schema);
+    console.log(
+      "llmSchema",
+      JSON.stringify(zodToJsonSchema(llmSchema), null, 2)
+    );
 
     // Extract structured data with a withStructuredOutput chain
     const structuredOutputLLM = llm.withStructuredOutput(llmSchema, {
