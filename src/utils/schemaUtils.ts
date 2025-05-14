@@ -4,15 +4,15 @@ import {
   ZodObject,
   ZodOptional,
   ZodTypeAny,
-  ZodString,
   ZodNullable,
+  ZodFirstPartyTypeKind,
 } from "zod";
 
 /**
  * Checks if a schema is a ZodString with URL validation
  */
 export function isUrlSchema(schema: ZodTypeAny): boolean {
-  if (!(schema instanceof ZodString)) return false;
+  if (!isZodType(schema, ZodFirstPartyTypeKind.ZodString)) return false;
 
   // Check if schema has URL validation by checking for internal checks property
   // This is a bit of a hack but necessary since Zod doesn't expose validation info
@@ -20,6 +20,13 @@ export function isUrlSchema(schema: ZodTypeAny): boolean {
   if (!checks || !Array.isArray(checks)) return false;
 
   return checks.some((check) => check.kind === "url");
+}
+
+/**
+ * Helper function to check schema type without using instanceof (can fail due to zod version differences)
+ */
+function isZodType(schema: ZodTypeAny, type: ZodFirstPartyTypeKind): boolean {
+  return (schema as any)._def.typeName === type;
 }
 
 /**
@@ -48,12 +55,12 @@ export function transformSchemaForLLM<T extends ZodTypeAny>(
   }
 
   // For object schemas, transform each property
-  if (schema instanceof ZodObject) {
+  if (isZodType(schema, ZodFirstPartyTypeKind.ZodObject)) {
     const originalDef = { ...(schema as any)._def };
     const newShape: Record<string, ZodTypeAny> = {};
 
     // Transform each property in the shape
-    for (const [key, propertySchema] of Object.entries(schema.shape)) {
+    for (const [key, propertySchema] of Object.entries((schema as any).shape)) {
       newShape[key] = transformSchemaForLLM(propertySchema as ZodTypeAny);
     }
 
@@ -66,10 +73,10 @@ export function transformSchemaForLLM<T extends ZodTypeAny>(
   }
 
   // For array schemas, transform the element schema
-  if (schema instanceof ZodArray) {
+  if (isZodType(schema, ZodFirstPartyTypeKind.ZodArray)) {
     const originalDef = { ...(schema as any)._def };
     const transformedElement = transformSchemaForLLM(
-      schema.element as ZodTypeAny
+      (schema as any).element as ZodTypeAny
     );
 
     // Create a new array with the same definition but transformed element
@@ -81,10 +88,10 @@ export function transformSchemaForLLM<T extends ZodTypeAny>(
   }
 
   // For optional schemas, transform the inner schema
-  if (schema instanceof ZodOptional) {
+  if (isZodType(schema, ZodFirstPartyTypeKind.ZodOptional)) {
     const originalDef = { ...(schema as any)._def };
     const transformedInner = transformSchemaForLLM(
-      schema.unwrap() as ZodTypeAny
+      (schema as any).unwrap() as ZodTypeAny
     );
 
     // Create a new optional with the same definition but transformed inner type
@@ -96,10 +103,10 @@ export function transformSchemaForLLM<T extends ZodTypeAny>(
   }
 
   // For nullable schemas, transform the inner schema
-  if (schema instanceof ZodNullable) {
+  if (isZodType(schema, ZodFirstPartyTypeKind.ZodNullable)) {
     const originalDef = { ...(schema as any)._def };
     const transformedInner = transformSchemaForLLM(
-      schema.unwrap() as ZodTypeAny
+      (schema as any).unwrap() as ZodTypeAny
     );
 
     // Create a new nullable with the same definition but transformed inner type
@@ -129,11 +136,11 @@ export function fixUrlEscapeSequences(data: any, schema: ZodTypeAny): any {
   }
 
   if (
-    schema instanceof ZodObject &&
+    isZodType(schema, ZodFirstPartyTypeKind.ZodObject) &&
     typeof data === "object" &&
     !Array.isArray(data)
   ) {
-    const shape = schema.shape;
+    const shape = (schema as any).shape;
     const result: Record<string, any> = {};
 
     for (const [key, propertySchema] of Object.entries(shape)) {
@@ -150,18 +157,21 @@ export function fixUrlEscapeSequences(data: any, schema: ZodTypeAny): any {
     return result;
   }
 
-  if (schema instanceof ZodArray && Array.isArray(data)) {
-    const elementSchema = schema.element as ZodTypeAny;
+  if (
+    isZodType(schema, ZodFirstPartyTypeKind.ZodArray) &&
+    Array.isArray(data)
+  ) {
+    const elementSchema = (schema as any).element as ZodTypeAny;
     return data.map((item) => fixUrlEscapeSequences(item, elementSchema));
   }
 
-  if (schema instanceof ZodOptional) {
-    const innerSchema = schema.unwrap() as ZodTypeAny;
+  if (isZodType(schema, ZodFirstPartyTypeKind.ZodOptional)) {
+    const innerSchema = (schema as any).unwrap() as ZodTypeAny;
     return fixUrlEscapeSequences(data, innerSchema);
   }
 
-  if (schema instanceof ZodNullable) {
-    const innerSchema = schema.unwrap() as ZodTypeAny;
+  if (isZodType(schema, ZodFirstPartyTypeKind.ZodNullable)) {
+    const innerSchema = (schema as any).unwrap() as ZodTypeAny;
     return fixUrlEscapeSequences(data, innerSchema);
   }
 
@@ -187,14 +197,14 @@ export function safeSanitizedParser<T extends ZodTypeAny>(
     }
 
     // Handle different schema types
-    if (schema instanceof ZodObject) {
-      return sanitizeObject(schema, rawObject);
-    } else if (schema instanceof ZodArray) {
-      return sanitizeArray(schema, rawObject);
-    } else if (schema instanceof ZodOptional) {
-      return sanitizeOptional(schema, rawObject);
-    } else if (schema instanceof ZodNullable) {
-      return sanitizeNullable(schema, rawObject);
+    if (isZodType(schema, ZodFirstPartyTypeKind.ZodObject)) {
+      return sanitizeObject(schema as any, rawObject);
+    } else if (isZodType(schema, ZodFirstPartyTypeKind.ZodArray)) {
+      return sanitizeArray(schema as any, rawObject);
+    } else if (isZodType(schema, ZodFirstPartyTypeKind.ZodOptional)) {
+      return sanitizeOptional(schema as any, rawObject);
+    } else if (isZodType(schema, ZodFirstPartyTypeKind.ZodNullable)) {
+      return sanitizeNullable(schema as any, rawObject);
     } else {
       // For primitive values, try to parse directly
       return schema.parse(rawObject);
@@ -229,7 +239,9 @@ function sanitizeObject(schema: ZodObject<any>, rawObject: unknown): any {
     }
 
     // If property is optional, try to sanitize it
-    if (propertySchema instanceof ZodOptional) {
+    if (
+      isZodType(propertySchema as ZodTypeAny, ZodFirstPartyTypeKind.ZodOptional)
+    ) {
       const sanitized = safeSanitizedParser(
         propertySchema as ZodTypeAny,
         rawObjectRecord[key]
@@ -238,7 +250,9 @@ function sanitizeObject(schema: ZodObject<any>, rawObject: unknown): any {
         result[key] = sanitized;
       }
       // If sanitization fails, just skip the optional property
-    } else if (propertySchema instanceof ZodNullable) {
+    } else if (
+      isZodType(propertySchema as ZodTypeAny, ZodFirstPartyTypeKind.ZodNullable)
+    ) {
       // For nullable properties, try to sanitize or set to null
       try {
         const sanitized = safeSanitizedParser(
