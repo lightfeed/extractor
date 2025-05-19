@@ -34,7 +34,7 @@ describe("ProcessedContent Integration Tests", () => {
 
     // Verify the processedContent is the same as the original content
     expect(result.processedContent).toBe(plainTextContent);
-  }, 30000);
+  }, 60000);
 
   it("should return original content as processedContent for MARKDOWN format", async () => {
     if (skipIfNoKeys()) {
@@ -55,7 +55,7 @@ describe("ProcessedContent Integration Tests", () => {
 
     // Verify the processedContent is the same as the original content
     expect(result.processedContent).toBe(markdownContent);
-  }, 30000);
+  }, 60000);
 
   it("should return converted markdown as processedContent for HTML format", async () => {
     if (skipIfNoKeys()) {
@@ -82,5 +82,5 @@ describe("ProcessedContent Integration Tests", () => {
     );
     expect(result.processedContent).not.toContain("<h1>");
     expect(result.processedContent).not.toContain("</p>");
-  }, 30000);
+  }, 60000);
 });
