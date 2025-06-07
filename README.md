@@ -8,13 +8,13 @@
 </p>
 
 <div align="center">
-  <a href="https://www.npmjs.com/package/lightfeed-extract">
-    <img src="https://img.shields.io/npm/v/lightfeed-extract?logo=npm" alt="npm" /></a>
-  <a href="https://github.com/lightfeed/lightfeed-extract/actions/workflows/test.yml">
-      <img src="https://img.shields.io/github/actions/workflow/status/lightfeed/lightfeed-extract/test.yml?branch=main"
+  <a href="https://www.npmjs.com/package/@lightfeed/extractor">
+    <img src="https://img.shields.io/npm/v/@lightfeed/extractor?logo=npm" alt="npm" /></a>
+  <a href="https://github.com/lightfeed/extractor/actions/workflows/test.yml">
+      <img src="https://img.shields.io/github/actions/workflow/status/lightfeed/extractor/test.yml?branch=main"
           alt="Test status (main branch)"></a>
-  <a href="https://github.com/lightfeed/lightfeed-extract/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/lightfeed/lightfeed-extract" alt="License" /></a>
+  <a href="https://github.com/lightfeed/extractor/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/lightfeed/extractor" alt="License" /></a>
 </div>
 <div>
   <p align="center">
@@ -51,7 +51,7 @@
 ## Installation
 
 ```bash
-npm install lightfeed-extract
+npm install @lightfeed/extractor
 ```
 
 ## Hosted Version
@@ -69,7 +69,7 @@ While this library provides a robust foundation for data extraction, you might w
 ### Basic Example
 
 ```typescript
-import { extract, ContentFormat, LLMProvider } from "lightfeed-extract";
+import { extract, ContentFormat, LLMProvider } from "@lightfeed/extractor";
 import { z } from "zod";
 
 async function main() {
@@ -335,7 +335,7 @@ The function returns a string containing the markdown conversion of the HTML con
 #### Example
 
 ```typescript
-import { convertHtmlToMarkdown, HTMLExtractionOptions } from "lightfeed-extract";
+import { convertHtmlToMarkdown, HTMLExtractionOptions } from "@lightfeed/extractor";
 
 // Basic conversion
 const markdown = convertHtmlToMarkdown("<h1>Hello World</h1><p>This is a test</p>");
@@ -377,7 +377,7 @@ safeSanitizedParser<T>(schema: ZodTypeAny, rawObject: unknown): z.infer<T> | nul
 ```
 
 ```typescript
-import { safeSanitizedParser } from "lightfeed-extract";
+import { safeSanitizedParser } from "@lightfeed/extractor";
 import { z } from "zod";
 
 // Define a product catalog schema
