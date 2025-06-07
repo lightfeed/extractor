@@ -1,6 +1,6 @@
 {
-  "name": "lightfeed-extract",
-  "version": "0.1.5",
+  "name": "@lightfeed/extractor",
+  "version": "0.1.6",
   "description": "Use LLMs to robustly extract and enrich structured data from HTML and markdown",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -32,11 +32,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lightfeed/lightfeed-extract.git"
+    "url": "git+https://github.com/lightfeed/extractor.git"
   },
   "keywords": [
     "llm",
     "extraction",
+    "web-scraping",
     "html",
     "markdown",
     "structured-data",
@@ -46,9 +47,9 @@
   "author": "Lightfeed",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/lightfeed/lightfeed-extract/issues"
+    "url": "https://github.com/lightfeed/extractor/issues"
   },
-  "homepage": "https://github.com/lightfeed/lightfeed-extract#readme",
+  "homepage": "https://github.com/lightfeed/extractor#readme",
   "dependencies": {
     "@langchain/google-genai": "^0.2.5",
     "@langchain/openai": "^0.5.10",
