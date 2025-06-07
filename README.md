@@ -1,5 +1,10 @@
+<h1 align="center">
+  <img src="https://www.lightfeed.ai/docs/img/logo.svg" width="32" height="32" alt="Lightfeed Logo"/>
+  Lightfeed Extractor
+</h1>
+
 <p align="center">
-  <img src="https://www.lightfeed.ai/docs/img/logo.svg" width="128" height="128" alt="Lightfeed Logo" />
+  <strong>Use LLMs to robustly extract structured data from HTML and markdown</strong>
 </p>
 
 <div align="center">
@@ -23,10 +28,6 @@
       <img src="https://img.shields.io/badge/Follow%20on%20X-202020?logo=x&logoColor=white" alt="Follow on X" /></a>
   </p>
 </div>
-
-# ⚡️ Lightfeed Extract
-
-Use LLMs to **robustly** extract or enrich structured data from HTML and markdown. Used in production by Lightfeed and successfully extracting 10M+ records. Written in Typescript/Node.js.
 
 ## How It Works
 
