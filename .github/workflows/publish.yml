@@ -62,7 +62,7 @@ jobs:
             
             ${{ env.CHANGES }}
             
-            For full details, see the [CHANGELOG](https://github.com/lightfeed/lightfeed-extract/blob/main/CHANGELOG.md).
+            For full details, see the [CHANGELOG](https://github.com/lightfeed/extractor/blob/main/CHANGELOG.md).
           draft: false
           prerelease: false
         

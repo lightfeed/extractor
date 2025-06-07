@@ -1,6 +1,6 @@
-# Contributing to lightfeed-extract
+# Contributing to lightfeed/extractor
 
-Thank you for considering contributing to lightfeed-extract! This document outlines the process for contributing to the project and releasing new versions.
+Thank you for considering contributing to lightfeed/extractor! This document outlines the process for contributing to the project and releasing new versions.
 
 ## Development Workflow
 
