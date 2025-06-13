@@ -9,22 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.7] - 2025-06-07
 
-## Changed
+### Changed
 - Updte README to use @lightfeed/extractor as new npm project
 
 ## [0.1.6] - 2025-06-07
 
-## Changed
+### Changed
 - Update project name to lightfeed/extractor and publish to npm project @lightfeed/extractor
 
 ## [0.1.5] - 2025-05-14
 
-## Fixed
+### Fixed
 - Improve main html content extraction - preserve option, label and select (can be important for product detail pages)
 
 ## [0.1.4] - 2025-05-13
 
-## Fixed
+### Fixed
 - Fixed schema conversion bug when input zod schema is from a different zod version
 
 ## [0.1.3] - 2025-05-13
