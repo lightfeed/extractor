@@ -42,7 +42,7 @@
 ## Why use an LLM extractor?
 💡 Understands natural language criteria and context to extract the data you need, not just raw content as displayed
 
-⚡️ No need to manually create custom scraper code for each site
+🚀 One solution works across all websites — no need to build custom scrapers for each site
 
 🔁 Resilient to website changes, e.g., HTML structure, CSS selectors, or page layout
 
@@ -58,11 +58,10 @@ npm install @lightfeed/extractor
 
 While this library provides a robust foundation for data extraction, you might want to consider [lightfeed.ai](https://lightfeed.ai) if you need:
 
-- **Persistent Searchable Databases**: Automatically store and manage extracted data in a production-ready vector database
-- **Scheduled Runs, Deduplication and Tracking**: Smart detection and handling of duplicate content across your sources, with automated change tracking
-- **Deep Link Extraction**: Follow links to collect complete data from connected pages
-- **Real-time API and Integration**: Query your extracted data through robust API endpoints and integrations
-- **Research Portal**: Explore and analyze your data through an intuitive interface
+- ⚡️ **Database with API**: Manage data in a production-ready vector database with real-time API
+- 📊 **Deduplication and Value History**: Maintain consistent data with automatic change tracking
+- 🤖 **AI Enrichment**: Enrich any data point — contact info, product details, company intelligence, and more
+- ⏰ **Workflow Automation**: Set up intelligent data pipelines that run automatically on your schedule
 
 ## Usage
 
