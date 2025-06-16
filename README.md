@@ -143,23 +143,31 @@ const result = await extract({
 
 If no prompt is provided, a default extraction prompt will be used.
 
-### Data Enrichment
+### Extraction Context
 
-You can use the `dataToEnrich` option to provide an existing data object that will be enriched with additional information from the content. This is particularly useful for:
+You can use the `extractionContext` option to provide additional context data that assists with the extraction process. This is particularly useful for:
 
-- Updating incomplete records with missing information
-- Enhancing existing data with new details from content
+- Enriching partial data objects with missing information from the content
+- Providing metadata like website URLs, user locations, timestamps that help with context-aware extraction
+- Including domain-specific knowledge or constraints that improve extraction accuracy
 - Merging data from multiple sources
 
-The LLM will be instructed to enrich the provided object rather than creating a completely new one:
+The LLM will use this contextual information to improve extraction accuracy and completeness:
 
 ```typescript
-// Example of enriching a product record with missing information
-const productToEnrich = {
+// Example 1: Enriching a product record with partial data and metadata
+const extractionContext = {
+  // Partial product data to be enriched
   productUrl: "https://example.com/products/smart-security-camera",
   name: "",
   price: 0,
   reviews: [],
+  
+  // Additional metadata that helps with extraction
+  userLocation: "US",
+  currency: "USD",
+  accessedFrom: "mobile",
+  timestamp: "2024-01-15T10:30:00Z"
 };
 
 const result = await extract({
@@ -167,19 +175,74 @@ const result = await extract({
   format: ContentFormat.HTML,
   schema: productSchema,
   sourceUrl: "https://example.com/products/smart-security-camera",
-  prompt: "Enrich the product data with complete details from the product page.",
-  dataToEnrich: productToEnrich,
+  prompt: "Extract product details considering the user location for pricing and availability.",
+  extractionContext: extractionContext,
   googleApiKey: "your-google-gemini-api-key",
 });
 
-// Result will contain the original data enriched with information from the content
-console.log(result.data);
-// {
-//   productUrl: "https://example.com/products/smart-security-camera" // Preserved from original object
-//   name: "Smart Security Camera", // Enriched from the product page
-//   price: 74.50, // Enriched from the product page
-//   reviews: ["I really like this camera", ...] // Reviews enriched from the product page
-// }
+// Example 2: Using only metadata for context-aware extraction
+const metadataContext = {
+  websiteRegion: "EU",
+  userLanguage: "en",
+  proxyLocation: "Germany",
+  scrapingSession: "session-123"
+};
+
+const result2 = await extract({
+  content: htmlContent,
+  format: ContentFormat.HTML,
+  schema: productSchema,
+  sourceUrl: "https://example.com/products/smart-security-camera",
+  extractionContext: metadataContext,
+  googleApiKey: "your-google-gemini-api-key",
+});
+```
+
+#### Types of Extraction Context
+
+The `extractionContext` parameter supports various types of contextual information:
+
+```typescript
+// 1. Partial data enrichment
+const partialDataContext = {
+  id: "product-123",
+  name: "", // Will be filled from content
+  price: 0, // Will be filled from content
+  category: "Electronics" // Pre-existing data to preserve
+};
+
+// 2. Metadata and environmental context
+const metadataContext = {
+  userAgent: "Mozilla/5.0...",
+  userLocation: "San Francisco, CA",
+  currency: "USD",
+  language: "en-US",
+  timestamp: new Date().toISOString(),
+  sessionId: "session-abc123"
+};
+
+// 3. Domain-specific context
+const domainContext = {
+  brandPreferences: ["Apple", "Samsung"],
+  priceRange: { min: 100, max: 1000 },
+  previousPurchases: ["iPhone 12", "AirPods"],
+  loyaltyLevel: "Gold"
+};
+
+// 4. Technical context
+const technicalContext = {
+  proxyRegion: "EU-West",
+  crawlDepth: 2,
+  referrerUrl: "https://google.com/search?q=smart+phone",
+  deviceType: "mobile"
+};
+
+// You can combine multiple types
+const combinedContext = {
+  ...partialDataContext,
+  ...metadataContext,
+  customInstructions: "Focus on premium products only"
+};
 ```
 
 ### Customizing LLM Provider and Managing Token Limits
@@ -286,7 +349,7 @@ Main function to extract structured data from content.
 | `htmlExtractionOptions` | `HTMLExtractionOptions` | HTML-specific options for content extraction (see below) | `{}` |
 | `sourceUrl` | `string` | URL of the HTML content, required when format is HTML to properly handle relative URLs | Required for HTML format |
 | `maxInputTokens` | `number` | Maximum number of input tokens to send to the LLM. Uses a rough conversion of 4 characters per token. When specified, content will be truncated if the total prompt size exceeds this limit. | `undefined` |
-| `dataToEnrich` | `Record<string, any>` | Original data object to enrich with information from the content. When provided, the LLM will be instructed to update this object rather than creating a new one from scratch. | `undefined` |
+| `extractionContext` | `Record<string, any>` | Additional context data to assist with extraction. Can include partial data objects to enrich, metadata like URLs/locations, or any contextual information that helps with extraction accuracy. | `undefined` |
 
 #### HTML Extraction Options
 

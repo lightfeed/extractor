@@ -31,7 +31,7 @@ const DEFAULT_MODELS = {
  * @param options.sourceUrl URL of the HTML content (required for HTML format)
  * @param options.htmlExtractionOptions HTML-specific options for content extraction
  * @param options.maxInputTokens Maximum number of input tokens to send to the LLM
- * @param options.dataToEnrich Original data object to enrich with information from the content
+ * @param options.extractionContext Additional context data to assist with extraction (partial data, metadata, etc.)
  * @returns The extracted data, original content, and usage statistics
  */
 export async function extract<T extends z.ZodTypeAny>(
@@ -94,7 +94,7 @@ export async function extract<T extends z.ZodTypeAny>(
     options.prompt,
     formatToUse.toString(), // Pass the correct format based on actual content
     options.maxInputTokens,
-    options.dataToEnrich
+    options.extractionContext
   );
 
   // Return the full result

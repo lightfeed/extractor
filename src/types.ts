@@ -81,8 +81,14 @@ export interface ExtractorOptions<T extends z.ZodTypeAny> {
   /** Maximum number of input tokens to send to the LLM. Uses a rough conversion of 4 characters per token. */
   maxInputTokens?: number;
 
-  /** Original data object to enrich with extracted information. When provided, the LLM will be instructed to enrich this object with additional information from the content. */
-  dataToEnrich?: Record<string, any>;
+  /**
+   * Additional context data to assist with extraction. This can include:
+   * - Partial data objects to be enriched with information from the content
+   * - Metadata like website URL, user location, access timestamp
+   * - Any other contextual information that might help with extraction
+   * When provided, the LLM will use this context to improve extraction accuracy.
+   */
+  extractionContext?: Record<string, any>;
 }
 
 /**

@@ -195,8 +195,8 @@ describe("extractors", () => {
       });
     });
 
-    it("should handle data enrichment", async () => {
-      const dataToEnrich = {
+    it("should handle extraction context", async () => {
+      const extractionContext = {
         title: "Existing Title",
         content: "", // Empty field that should be filled
       };
@@ -211,7 +211,7 @@ describe("extractors", () => {
         undefined,
         ContentFormat.TXT,
         undefined,
-        dataToEnrich
+        extractionContext
       );
 
       expect(result.data).toEqual({
@@ -251,11 +251,11 @@ describe("extractors", () => {
       expect(result.length).toBe(content.length - 4);
     });
 
-    it("should account for dataToEnrich in prompt size calculation", () => {
+    it("should account for extractionContext in prompt size calculation", () => {
       const prompt = generateExtractionPrompt({
         format: ContentFormat.TXT,
         content: "",
-        dataToEnrich: { a: 1, b: 2 },
+        extractionContext: { a: 1, b: 2 },
       });
 
       const content = "This is a test content for enrichment.";
@@ -263,7 +263,7 @@ describe("extractors", () => {
         content,
         maxTokens: (prompt.length + content.length) / 4 - 1,
         format: ContentFormat.TXT,
-        dataToEnrich: { a: 1, b: 2 },
+        extractionContext: { a: 1, b: 2 },
       });
 
       expect(result.length).toBe(content.length - 4);
@@ -271,7 +271,7 @@ describe("extractors", () => {
   });
 
   describe("generateExtractionPrompt", () => {
-    it("should generate a basic extraction prompt without dataToEnrich", () => {
+    it("should generate a basic extraction prompt without extractionContext", () => {
       const prompt = generateExtractionPrompt({
         format: ContentFormat.TXT,
         content: "Some test content",
@@ -284,14 +284,14 @@ describe("extractors", () => {
       expect(prompt).toContain(
         "Extract ONLY information explicitly stated in the context"
       );
-      expect(prompt).not.toContain("Enrich the original JSON object");
+      expect(prompt).not.toContain("Additional context data");
       expect(prompt).toContain(
         "Return only the structured data in valid JSON format"
       );
     });
 
-    it("should generate an enrichment prompt with dataToEnrich", () => {
-      const dataToEnrich = {
+    it("should generate a context-aware prompt with extractionContext", () => {
+      const extractionContext = {
         title: "Existing Title",
         author: "",
         tags: ["existing"],
@@ -300,22 +300,22 @@ describe("extractors", () => {
       const prompt = generateExtractionPrompt({
         format: ContentFormat.MARKDOWN,
         content: "Some markdown content",
-        dataToEnrich,
+        extractionContext,
       });
 
       expect(prompt).toContain("Context information is below:");
       expect(prompt).toContain("Format: markdown");
       expect(prompt).toContain("Some markdown content");
-      expect(prompt).toContain("Original JSON object");
-      expect(prompt).toContain(JSON.stringify(dataToEnrich, null, 2));
+      expect(prompt).toContain("Additional context data");
+      expect(prompt).toContain(JSON.stringify(extractionContext, null, 2));
       expect(prompt).toContain(
-        "You are a data extraction assistant that extracts structured information from the above context in markdown and JSON"
+        "You are a data extraction assistant that extracts structured information from the above context in markdown format"
       );
       expect(prompt).toContain(
-        "Enrich the original JSON object with information from the context"
+        "Use the additional context data to improve extraction accuracy when relevant"
       );
       expect(prompt).toContain(
-        "Only update existing fields and fill in additional fields if new and relevant information is available in the context"
+        "If the additional context contains partial data objects, enrich them with information from the content"
       );
       expect(prompt).toContain(
         "Return only the structured data in valid JSON format"
@@ -324,18 +324,18 @@ describe("extractors", () => {
 
     it("should include custom prompt in the instructions", () => {
       const customPrompt = "Extract only product information and prices";
-      const dataToEnrich = { products: [] };
+      const extractionContext = { products: [] };
 
       const prompt = generateExtractionPrompt({
         format: ContentFormat.HTML,
         content: "<div>Product content</div>",
         customPrompt,
-        dataToEnrich,
+        extractionContext,
       });
 
       expect(prompt).toContain(customPrompt);
-      expect(prompt).toContain("Enrich the original JSON object");
-      expect(prompt).toContain(JSON.stringify(dataToEnrich, null, 2));
+      expect(prompt).toContain("Additional context data");
+      expect(prompt).toContain(JSON.stringify(extractionContext, null, 2));
     });
   });
 });

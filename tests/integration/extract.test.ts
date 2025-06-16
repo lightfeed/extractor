@@ -380,7 +380,7 @@ describe("Extract Integration Tests", () => {
         provider: LLMProvider.GOOGLE_GEMINI,
         googleApiKey: process.env.GOOGLE_API_KEY,
         sourceUrl: "https://example.com/blog/async-await",
-        dataToEnrich: partialData,
+        extractionContext: partialData,
       });
 
       // Verify the enriched data has the correct values
@@ -402,7 +402,7 @@ describe("Extract Integration Tests", () => {
         provider: LLMProvider.OPENAI,
         openaiApiKey: process.env.OPENAI_API_KEY,
         sourceUrl: "https://example.com/blog/async-await",
-        dataToEnrich: partialData,
+        extractionContext: partialData,
       });
 
       // Verify the enriched data has the correct values
@@ -438,7 +438,7 @@ describe("Extract Integration Tests", () => {
         provider: LLMProvider.GOOGLE_GEMINI,
         googleApiKey: process.env.GOOGLE_API_KEY,
         sourceUrl: "https://example.com/products",
-        dataToEnrich: partialData,
+        extractionContext: partialData,
         prompt:
           "Focus on enriching the product data with accurate prices and feature lists from the context.",
       });

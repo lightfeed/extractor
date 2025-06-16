@@ -72,7 +72,7 @@ interface ExtractionPromptOptions {
   format: string;
   content: string;
   customPrompt?: string;
-  dataToEnrich?: Record<string, any>;
+  extractionContext?: Record<string, any>;
 }
 
 interface TruncateContentOptions extends ExtractionPromptOptions {
@@ -86,14 +86,14 @@ export function generateExtractionPrompt({
   format,
   content,
   customPrompt,
-  dataToEnrich,
+  extractionContext,
 }: ExtractionPromptOptions): string {
   // Base prompt structure that's shared between default and custom prompts
   const extractionTask = customPrompt
     ? `${customPrompt}`
     : "Please extract structured information from the provided context.";
 
-  // If dataToEnrich is provided, include it in the prompt for enrichment
+  // If extractionContext is provided, include it in the prompt for additional context
   let promptTemplate = `Context information is below:
 ------
 Format: ${format}
@@ -103,23 +103,23 @@ ${content}
 
 `;
 
-  if (dataToEnrich) {
-    promptTemplate += `Original JSON object:
+  if (extractionContext) {
+    promptTemplate += `Additional context data:
 ---
-${JSON.stringify(dataToEnrich, null, 2)}
+${JSON.stringify(extractionContext, null, 2)}
 ------
 
-You are a data extraction assistant that extracts structured information from the above context in ${format} and JSON.
+You are a data extraction assistant that extracts structured information from the above context in ${format} format.
 
 Your task is: ${extractionTask}
 
 ## Guidelines:
 1. Extract ONLY information explicitly stated in the context
-2. Enrich the original JSON object with information from the context
-3. Do not remove any fields from the original JSON object
-4. Only update existing fields and fill in additional fields if new and relevant information is available in the context
-5. Do not make assumptions or infer missing data
-6. Do not include information that appears incomplete or truncated
+2. Use the additional context data to improve extraction accuracy when relevant
+3. Do not make assumptions or infer missing data
+4. Leave fields empty when information is not present or you are uncertain
+5. Do not include information that appears incomplete or truncated
+6. Follow the required schema exactly
 
 `;
   } else {
@@ -150,7 +150,7 @@ export function truncateContent({
   format,
   content,
   customPrompt,
-  dataToEnrich,
+  extractionContext,
   maxTokens,
 }: TruncateContentOptions): string {
   const maxChars = maxTokens * 4;
@@ -160,7 +160,7 @@ export function truncateContent({
     format,
     content,
     customPrompt,
-    dataToEnrich,
+    extractionContext,
   });
 
   // If the full prompt is within limits, return original content
@@ -188,7 +188,7 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
   customPrompt?: string,
   format: string = ContentFormat.MARKDOWN,
   maxInputTokens?: number,
-  dataToEnrich?: Record<string, any>
+  extractionContext?: Record<string, any>
 ): Promise<{ data: z.infer<T>; usage: Usage }> {
   const llm = createLLM(provider, modelName, apiKey, temperature);
   let usage: Usage = {};
@@ -199,7 +199,7 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
         format,
         content,
         customPrompt,
-        dataToEnrich,
+        extractionContext,
         maxTokens: maxInputTokens,
       })
     : content;
@@ -209,7 +209,7 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
     format,
     content: truncatedContent,
     customPrompt,
-    dataToEnrich,
+    extractionContext,
   });
 
   try {
