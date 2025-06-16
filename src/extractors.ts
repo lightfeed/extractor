@@ -116,9 +116,9 @@ Your task is: ${extractionTask}
 ## Guidelines:
 1. Extract ONLY information explicitly stated in the context
 2. Use the additional context data to improve extraction accuracy when relevant
-3. Do not make assumptions or infer missing data
-4. Leave fields empty when information is not present or you are uncertain
-5. Do not include information that appears incomplete or truncated
+3. If the additional context data is incomplete, enrich the data with the information from the context
+4. Do not make assumptions or infer missing data
+5. Leave fields empty when information is not present or you are uncertain
 6. Follow the required schema exactly
 
 `;
