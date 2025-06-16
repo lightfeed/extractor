@@ -31,7 +31,7 @@ const DEFAULT_MODELS = {
  * @param options.sourceUrl URL of the HTML content (required for HTML format)
  * @param options.htmlExtractionOptions HTML-specific options for content extraction
  * @param options.maxInputTokens Maximum number of input tokens to send to the LLM
- * @param options.extractionContext Additional context data to assist with extraction (partial data, metadata, etc.)
+ * @param options.extractionContext Extraction context that provides additional information for the extraction process (partial data, metadata, etc.)
  * @returns The extracted data, original content, and usage statistics
  */
 export async function extract<T extends z.ZodTypeAny>(

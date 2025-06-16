@@ -277,14 +277,14 @@ describe("extractors", () => {
         content: "Some test content",
       });
 
-      expect(prompt).toContain("Context information is below:");
+      expect(prompt).toContain("Content information is below:");
       expect(prompt).toContain("Format: txt");
       expect(prompt).toContain("Some test content");
       expect(prompt).toContain("You are a data extraction assistant");
       expect(prompt).toContain(
-        "Extract ONLY information explicitly stated in the context"
+        "Extract ONLY information explicitly stated in the content"
       );
-      expect(prompt).not.toContain("Additional context data");
+      expect(prompt).not.toContain("Extraction context");
       expect(prompt).toContain(
         "Return only the structured data in valid JSON format"
       );
@@ -303,16 +303,16 @@ describe("extractors", () => {
         extractionContext,
       });
 
-      expect(prompt).toContain("Context information is below:");
+      expect(prompt).toContain("Content information is below:");
       expect(prompt).toContain("Format: markdown");
       expect(prompt).toContain("Some markdown content");
-      expect(prompt).toContain("Additional context data");
+      expect(prompt).toContain("Extraction context");
       expect(prompt).toContain(JSON.stringify(extractionContext, null, 2));
       expect(prompt).toContain(
-        "You are a data extraction assistant that extracts structured information from the above context in markdown format"
+        "You are a data extraction assistant that extracts structured information from the above content and context"
       );
       expect(prompt).toContain(
-        "Use the additional context data to improve extraction accuracy when relevant"
+        "If the extraction context contains partial data objects, enrich and update them with information from the content"
       );
       expect(prompt).toContain(
         "Return only the structured data in valid JSON format"
@@ -331,7 +331,7 @@ describe("extractors", () => {
       });
 
       expect(prompt).toContain(customPrompt);
-      expect(prompt).toContain("Additional context data");
+      expect(prompt).toContain("Extraction context");
       expect(prompt).toContain(JSON.stringify(extractionContext, null, 2));
     });
   });

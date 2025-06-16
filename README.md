@@ -145,14 +145,14 @@ If no prompt is provided, a default extraction prompt will be used.
 
 ### Extraction Context
 
-You can use the `extractionContext` option to provide additional context data that assists with the extraction process. This is particularly useful for:
+You can use the `extractionContext` option to provide contextual information that enhances the extraction process. This context works alongside the content to enable more accurate and comprehensive data extraction. Common use cases include:
 
 - Enriching partial data objects with missing information from the content
-- Providing metadata like website URLs, user locations, timestamps that help with context-aware extraction
-- Including domain-specific knowledge or constraints that improve extraction accuracy
+- Providing metadata like website URLs, user locations, timestamps for context-aware extraction
+- Including domain-specific knowledge or constraints
 - Merging data from multiple sources
 
-The LLM will use this contextual information to improve extraction accuracy and completeness:
+The LLM will consider both the content and the extraction context when performing extraction:
 
 ```typescript
 // Example: Using extraction context with website metadata and geolocation
@@ -294,7 +294,7 @@ Main function to extract structured data from content.
 | `htmlExtractionOptions` | `HTMLExtractionOptions` | HTML-specific options for content extraction (see below) | `{}` |
 | `sourceUrl` | `string` | URL of the HTML content, required when format is HTML to properly handle relative URLs | Required for HTML format |
 | `maxInputTokens` | `number` | Maximum number of input tokens to send to the LLM. Uses a rough conversion of 4 characters per token. When specified, content will be truncated if the total prompt size exceeds this limit. | `undefined` |
-| `extractionContext` | `Record<string, any>` | Additional context data to assist with extraction. Can include partial data objects to enrich, metadata like URLs/locations, or any contextual information that helps with extraction accuracy. | `undefined` |
+| `extractionContext` | `Record<string, any>` | Extraction context that provides additional information for the extraction process. Can include partial data objects to enrich, metadata like URLs/locations, or any contextual information relevant to the extraction task. | `undefined` |
 
 #### HTML Extraction Options
 

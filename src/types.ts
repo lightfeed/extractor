@@ -82,11 +82,12 @@ export interface ExtractorOptions<T extends z.ZodTypeAny> {
   maxInputTokens?: number;
 
   /**
-   * Additional context data to assist with extraction. This can include:
+   * Extraction context that provides additional information for the extraction process. This can include:
    * - Partial data objects to be enriched with information from the content
    * - Metadata like website URL, user location, access timestamp
-   * - Any other contextual information that might help with extraction
-   * When provided, the LLM will use this context to improve extraction accuracy.
+   * - Domain-specific knowledge or constraints
+   * - Any other contextual information relevant to the extraction task
+   * When provided, the LLM will consider this context alongside the content for more accurate extraction.
    */
   extractionContext?: Record<string, any>;
 }

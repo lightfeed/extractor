@@ -91,10 +91,10 @@ export function generateExtractionPrompt({
   // Base prompt structure that's shared between default and custom prompts
   const extractionTask = customPrompt
     ? `${customPrompt}`
-    : "Please extract structured information from the provided context.";
+    : "Please extract structured information from the provided content.";
 
   // If extractionContext is provided, include it in the prompt for additional context
-  let promptTemplate = `Context information is below:
+  let promptTemplate = `Content information is below:
 ------
 Format: ${format}
 ---
@@ -104,31 +104,31 @@ ${content}
 `;
 
   if (extractionContext) {
-    promptTemplate += `Additional context data:
+    promptTemplate += `Extraction context:
 ---
 ${JSON.stringify(extractionContext, null, 2)}
 ------
 
-You are a data extraction assistant that extracts structured information from the above context in ${format} format.
+You are a data extraction assistant that extracts structured information from the above content and context.
 
 Your task is: ${extractionTask}
 
 ## Guidelines:
-1. Extract ONLY information explicitly stated in the context
-2. Use the additional context data to improve extraction accuracy when relevant
-3. If the additional context data is incomplete, enrich the data with the information from the context
-4. Do not make assumptions or infer missing data
+1. Extract ONLY information explicitly stated in the content or provided in the extraction context
+2. If the extraction context contains partial data objects, enrich and update them with information from the content, overriding existing values when better information is available
+3. If the extraction context contains metadata (URLs, locations, etc.), use it to enhance your understanding and extraction
+4. Do not make assumptions or infer missing data beyond what's provided
 5. Leave fields empty when information is not present or you are uncertain
 6. Follow the required schema exactly
 
 `;
   } else {
-    promptTemplate += `You are a data extraction assistant that extracts structured information from the above context.
+    promptTemplate += `You are a data extraction assistant that extracts structured information from the above content.
 
 Your task is: ${extractionTask}
 
 ## Guidelines:
-1. Extract ONLY information explicitly stated in the context
+1. Extract ONLY information explicitly stated in the content
 2. Do not make assumptions or infer missing data
 3. Leave fields empty when information is not present or you are uncertain
 4. Do not include information that appears incomplete or truncated
