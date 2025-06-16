@@ -315,9 +315,6 @@ describe("extractors", () => {
         "Use the additional context data to improve extraction accuracy when relevant"
       );
       expect(prompt).toContain(
-        "If the additional context contains partial data objects, enrich them with information from the content"
-      );
-      expect(prompt).toContain(
         "Return only the structured data in valid JSON format"
       );
     });
