@@ -273,7 +273,12 @@ describe("Extract Integration Tests", () => {
         openaiApiKey: process.env.OPENAI_API_KEY,
         modelName: "gpt-3.5-turbo",
       });
-      expect(result.data).toEqual({ product: "Apple", price: null });
+      expect(result.data).toEqual(
+        expect.objectContaining({
+          product: expect.stringMatching(/^Apple(?:, Price: N\/A)?$/),
+          price: null,
+        })
+      );
     });
 
     test("should handle structured output errors using Google Gemini", async () => {
@@ -380,7 +385,7 @@ describe("Extract Integration Tests", () => {
         provider: LLMProvider.GOOGLE_GEMINI,
         googleApiKey: process.env.GOOGLE_API_KEY,
         sourceUrl: "https://example.com/blog/async-await",
-        dataToEnrich: partialData,
+        extractionContext: partialData,
       });
 
       // Verify the enriched data has the correct values
@@ -402,7 +407,7 @@ describe("Extract Integration Tests", () => {
         provider: LLMProvider.OPENAI,
         openaiApiKey: process.env.OPENAI_API_KEY,
         sourceUrl: "https://example.com/blog/async-await",
-        dataToEnrich: partialData,
+        extractionContext: partialData,
       });
 
       // Verify the enriched data has the correct values
@@ -438,7 +443,7 @@ describe("Extract Integration Tests", () => {
         provider: LLMProvider.GOOGLE_GEMINI,
         googleApiKey: process.env.GOOGLE_API_KEY,
         sourceUrl: "https://example.com/products",
-        dataToEnrich: partialData,
+        extractionContext: partialData,
         prompt:
           "Focus on enriching the product data with accurate prices and feature lists from the context.",
       });

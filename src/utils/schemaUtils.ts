@@ -233,8 +233,18 @@ function sanitizeObject(schema: ZodObject<any>, rawObject: unknown): any {
 
   // Process each property in the schema
   for (const [key, propertySchema] of Object.entries(shape)) {
-    // Skip if the property doesn't exist in the raw object
+    // Check if the property doesn't exist in the raw object
     if (!(key in rawObjectRecord)) {
+      // For nullable properties, add as null if missing
+      if (
+        isZodType(
+          propertySchema as ZodTypeAny,
+          ZodFirstPartyTypeKind.ZodNullable
+        )
+      ) {
+        result[key] = null;
+      }
+      // For other types (required or optional), skip missing properties
       continue;
     }
 

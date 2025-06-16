@@ -168,6 +168,19 @@ describe("safeSanitizedParser", () => {
       expect(result).toEqual(expected);
     });
 
+    test("should add missing nullable properties as null", () => {
+      const schema = z.object({
+        product: z.string(),
+        price: z.number().nullable(),
+      });
+
+      const rawObject = { product: "Apple, Price: N/A" };
+      const expected = { product: "Apple, Price: N/A", price: null };
+
+      const result = safeSanitizedParser(schema, rawObject);
+      expect(result).toEqual(expected);
+    });
+
     test("should return null if required property is invalid with nullable fields", () => {
       const schema = z.object({
         required: z.string(),

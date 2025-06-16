@@ -143,42 +143,50 @@ const result = await extract({
 
 If no prompt is provided, a default extraction prompt will be used.
 
-### Data Enrichment
+### Extraction Context
 
-You can use the `dataToEnrich` option to provide an existing data object that will be enriched with additional information from the content. This is particularly useful for:
+You can use the `extractionContext` option to provide contextual information that enhances the extraction process. This context works alongside the content to enable more accurate and comprehensive data extraction. Common use cases include:
 
-- Updating incomplete records with missing information
-- Enhancing existing data with new details from content
+- Enriching partial data objects with missing information from the content
+- Providing metadata like website URLs, user locations, timestamps for context-aware extraction
+- Including domain-specific knowledge or constraints
 - Merging data from multiple sources
 
-The LLM will be instructed to enrich the provided object rather than creating a completely new one:
+The LLM will consider both the content and the extraction context when performing extraction:
 
 ```typescript
-// Example of enriching a product record with missing information
-const productToEnrich = {
-  productUrl: "https://example.com/products/smart-security-camera",
-  name: "",
-  price: 0,
-  reviews: [],
+// Example: Using extraction context with website metadata and geolocation
+const extractionContext = {
+  websiteUrl: "https://acme.com/products/smart-security-camera",
+  country: "Canada",
+  city: "Vancouver"
 };
+
+const schema = z.object({
+  title: z.string(),
+  price: z.number(),
+  storeName: z.string().describe("Store name in title case from website URL or context"),
+  inStock: z.boolean().optional(),
+  location: z.string().optional().describe("Location in the format of City, Country")
+});
 
 const result = await extract({
   content: htmlContent,
   format: ContentFormat.HTML,
-  schema: productSchema,
-  sourceUrl: "https://example.com/products/smart-security-camera",
-  prompt: "Enrich the product data with complete details from the product page.",
-  dataToEnrich: productToEnrich,
+  schema: schema,
+  sourceUrl: "https://acme.com/products/smart-security-camera",
+  extractionContext: extractionContext,
   googleApiKey: "your-google-gemini-api-key",
 });
 
-// Result will contain the original data enriched with information from the content
+// The LLM will use the context to extract store name (acme) and consider the location
 console.log(result.data);
 // {
-//   productUrl: "https://example.com/products/smart-security-camera" // Preserved from original object
-//   name: "Smart Security Camera", // Enriched from the product page
-//   price: 74.50, // Enriched from the product page
-//   reviews: ["I really like this camera", ...] // Reviews enriched from the product page
+//   title: "Smart Security Camera",
+//   price: 74.50,
+//   storeName: "Acme",
+//   inStock: true,
+//   location: "Vancouver, Canada"
 // }
 ```
 
@@ -286,7 +294,7 @@ Main function to extract structured data from content.
 | `htmlExtractionOptions` | `HTMLExtractionOptions` | HTML-specific options for content extraction (see below) | `{}` |
 | `sourceUrl` | `string` | URL of the HTML content, required when format is HTML to properly handle relative URLs | Required for HTML format |
 | `maxInputTokens` | `number` | Maximum number of input tokens to send to the LLM. Uses a rough conversion of 4 characters per token. When specified, content will be truncated if the total prompt size exceeds this limit. | `undefined` |
-| `dataToEnrich` | `Record<string, any>` | Original data object to enrich with information from the content. When provided, the LLM will be instructed to update this object rather than creating a new one from scratch. | `undefined` |
+| `extractionContext` | `Record<string, any>` | Extraction context that provides additional information for the extraction process. Can include partial data objects to enrich, metadata like URLs/locations, or any contextual information relevant to the extraction task. | `undefined` |
 
 #### HTML Extraction Options
 
