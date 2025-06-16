@@ -155,94 +155,39 @@ You can use the `extractionContext` option to provide additional context data th
 The LLM will use this contextual information to improve extraction accuracy and completeness:
 
 ```typescript
-// Example 1: Enriching a product record with partial data and metadata
+// Example: Using extraction context with website metadata and geolocation
 const extractionContext = {
-  // Partial product data to be enriched
-  productUrl: "https://example.com/products/smart-security-camera",
-  name: "",
-  price: 0,
-  reviews: [],
-  
-  // Additional metadata that helps with extraction
-  userLocation: "US",
-  currency: "USD",
-  accessedFrom: "mobile",
-  timestamp: "2024-01-15T10:30:00Z"
+  websiteUrl: "https://acme.com/products/smart-security-camera",
+  country: "Canada",
+  city: "Vancouver"
 };
+
+const schema = z.object({
+  title: z.string(),
+  price: z.number(),
+  storeName: z.string().describe("Store name in title case from website URL or context"),
+  inStock: z.boolean().optional(),
+  location: z.string().optional().describe("Location in the format of City, Country")
+});
 
 const result = await extract({
   content: htmlContent,
   format: ContentFormat.HTML,
-  schema: productSchema,
-  sourceUrl: "https://example.com/products/smart-security-camera",
-  prompt: "Extract product details considering the user location for pricing and availability.",
+  schema: schema,
+  sourceUrl: "https://acme.com/products/smart-security-camera",
   extractionContext: extractionContext,
   googleApiKey: "your-google-gemini-api-key",
 });
 
-// Example 2: Using only metadata for context-aware extraction
-const metadataContext = {
-  websiteRegion: "EU",
-  userLanguage: "en",
-  proxyLocation: "Germany",
-  scrapingSession: "session-123"
-};
-
-const result2 = await extract({
-  content: htmlContent,
-  format: ContentFormat.HTML,
-  schema: productSchema,
-  sourceUrl: "https://example.com/products/smart-security-camera",
-  extractionContext: metadataContext,
-  googleApiKey: "your-google-gemini-api-key",
-});
-```
-
-#### Types of Extraction Context
-
-The `extractionContext` parameter supports various types of contextual information:
-
-```typescript
-// 1. Partial data enrichment
-const partialDataContext = {
-  id: "product-123",
-  name: "", // Will be filled from content
-  price: 0, // Will be filled from content
-  category: "Electronics" // Pre-existing data to preserve
-};
-
-// 2. Metadata and environmental context
-const metadataContext = {
-  userAgent: "Mozilla/5.0...",
-  userLocation: "San Francisco, CA",
-  currency: "USD",
-  language: "en-US",
-  timestamp: new Date().toISOString(),
-  sessionId: "session-abc123"
-};
-
-// 3. Domain-specific context
-const domainContext = {
-  brandPreferences: ["Apple", "Samsung"],
-  priceRange: { min: 100, max: 1000 },
-  previousPurchases: ["iPhone 12", "AirPods"],
-  loyaltyLevel: "Gold"
-};
-
-// 4. Technical context
-const technicalContext = {
-  proxyRegion: "EU-West",
-  crawlDepth: 2,
-  referrerUrl: "https://google.com/search?q=smart+phone",
-  deviceType: "mobile"
-};
-
-// You can combine multiple types
-const combinedContext = {
-  ...partialDataContext,
-  ...metadataContext,
-  customInstructions: "Focus on premium products only"
-};
+// The LLM will use the context to extract store name (acme) and consider the location
+console.log(result.data);
+// {
+//   title: "Smart Security Camera",
+//   price: 74.50,
+//   storeName: "Acme",
+//   inStock: true,
+//   location: "Vancouver, Canada"
+// }
 ```
 
 ### Customizing LLM Provider and Managing Token Limits
