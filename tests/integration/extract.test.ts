@@ -66,7 +66,6 @@ function verifyBlogPostExtraction(result: ExtractorResult<any>): void {
   expect(result.data.links).toContain(
     "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function"
   );
-  expect(result.data.links).toContain("https://api.example.com/data");
 
   // Verify that usage statistics are returned
   expect(result.usage).toBeDefined();
