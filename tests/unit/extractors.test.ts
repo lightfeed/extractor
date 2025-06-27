@@ -111,7 +111,7 @@ describe("extractors", () => {
     it("should create ChatGoogleGenerativeAI instance for GOOGLE_GEMINI provider", () => {
       const llm = createLLM(
         LLMProvider.GOOGLE_GEMINI,
-        "gemini-2.5-flash-preview-04-17",
+        "gemini-2.5-flash",
         "fake-api-key",
         0
       );
@@ -149,7 +149,7 @@ describe("extractors", () => {
         mockContent,
         mockSchema,
         LLMProvider.GOOGLE_GEMINI,
-        "gemini-2.5-flash-preview-04-17",
+        "gemini-2.5-flash",
         mockApiKey
       );
 
