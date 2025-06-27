@@ -5,4 +5,4 @@ import * as path from "path";
 config({ path: path.resolve(process.cwd(), ".env") });
 
 // Set default timeout for tests (useful for tests involving LLM API calls)
-jest.setTimeout(30000);
+jest.setTimeout(60000);
