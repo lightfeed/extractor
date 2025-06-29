@@ -45,7 +45,7 @@ export interface HTMLExtractionOptions {
    * Currently supports cleaning Amazon product URLs by removing /ref= parameters and everything after.
    * This helps produce cleaner, more readable URLs in the markdown output.
    *
-   * Enabled by default to improve URL quality.
+   * Disabled by default to preserve original URLs.
    */
   cleanUrls?: boolean;
 }

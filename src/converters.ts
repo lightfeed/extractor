@@ -16,7 +16,12 @@ function cleanUrl(url: string): string {
     const urlObj = new URL(url);
     const hostname = urlObj.hostname.toLowerCase();
 
-    if (hostname.includes("amazon.com") || hostname.includes("amazon.ca")) {
+    if (
+      hostname.startsWith("amazon.com") ||
+      hostname.startsWith("www.amazon.com") ||
+      hostname.startsWith("amazon.ca") ||
+      hostname.startsWith("www.amazon.ca")
+    ) {
       // For Amazon URLs, remove /ref= and everything after it
       const refIndex = url.indexOf("/ref=");
       if (refIndex !== -1) {
@@ -145,8 +150,8 @@ export function htmlToMarkdown(
           }
         }
 
-        // Clean URL if cleanUrls option is enabled (default true)
-        if (options?.cleanUrls ?? true) {
+        // Clean URL if cleanUrls option is enabled (default false)
+        if (options?.cleanUrls) {
           href = cleanUrl(href);
         }
 
@@ -180,8 +185,8 @@ export function htmlToMarkdown(
           }
         }
 
-        // Clean URL if cleanUrls option is enabled (default true)
-        if (options?.cleanUrls ?? true) {
+        // Clean URL if cleanUrls option is enabled (default false)
+        if (options?.cleanUrls) {
           src = cleanUrl(src);
         }
 

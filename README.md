@@ -31,7 +31,7 @@
 
 ## How It Works
 
-1. **HTML to Markdown Conversion**: If the input is HTML, it's first converted to clean, LLM-friendly markdown. This step can optionally extract only the main content and include images. See [HTML to Markdown Conversion](#html-to-markdown-conversion) section for details. The `convertHtmlToMarkdown` function can also be used standalone.
+1. **HTML to Markdown Conversion**: If the input is HTML, it's first converted to clean, LLM-friendly markdown. This step can optionally extract only the main content, include images, and clean URLs by removing tracking parameters. See [HTML to Markdown Conversion](#html-to-markdown-conversion) section for details. The `convertHtmlToMarkdown` function can also be used standalone.
 
 2. **LLM Processing**: The markdown is sent to an LLM in JSON mode (Google Gemini 2.5 flash or OpenAI GPT-4o mini by default) with a prompt to extract structured data according to your Zod schema or enrich existing data objects. You can set a maximum input token limit to control costs or avoid exceeding the model's context window, and the function will return token usage metrics for each LLM call.
 
@@ -265,35 +265,20 @@ const result = await extract({
 
 ### URL Cleaning
 
-By default, the library cleans URLs to remove tracking parameters and unnecessary components, producing cleaner and more readable links. This is particularly useful for e-commerce sites that add extensive tracking parameters:
+The library can clean URLs to remove tracking parameters and unnecessary components, producing cleaner and more readable links. This is particularly useful for e-commerce sites that add extensive tracking parameters:
 
 ```typescript
-// HTML with Amazon tracking URLs
-const htmlWithTrackingUrls = `
-  <p>Check out this <a href="https://www.amazon.com/Product-Name/dp/ABCDE01234/ref=sr_1_47?dib=abc123&qid=1640995200">amazing product</a></p>
-  <p>Also available on <a href="https://amazon.ca/Item-Name/dp/B12345/ref=sr_1_1?keywords=test">Amazon Canada</a></p>
-`;
-
-// By default, URLs are cleaned (cleanUrls: true)
-const cleanResult = await extract({
-  content: htmlWithTrackingUrls,
+const result = await extract({
+  content: htmlContent,
   format: ContentFormat.HTML,
-  schema: linkSchema,
-  sourceUrl: "https://example.com",
-});
-// Result: URLs become "https://www.amazon.com/Product-Name/dp/ABCDE01234" and "https://amazon.ca/Item-Name/dp/B12345"
-
-// To preserve original URLs with tracking parameters
-const preserveResult = await extract({
-  content: htmlWithTrackingUrls,
-  format: ContentFormat.HTML,
-  schema: linkSchema,
+  schema: mySchema,
   htmlExtractionOptions: {
-    cleanUrls: false // Disable URL cleaning
+    cleanUrls: true // Enable URL cleaning to remove tracking parameters
   },
   sourceUrl: "https://example.com",
 });
-// Result: URLs preserve all tracking parameters
+// Amazon URLs like "https://www.amazon.com/Product/dp/B123/ref=sr_1_47?dib=abc"
+// become "https://www.amazon.com/Product/dp/B123"
 ```
 
 > [!NOTE]
@@ -338,7 +323,7 @@ Main function to extract structured data from content.
 |--------|------|-------------|---------|
 | `extractMainHtml` | `boolean` | When enabled for HTML content, attempts to extract the main content area, removing navigation bars, headers, footers, sidebars etc. using heuristics. Should be kept off when extracting details about a single item. | `false` |
 | `includeImages` | `boolean` | When enabled, images in the HTML will be included in the markdown output. Enable this when you need to extract image URLs or related content. | `false` |
-| `cleanUrls` | `boolean` | When enabled, removes tracking parameters and unnecessary URL components to produce cleaner links. Currently supports cleaning Amazon product URLs by removing `/ref=` parameters and everything after. This helps produce more readable URLs in the markdown output. | `true` |
+| `cleanUrls` | `boolean` | When enabled, removes tracking parameters and unnecessary URL components to produce cleaner links. Currently supports cleaning Amazon product URLs by removing `/ref=` parameters and everything after. This helps produce more readable URLs in the markdown output. | `false` |
 
 #### Return Value
 
@@ -390,7 +375,7 @@ console.log(markdown);
 const options: HTMLExtractionOptions = {
   extractMainHtml: true,
   includeImages: true,
-  cleanUrls: true // Clean URLs by removing tracking parameters (enabled by default)
+  cleanUrls: true // Clean URLs by removing tracking parameters
 };
 
 // With source URL to handle relative links
