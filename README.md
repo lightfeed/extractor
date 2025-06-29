@@ -31,7 +31,7 @@
 
 ## How It Works
 
-1. **HTML to Markdown Conversion**: If the input is HTML, it's first converted to clean, LLM-friendly markdown. This step can optionally extract only the main content and include images. See [HTML to Markdown Conversion](#html-to-markdown-conversion) section for details. The `convertHtmlToMarkdown` function can also be used standalone.
+1. **HTML to Markdown Conversion**: If the input is HTML, it's first converted to clean, LLM-friendly markdown. This step can optionally extract only the main content, include images, and clean URLs by removing tracking parameters. See [HTML to Markdown Conversion](#html-to-markdown-conversion) section for details. The `convertHtmlToMarkdown` function can also be used standalone.
 
 2. **LLM Processing**: The markdown is sent to an LLM in JSON mode (Google Gemini 2.5 flash or OpenAI GPT-4o mini by default) with a prompt to extract structured data according to your Zod schema or enrich existing data objects. You can set a maximum input token limit to control costs or avoid exceeding the model's context window, and the function will return token usage metrics for each LLM call.
 
@@ -263,6 +263,27 @@ const result = await extract({
 });
 ```
 
+### URL Cleaning
+
+The library can clean URLs to remove tracking parameters and unnecessary components, producing cleaner and more readable links. This is particularly useful for e-commerce sites that add extensive tracking parameters:
+
+```typescript
+const result = await extract({
+  content: htmlContent,
+  format: ContentFormat.HTML,
+  schema: mySchema,
+  htmlExtractionOptions: {
+    cleanUrls: true // Enable URL cleaning to remove tracking parameters
+  },
+  sourceUrl: "https://amazon.ca/s?k=vitamins",
+});
+// Amazon URLs like "https://www.amazon.com/Product/dp/B123/ref=sr_1_47?dib=abc"
+// become "https://www.amazon.com/Product/dp/B123"
+```
+
+> [!NOTE]
+> Currently, URL cleaning supports Amazon product URLs (amazon.com, amazon.ca) by removing `/ref=` parameters and everything after. The feature is designed to be extensible for other e-commerce platforms in the future.
+
 ## API Keys
 
 The library will check for API keys in the following order:
@@ -302,6 +323,7 @@ Main function to extract structured data from content.
 |--------|------|-------------|---------|
 | `extractMainHtml` | `boolean` | When enabled for HTML content, attempts to extract the main content area, removing navigation bars, headers, footers, sidebars etc. using heuristics. Should be kept off when extracting details about a single item. | `false` |
 | `includeImages` | `boolean` | When enabled, images in the HTML will be included in the markdown output. Enable this when you need to extract image URLs or related content. | `false` |
+| `cleanUrls` | `boolean` | When enabled, removes tracking parameters and unnecessary URL components to produce cleaner links. Currently supports cleaning Amazon product URLs by removing `/ref=` parameters and everything after. This helps produce more readable URLs in the markdown output. | `false` |
 
 #### Return Value
 
@@ -349,10 +371,11 @@ const markdown = convertHtmlToMarkdown("<h1>Hello World</h1><p>This is a test</p
 console.log(markdown);
 // Output: "Hello World\n===========\n\nThis is a test"
 
-// With options to extract main content and include images
+// With options to extract main content, include images, and clean URLs
 const options: HTMLExtractionOptions = {
   extractMainHtml: true,
-  includeImages: true
+  includeImages: true,
+  cleanUrls: true // Clean URLs by removing tracking parameters
 };
 
 // With source URL to handle relative links
@@ -363,6 +386,7 @@ const markdownWithOptions = convertHtmlToMarkdown(
       <div>
         <img src="/images/logo.png" alt="Logo">
         <a href="/about">About</a>
+        <a href="https://www.amazon.com/product/dp/B123/ref=sr_1_1">Amazon Product</a>
       </div>
     </body>
     <footer>Footer content</footer>
@@ -371,7 +395,7 @@ const markdownWithOptions = convertHtmlToMarkdown(
   "https://example.com"
 );
 console.log(markdownWithOptions);
-// Output: "![Logo](https://example.com/images/logo.png)[About](https://example.com/about)"
+// Output: "![Logo](https://example.com/images/logo.png)[About](https://example.com/about)[Amazon Product](https://www.amazon.com/product/dp/B123)"
 ```
 
 ### JSON Sanitization

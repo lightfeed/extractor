@@ -8,6 +8,36 @@ var xpath = require("xpath");
 const cheerio = require("cheerio");
 
 /**
+ * Clean URL by removing tracking parameters and unnecessary components
+ */
+function cleanUrl(url: string): string {
+  try {
+    // Check if this is an Amazon URL (amazon.com or amazon.ca)
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname.toLowerCase();
+
+    if (
+      hostname.startsWith("amazon.com") ||
+      hostname.startsWith("www.amazon.com") ||
+      hostname.startsWith("amazon.ca") ||
+      hostname.startsWith("www.amazon.ca")
+    ) {
+      // For Amazon URLs, remove /ref= and everything after it
+      const refIndex = url.indexOf("/ref=");
+      if (refIndex !== -1) {
+        return url.substring(0, refIndex);
+      }
+    }
+
+    // For other URLs, return as-is (can be extended in the future)
+    return url;
+  } catch (error) {
+    // If URL parsing fails, return original URL
+    return url;
+  }
+}
+
+/**
  * Extract the main content from an HTML string if requested
  */
 function extractMainHtml(html: string): string {
@@ -119,6 +149,12 @@ export function htmlToMarkdown(
             );
           }
         }
+
+        // Clean URL if cleanUrls option is enabled (default false)
+        if (options?.cleanUrls) {
+          href = cleanUrl(href);
+        }
+
         href = href.replace(/([()])/g, "\\$1");
       }
       let title = cleanAttribute(node.getAttribute("title"));
@@ -148,6 +184,12 @@ export function htmlToMarkdown(
             );
           }
         }
+
+        // Clean URL if cleanUrls option is enabled (default false)
+        if (options?.cleanUrls) {
+          src = cleanUrl(src);
+        }
+
         src = src.replace(/([()])/g, "\\$1");
       } else {
         return ""; // No source, no image

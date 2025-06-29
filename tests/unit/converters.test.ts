@@ -210,6 +210,76 @@ describe("HTML to Markdown converter", () => {
       expect(markdown).toContain("[Invalid Link](invalid:url)");
       expect(markdown).toContain("![Invalid Image](invalid:url)");
     });
+
+    describe("URL cleaning", () => {
+      test("should clean Amazon URLs by removing tracking parameters when cleanUrls is enabled", () => {
+        const html = `
+          <a href="https://www.amazon.com/Product-Name-Here/dp/ABCDE01234/ref=sr_1_47?dib=abc123&qid=1640995200">Amazon Product</a>
+          <a href="https://amazon.ca/Item-Name/dp/B12345/ref=sr_1_1?keywords=test">Amazon CA Product</a>
+        `;
+        const markdown = htmlToMarkdown(html, { cleanUrls: true });
+
+        // Check that Amazon URLs are cleaned
+        expect(markdown).toContain(
+          "[Amazon Product](https://www.amazon.com/Product-Name-Here/dp/ABCDE01234)"
+        );
+        expect(markdown).toContain(
+          "[Amazon CA Product](https://amazon.ca/Item-Name/dp/B12345)"
+        );
+
+        // Ensure tracking parameters are removed
+        expect(markdown).not.toContain("/ref=");
+        expect(markdown).not.toContain("dib=");
+        expect(markdown).not.toContain("qid=");
+      });
+
+      test("should not clean Amazon URLs by default", () => {
+        const html = `
+          <a href="https://www.amazon.com/Product-Name-Here/dp/ABCDE01234/ref=sr_1_47?dib=abc123&qid=1640995200">Amazon Product</a>
+        `;
+        const markdown = htmlToMarkdown(html);
+
+        // Check that Amazon URLs are NOT cleaned by default
+        expect(markdown).toContain(
+          "[Amazon Product](https://www.amazon.com/Product-Name-Here/dp/ABCDE01234/ref=sr_1_47?dib=abc123&qid=1640995200)"
+        );
+      });
+
+      test("should not clean Amazon URLs when cleanUrls is false", () => {
+        const html = `
+          <a href="https://www.amazon.com/Product-Name-Here/dp/ABCDE01234/ref=sr_1_47?dib=abc123&qid=1640995200">Amazon Product</a>
+        `;
+        const markdown = htmlToMarkdown(html, { cleanUrls: false });
+
+        // Check that Amazon URLs are NOT cleaned when option is disabled
+        expect(markdown).toContain(
+          "[Amazon Product](https://www.amazon.com/Product-Name-Here/dp/ABCDE01234/ref=sr_1_47?dib=abc123&qid=1640995200)"
+        );
+      });
+
+      test("should not modify non-Amazon URLs", () => {
+        const html = `
+          <a href="https://example.com/product?utm_source=test&ref=something">Regular Link</a>
+          <a href="https://shop.example.com/item/ref=special">Shop Link</a>
+          <img src="https://cdn.example.com/image.jpg?v=123&ref=cache" alt="Image">
+        `;
+        const markdown = htmlToMarkdown(html, {
+          includeImages: true,
+          cleanUrls: true,
+        });
+
+        // Check that non-Amazon URLs remain unchanged even with cleanUrls enabled
+        expect(markdown).toContain(
+          "[Regular Link](https://example.com/product?utm_source=test&ref=something)"
+        );
+        expect(markdown).toContain(
+          "[Shop Link](https://shop.example.com/item/ref=special)"
+        );
+        expect(markdown).toContain(
+          "![Image](https://cdn.example.com/image.jpg?v=123&ref=cache)"
+        );
+      });
+    });
   });
 });
 
