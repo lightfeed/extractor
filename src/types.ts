@@ -39,6 +39,15 @@ export interface HTMLExtractionOptions {
    * Enable this option when you need to extract image information or URLs.
    */
   includeImages?: boolean;
+
+  /**
+   * When enabled, removes tracking parameters and unnecessary URL components to clean up links.
+   * Currently supports cleaning Amazon product URLs by removing /ref= parameters and everything after.
+   * This helps produce cleaner, more readable URLs in the markdown output.
+   *
+   * Enabled by default to improve URL quality.
+   */
+  cleanUrls?: boolean;
 }
 
 /**

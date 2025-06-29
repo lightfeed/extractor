@@ -263,6 +263,42 @@ const result = await extract({
 });
 ```
 
+### URL Cleaning
+
+By default, the library cleans URLs to remove tracking parameters and unnecessary components, producing cleaner and more readable links. This is particularly useful for e-commerce sites that add extensive tracking parameters:
+
+```typescript
+// HTML with Amazon tracking URLs
+const htmlWithTrackingUrls = `
+  <p>Check out this <a href="https://www.amazon.com/Product-Name/dp/ABCDE01234/ref=sr_1_47?dib=abc123&qid=1640995200">amazing product</a></p>
+  <p>Also available on <a href="https://amazon.ca/Item-Name/dp/B12345/ref=sr_1_1?keywords=test">Amazon Canada</a></p>
+`;
+
+// By default, URLs are cleaned (cleanUrls: true)
+const cleanResult = await extract({
+  content: htmlWithTrackingUrls,
+  format: ContentFormat.HTML,
+  schema: linkSchema,
+  sourceUrl: "https://example.com",
+});
+// Result: URLs become "https://www.amazon.com/Product-Name/dp/ABCDE01234" and "https://amazon.ca/Item-Name/dp/B12345"
+
+// To preserve original URLs with tracking parameters
+const preserveResult = await extract({
+  content: htmlWithTrackingUrls,
+  format: ContentFormat.HTML,
+  schema: linkSchema,
+  htmlExtractionOptions: {
+    cleanUrls: false // Disable URL cleaning
+  },
+  sourceUrl: "https://example.com",
+});
+// Result: URLs preserve all tracking parameters
+```
+
+> [!NOTE]
+> Currently, URL cleaning supports Amazon product URLs (amazon.com, amazon.ca) by removing `/ref=` parameters and everything after. The feature is designed to be extensible for other e-commerce platforms in the future.
+
 ## API Keys
 
 The library will check for API keys in the following order:
@@ -302,6 +338,7 @@ Main function to extract structured data from content.
 |--------|------|-------------|---------|
 | `extractMainHtml` | `boolean` | When enabled for HTML content, attempts to extract the main content area, removing navigation bars, headers, footers, sidebars etc. using heuristics. Should be kept off when extracting details about a single item. | `false` |
 | `includeImages` | `boolean` | When enabled, images in the HTML will be included in the markdown output. Enable this when you need to extract image URLs or related content. | `false` |
+| `cleanUrls` | `boolean` | When enabled, removes tracking parameters and unnecessary URL components to produce cleaner links. Currently supports cleaning Amazon product URLs by removing `/ref=` parameters and everything after. This helps produce more readable URLs in the markdown output. | `true` |
 
 #### Return Value
 
@@ -349,10 +386,11 @@ const markdown = convertHtmlToMarkdown("<h1>Hello World</h1><p>This is a test</p
 console.log(markdown);
 // Output: "Hello World\n===========\n\nThis is a test"
 
-// With options to extract main content and include images
+// With options to extract main content, include images, and clean URLs
 const options: HTMLExtractionOptions = {
   extractMainHtml: true,
-  includeImages: true
+  includeImages: true,
+  cleanUrls: true // Clean URLs by removing tracking parameters (enabled by default)
 };
 
 // With source URL to handle relative links
@@ -363,6 +401,7 @@ const markdownWithOptions = convertHtmlToMarkdown(
       <div>
         <img src="/images/logo.png" alt="Logo">
         <a href="/about">About</a>
+        <a href="https://www.amazon.com/product/dp/B123/ref=sr_1_1">Amazon Product</a>
       </div>
     </body>
     <footer>Footer content</footer>
@@ -371,7 +410,7 @@ const markdownWithOptions = convertHtmlToMarkdown(
   "https://example.com"
 );
 console.log(markdownWithOptions);
-// Output: "![Logo](https://example.com/images/logo.png)[About](https://example.com/about)"
+// Output: "![Logo](https://example.com/images/logo.png)[About](https://example.com/about)[Amazon Product](https://www.amazon.com/product/dp/B123)"
 ```
 
 ### JSON Sanitization
