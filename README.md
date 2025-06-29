@@ -275,7 +275,7 @@ const result = await extract({
   htmlExtractionOptions: {
     cleanUrls: true // Enable URL cleaning to remove tracking parameters
   },
-  sourceUrl: "https://example.com",
+  sourceUrl: "https://amazon.ca/s?k=vitamins",
 });
 // Amazon URLs like "https://www.amazon.com/Product/dp/B123/ref=sr_1_47?dib=abc"
 // become "https://www.amazon.com/Product/dp/B123"
