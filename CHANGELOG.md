@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.9] - 2025-06-28
+
+### Added
+- Added cleanUrl field in HTMLExtractionOptions - when enabled, it will clean tracking parameters from Amazon product URLs
+
+### Changed
+- Used Gemini 2.5 flash model instead of the preview version
+
 ## [0.1.8] - 2025-06-16
 
 ### Changed
