@@ -31,13 +31,15 @@
 
 ## How It Works
 
-1. **HTML to Markdown Conversion**: If the input is HTML, it's first converted to clean, LLM-friendly markdown. This step can optionally extract only the main content, include images, and clean URLs by removing tracking parameters. See [HTML to Markdown Conversion](#html-to-markdown-conversion) section for details. The `convertHtmlToMarkdown` function can also be used standalone.
+1. **Browser Loading (New!)**: Use the new `Browser` class to load web pages with Playwright, handling JavaScript-rendered content and modern web applications. Choose between local, serverless, or remote browser configurations for maximum flexibility.
 
-2. **LLM Processing**: The markdown is sent to an LLM in JSON mode (Google Gemini 2.5 flash or OpenAI GPT-4o mini by default) with a prompt to extract structured data according to your Zod schema or enrich existing data objects. You can set a maximum input token limit to control costs or avoid exceeding the model's context window, and the function will return token usage metrics for each LLM call.
+2. **HTML to Markdown Conversion**: HTML content (either from a browser or direct HTML string) is converted to clean, LLM-friendly markdown. This step can optionally extract only the main content, include images, and clean URLs by removing tracking parameters. See [HTML to Markdown Conversion](#html-to-markdown-conversion) section for details. The `convertHtmlToMarkdown` function can also be used standalone.
 
-3. **JSON Sanitization**: If the LLM structured output fails or doesn't fully match your schema, a sanitization process attempts to recover and fix the data. This makes complex schema extraction much more robust, especially with deeply nested objects and arrays. See [JSON Sanitization](#json-sanitization) for details.
+3. **LLM Processing**: The markdown is sent to an LLM in JSON mode (Google Gemini 2.5 flash or OpenAI GPT-4o mini by default) with a prompt to extract structured data according to your Zod schema or enrich existing data objects. You can set a maximum input token limit to control costs or avoid exceeding the model's context window, and the function will return token usage metrics for each LLM call.
 
-4. **URL Validation**: All extracted URLs are validated - handling relative URLs, removing invalid ones, and repairing markdown-escaped links. See [URL Validation](#url-validation) section for details.
+4. **JSON Sanitization**: If the LLM structured output fails or doesn't fully match your schema, a sanitization process attempts to recover and fix the data. This makes complex schema extraction much more robust, especially with deeply nested objects and arrays. See [JSON Sanitization](#json-sanitization) for details.
+
+5. **URL Validation**: All extracted URLs are validated - handling relative URLs, removing invalid ones, and repairing markdown-escaped links. See [URL Validation](#url-validation) section for details.
 
 ## Why use an LLM extractor?
 💡 Understands natural language criteria and context to extract the data you need, not just raw content as displayed
@@ -109,6 +111,86 @@ async function main() {
 }
 
 main().catch(console.error);
+```
+
+### Loading Web Pages with Browser Class (New!)
+
+Use the new `Browser` class to load web pages and then extract structured data:
+
+```typescript
+import { extract, ContentFormat, LLMProvider, Browser, loadHtmlFromUrl } from "@lightfeed/extractor";
+import { z } from "zod";
+
+async function extractFromWebpage() {
+  const schema = z.object({
+    title: z.string(),
+    description: z.string().optional(),
+    mainHeadings: z.array(z.string()),
+    socialLinks: z.array(z.string().url()).describe("Social media and important links"),
+    technologies: z.array(z.string()).describe("Technologies or frameworks mentioned")
+  });
+
+  // Method 1: Using Browser class for full control
+  const browser = new Browser({
+    type: "local", // or "serverless" or "remote"
+    options: {
+      args: ["--no-sandbox", "--disable-dev-shm-usage"]
+    }
+  });
+
+  try {
+    // Load the webpage
+    const { html, url } = await browser.loadPage("https://example.com/blog/latest-post", {
+      timeout: 30000,
+      waitUntil: "domcontentloaded",
+      waitTime: 2000 // Wait for dynamic content
+    });
+
+    // Extract structured data from the loaded HTML
+    const result = await extract({
+      content: html,
+      format: ContentFormat.HTML,
+      sourceUrl: url,
+      schema,
+      googleApiKey: "your-google-gemini-api-key",
+      htmlExtractionOptions: {
+        extractMainHtml: true,
+        includeImages: false,
+        cleanUrls: true
+      }
+    });
+
+    console.log("Extracted Data:", result.data);
+    console.log("Processed Content:", result.processedContent);
+
+  } finally {
+    await browser.close(); // Always close the browser
+  }
+}
+
+// Method 2: Using convenience function for simple cases
+async function extractFromWebpageSimple() {
+  const schema = z.object({
+    title: z.string(),
+    mainContent: z.string().optional(),
+  });
+
+  // One-liner to load HTML and auto-close browser
+  const { html, url } = await loadHtmlFromUrl("https://example.com");
+
+  const result = await extract({
+    content: html,
+    format: ContentFormat.HTML,
+    sourceUrl: url,
+    schema,
+    googleApiKey: "your-google-gemini-api-key",
+  });
+
+  console.log("Title:", result.data.title);
+}
+
+extractFromWebpage().catch(console.error);
+extractFromWebpageSimple().catch(console.error);
 ```
 
 ### Extracting from Markdown or Plain Text
@@ -324,6 +406,160 @@ Main function to extract structured data from content.
 | `extractMainHtml` | `boolean` | When enabled for HTML content, attempts to extract the main content area, removing navigation bars, headers, footers, sidebars etc. using heuristics. Should be kept off when extracting details about a single item. | `false` |
 | `includeImages` | `boolean` | When enabled, images in the HTML will be included in the markdown output. Enable this when you need to extract image URLs or related content. | `false` |
 | `cleanUrls` | `boolean` | When enabled, removes tracking parameters and unnecessary URL components to produce cleaner links. Currently supports cleaning Amazon product URLs by removing `/ref=` parameters and everything after. This helps produce more readable URLs in the markdown output. | `false` |
+
+### Browser Class API
+
+The `Browser` class provides a clean interface for loading web pages with Playwright. Use it to load HTML content before extracting structured data.
+
+#### Constructor
+
+```typescript
+const browser = new Browser(config?: BrowserConfig)
+```
+
+**Browser Configuration Types:**
+
+**Local Browser Configuration:**
+```typescript
+{
+  type: "local",
+  options?: {
+    args?: string[]; // Chrome command line arguments
+    // Other Playwright LaunchOptions (excluding headless and channel)
+  },
+  proxy?: {
+    host: string;
+    port: number;
+    auth?: { username: string; password: string; };
+  }
+}
+```
+
+**Serverless Browser Configuration (for AWS Lambda, etc.):**
+```typescript
+{
+  type: "serverless",
+  executablePath: string; // Path to Chrome/Chromium binary
+  options?: {
+    args?: string[]; // Chrome command line arguments
+    // Other Playwright LaunchOptions (excluding headless and channel)
+  },
+  proxy?: {
+    host: string;
+    port: number;
+    auth?: { username: string; password: string; };
+  }
+}
+```
+
+**Remote Browser Configuration (for browser farms, Docker, etc.):**
+```typescript
+{
+  type: "remote",
+  wsEndpoint: string; // WebSocket endpoint to connect to
+  options?: {
+    timeout?: number;
+    // Other Playwright ConnectOverCDPOptions (excluding endpointURL)
+  }
+}
+```
+
+#### Methods
+
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `start()` | Start the browser instance | `Promise<void>` |
+| `close()` | Close the browser and clean up resources | `Promise<void>` |
+| `newPage()` | Create a new page (browser must be started) | `Promise<Page>` |
+| `getBrowser()` | Get the underlying Playwright browser instance | `PlaywrightBrowser \| null` |
+| `isStarted()` | Check if the browser is currently running | `boolean` |
+| `loadPage(url, options?)` | Load a URL and get HTML content | `Promise<{html: string, url: string}>` |
+
+#### loadPage Options
+
+```typescript
+{
+  timeout?: number; // Page load timeout in ms (default: 30000)
+  waitUntil?: "load" | "domcontentloaded" | "networkidle"; // Wait condition (default: "domcontentloaded")
+  waitTime?: number; // Additional wait time for dynamic content in ms (default: 1000)
+}
+```
+
+#### Examples
+
+```typescript
+// Local browser with custom Chrome flags
+const browser = new Browser({
+  type: "local",
+  options: {
+    args: ["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
+  }
+});
+
+// Serverless browser (AWS Lambda)
+const serverlessBrowser = new Browser({
+  type: "serverless",
+  executablePath: "/opt/chrome/chrome",
+  options: {
+    args: ["--no-sandbox", "--single-process"]
+  }
+});
+
+// Remote browser (Docker or browser farm)
+const remoteBrowser = new Browser({
+  type: "remote",
+  wsEndpoint: "ws://chrome-service:9222",
+  options: {
+    timeout: 30000
+  }
+});
+
+// With proxy
+const proxyBrowser = new Browser({
+  type: "local",
+  proxy: {
+    host: "proxy.company.com",
+    port: 8080,
+    auth: {
+      username: "user",
+      password: "pass"
+    }
+  }
+});
+
+// Usage example
+const browser = new Browser();
+try {
+  const { html, url } = await browser.loadPage("https://example.com", {
+    timeout: 20000,
+    waitUntil: "load",
+    waitTime: 2000
+  });
+  
+  // Use html and url with extract() function
+  const result = await extract({
+    content: html,
+    format: ContentFormat.HTML,
+    sourceUrl: url,
+    schema: mySchema,
+    googleApiKey: "your-key"
+  });
+} finally {
+  await browser.close();
+}
+```
+
+#### Convenience Function
+
+For simple use cases, use the `loadHtmlFromUrl` function:
+
+```typescript
+const { html, url } = await loadHtmlFromUrl(
+  "https://example.com",
+  browserConfig?, // Optional browser configuration
+  options? // Optional load options
+);
+```
 
 #### Return Value
 
