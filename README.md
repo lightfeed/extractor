@@ -31,7 +31,7 @@
 
 ## How It Works
 
-1. **Browser Loading (New!)**: Use the new `Browser` class to load web pages with Playwright, handling JavaScript-rendered content and modern web applications. Choose between local, serverless, or remote browser configurations for maximum flexibility.
+1. **Browser Loading (New!)**: Use the new `Browser` class to load web pages with Stealth Playwright, handling JavaScript-rendered content with built-in anti-bot patches. Choose between local, serverless, or remote browser configurations for maximum flexibility.
 
 2. **HTML to Markdown Conversion**: HTML content (either from a browser or direct HTML string) is converted to clean, LLM-friendly markdown. This step can optionally extract only the main content, include images, and clean URLs by removing tracking parameters. See [HTML to Markdown Conversion](#html-to-markdown-conversion) section for details. The `convertHtmlToMarkdown` function can also be used standalone.
 
