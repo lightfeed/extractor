@@ -51,7 +51,7 @@ describe("Browser Providers", () => {
 
       expect(chromium.launch).toHaveBeenCalledWith({
         channel: "chrome",
-        headless: false,
+        headless: true,
         args: ["--disable-blink-features=AutomationControlled", "--test-arg"],
         proxy: {
           server: "http://proxy.test:3128",
@@ -72,7 +72,7 @@ describe("Browser Providers", () => {
 
       expect(chromium.launch).toHaveBeenCalledWith({
         channel: "chrome",
-        headless: false,
+        headless: true,
         args: ["--disable-blink-features=AutomationControlled"],
       });
     });
