@@ -13,14 +13,17 @@ export class LocalBrowserProvider extends BrowserProvider<Browser> {
   options: Omit<Omit<LaunchOptions, "headless">, "channel"> | undefined;
   session: Browser | undefined;
   proxy: ProxyConfig | null;
+  headless: boolean;
 
   constructor(params: {
     options?: Omit<Omit<LaunchOptions, "headless">, "channel">;
+    headless?: boolean;
     proxy?: ProxyConfig;
   }) {
     super();
     this.options = params.options;
     this.proxy = params.proxy ?? null;
+    this.headless = params.headless ?? true;
   }
 
   async start(): Promise<Browser> {
@@ -28,7 +31,7 @@ export class LocalBrowserProvider extends BrowserProvider<Browser> {
     const browser = await chromium.launch({
       ...(this.options ?? {}),
       channel: "chrome",
-      headless: false,
+      headless: this.headless,
       args: ["--disable-blink-features=AutomationControlled", ...launchArgs],
       ...(this.proxy == null
         ? {}
@@ -60,7 +63,9 @@ export class LocalBrowserProvider extends BrowserProvider<Browser> {
  * Serverless browser provider for environments like AWS Lambda
  */
 export class ServerlessBrowserProvider extends BrowserProvider<Browser> {
-  options: Omit<Omit<LaunchOptions, "headless">, "channel"> | undefined;
+  options:
+    | Omit<Omit<Omit<LaunchOptions, "headless">, "channel">, "executablePath">
+    | undefined;
   session: Browser | undefined;
   executablePath: string;
   proxy: ProxyConfig | null;
@@ -153,12 +158,16 @@ export class RemoteBrowserProvider extends BrowserProvider<Browser> {
 export function createBrowserProvider(config: {
   type: "local";
   options?: Omit<Omit<LaunchOptions, "headless">, "channel">;
+  headless?: boolean;
   proxy?: ProxyConfig;
 }): LocalBrowserProvider;
 export function createBrowserProvider(config: {
   type: "serverless";
   executablePath: string;
-  options?: Omit<Omit<LaunchOptions, "headless">, "channel">;
+  options?: Omit<
+    Omit<Omit<LaunchOptions, "headless">, "channel">,
+    "executablePath"
+  >;
   proxy?: ProxyConfig;
 }): ServerlessBrowserProvider;
 export function createBrowserProvider(config: {
@@ -173,6 +182,7 @@ export function createBrowserProvider(
     case "local":
       return new LocalBrowserProvider({
         options: config.options,
+        headless: config.headless,
         proxy: config.proxy,
       });
     case "serverless":

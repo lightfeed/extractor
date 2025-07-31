@@ -45,6 +45,7 @@ export abstract class BrowserProvider<T = Browser> {
 export interface LocalBrowserConfig {
   type: "local";
   options?: Omit<Omit<LaunchOptions, "headless">, "channel">;
+  headless?: boolean;
   proxy?: ProxyConfig;
 }
 
@@ -54,7 +55,11 @@ export interface LocalBrowserConfig {
 export interface ServerlessBrowserConfig {
   type: "serverless";
   executablePath: string;
-  options?: Omit<Omit<LaunchOptions, "headless">, "channel">;
+  options?: Omit<
+    Omit<Omit<LaunchOptions, "headless">, "channel">,
+    "executablePath"
+  >;
+  headless?: boolean;
   proxy?: ProxyConfig;
 }
 
