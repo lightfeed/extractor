@@ -77,7 +77,7 @@ export class Browser {
     }
   ): Promise<{ html: string; url: string }> {
     const {
-      timeout = 30000,
+      timeout = 60000,
       waitUntil = "domcontentloaded",
       waitTime = 1000,
     } = options || {};
