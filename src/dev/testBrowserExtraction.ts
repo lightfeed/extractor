@@ -12,13 +12,15 @@ const productCatalogSchema = z.object({
       z.object({
         name: z.string().describe("Product name or title"),
         brand: z.string().optional().describe("Brand name"),
-        price: z.string().describe("Current price"),
+        price: z.number().describe("Current price"),
         originalPrice: z
-          .string()
+          .number()
           .optional()
           .describe("Original price if on sale"),
         rating: z.number().optional().describe("Product rating out of 5"),
         reviewCount: z.number().optional().describe("Number of reviews"),
+        productUrl: z.string().url().describe("Link to product detail page"),
+        imageUrl: z.string().url().optional().describe("Product image URL"),
       })
     )
     .describe("List of bread and bakery products"),
@@ -71,7 +73,7 @@ async function testProductCatalogExtraction() {
       googleApiKey: process.env.GOOGLE_API_KEY,
       htmlExtractionOptions: {
         extractMainHtml: true,
-        includeImages: false,
+        includeImages: true,
         cleanUrls: true,
       },
     });

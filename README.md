@@ -65,166 +65,112 @@ While this library provides a robust foundation for data extraction, you might w
 
 ## Usage
 
-### Basic Example
+### Extract from Web Pages
 
-```typescript
-import { extract, ContentFormat, LLMProvider } from "@lightfeed/extractor";
-import { z } from "zod";
-
-async function main() {
-  // Define your schema. We will run one more sanitization process to recover imperfect, failed, or partial LLM outputs into this schema
-  const schema = z.object({
-    title: z.string(),
-    author: z.string().optional(),
-    date: z.string().optional(),
-    tags: z.array(z.string()),
-    summary: z.string().describe("A brief summary of the article content within 500 characters"),
-    // Use .url() to fix and validate URL field
-    links: z.array(z.string().url()).describe("All URLs mentioned in the article")
-  });
-
-  // Extract from HTML
-  const result = await extract({
-    content: `
-      <article>
-        <h1>Understanding Async/Await in JavaScript</h1>
-        <div class="meta">
-          <span class="author">John Doe</span> |
-          <span class="date">January 15, 2023</span> |
-          <span class="tags">#JavaScript #Programming</span>
-        </div>
-        <p>This article explains how async/await works in modern JavaScript.</p>
-        <p>Learn more at <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function">MDN</a>
-        or check our <a href="/blog/javascript-tutorials">tutorials</a>.</p>
-      </article>
-    `,
-    format: ContentFormat.HTML,
-    schema,
-    sourceUrl: "https://example.com/blog/async-await", // Required for HTML format to handle relative URLs
-    googleApiKey: "your-google-gemini-api-key",
-  });
-
-  console.log("Extracted Data:", result.data);
-  console.log("Token Usage:", result.usage);
-}
-
-main().catch(console.error);
-```
-
-### Loading Web Pages with Browser Class (New!)
-
-Use the new `Browser` class with direct Playwright API to load web pages and then extract structured data:
+This example shows how to extract structured data from an e-commerce website using a local browser with robust error handling.
 
 ```typescript
 import { extract, ContentFormat, LLMProvider, Browser } from "@lightfeed/extractor";
 import { z } from "zod";
 
-async function extractFromWebpage() {
-  const schema = z.object({
-    title: z.string(),
-    description: z.string().optional(),
-    mainHeadings: z.array(z.string()),
-    socialLinks: z.array(z.string().url()).describe("Social media and important links"),
-    technologies: z.array(z.string()).describe("Technologies or frameworks mentioned")
-  });
+// Define schema for product catalog extraction
+const productCatalogSchema = z.object({
+  products: z
+    .array(
+      z.object({
+        name: z.string().describe("Product name or title"),
+        brand: z.string().optional().describe("Brand name"),
+        price: z.number().describe("Current price"),
+        originalPrice: z
+          .number()
+          .optional()
+          .describe("Original price if on sale"),
+        rating: z.number().optional().describe("Product rating out of 5"),
+        reviewCount: z.number().optional().describe("Number of reviews"),
+        productUrl: z.string().url().describe("Link to product detail page"),
+        imageUrl: z.string().url().optional().describe("Product image URL"),
+      })
+    )
+    .describe("List of bread and bakery products"),
+});
 
-  // Create browser with configuration
-  const browser = new Browser({
-    type: "local", // or "serverless" or "remote"
-  });
+// Create browser instance
+const browser = new Browser({
+  type: "local", // also supporting serverless and remote browser
+  headless: false,
+});
+
+try {
+  await browser.start();
+  console.log("Browser started successfully");
+
+  // Create page and navigate to e-commerce site
+  const page = await browser.newPage();
+
+  const pageUrl = "https://www.walmart.ca/en/browse/grocery/bread-bakery/10019_6000194327359";
+  await page.goto(pageUrl);
 
   try {
-    await browser.start();
+    await page.waitForLoadState("networkidle", { timeout: 10000 });
+  } catch {
+    console.log("Network idle timeout, continuing...");
+  }
 
-    // Create page and load content using direct Playwright API
-    const page = await browser.newPage();
-    await page.goto("https://example.com/blog/latest-post");
-    
-    // Wait for dynamic content to load
-    try {
-      await page.waitForLoadState("networkidle", { timeout: 10000 });
-    } catch {
-      console.log("Network idle timeout, continuing...");
+  // Get HTML content
+  const html = await page.content();
+  console.log(`Loaded ${html.length} characters of HTML`);
+
+  // Extract structured product data
+  console.log("Extracting product data using LLM...");
+  const result = await extract({
+    content: html,
+    format: ContentFormat.HTML,
+    sourceUrl: pageUrl,
+    schema: productCatalogSchema,
+    provider: LLMProvider.GOOGLE_GEMINI,
+    googleApiKey: process.env.GOOGLE_API_KEY, // Use environment variable
+    htmlExtractionOptions: {
+      extractMainHtml: true,
+      includeImages: true,
+      cleanUrls: true
     }
+  });
 
-    // Get HTML content
-    const html = await page.content();
+  console.log("Extraction successful!");
+  console.log("Found products:", result.data.products.length);
 
-    // Extract structured data from the loaded HTML
-    const result = await extract({
-      content: html,
-      format: ContentFormat.HTML,
-      sourceUrl: "https://example.com/blog/latest-post",
-      schema,
-      googleApiKey: "your-google-gemini-api-key",
-      htmlExtractionOptions: {
-        extractMainHtml: true,
-        includeImages: false,
-        cleanUrls: true
-      }
-    });
+  // Print the extracted data
+  console.log(JSON.stringify(result.data, null, 2));
 
-    console.log("Extracted Data:", result.data);
-    console.log("Processed Content:", result.processedContent);
-
-  } finally {
-    await browser.close(); // Always close the browser
-  }
+} catch (error) {
+  console.error("Error during extraction:", error);
+} finally {
+  await browser.close();
+  console.log("Browser closed");
 }
 
-// Advanced operations example
-async function extractWithCustomOperations() {
-  const browser = new Browser();
-  
-  try {
-    await browser.start();
-    const page = await browser.newPage();
-
-    // Navigate and perform custom operations
-    await page.goto("https://example.com");
-    
-    // Wait for specific elements, interact with page, etc.
-    await page.waitForSelector("h1", { timeout: 5000 });
-    
-    // Get page title programmatically
-    const pageTitle = await page.title();
-    console.log("Page title:", pageTitle);
-    
-    // Take a screenshot if needed
-    // await page.screenshot({ path: 'page.png' });
-    
-    // Evaluate JavaScript on the page
-    const customData = await page.evaluate(() => {
-      return {
-        url: window.location.href,
-        userAgent: navigator.userAgent
-      };
-    });
-    
-    const html = await page.content();
-
-    // Use the extracted HTML with your schema
-    const schema = z.object({ title: z.string() });
-    const result = await extract({
-      content: html,
-      format: ContentFormat.HTML,
-      sourceUrl: customData.url,
-      schema,
-      googleApiKey: "your-google-gemini-api-key",
-    });
-
-    console.log("Extracted:", result.data);
-  } finally {
-    await browser.close();
-  }
+/* Expected output:
+{
+  "products": [
+    {
+      "name": "Dempster's® Signature The Classic Burger Buns, Pack of 8; 568 g",
+      "brand": "Dempster's",
+      "price": 3.98,
+      "originalPrice": 4.57,
+      "rating": 4.7376,
+      "reviewCount": 141,
+      "productUrl": "https://www.walmart.ca/en/ip/dempsters-signature-the-classic-burger-buns/6000188080451?classType=REGULAR&athbdg=L1300",
+      "imageUrl": "https://i5.walmartimages.ca/images/Enlarge/725/979/6000196725979.jpg?odnHeight=580&odnWidth=580&odnBg=FFFFFF"
+    },
+    ... (more products)
+  ]
 }
-
-extractFromWebpage().catch(console.error);
+*/
 ```
 
 ### Extracting from Markdown or Plain Text
 
-You can also extract structured data directly from Markdown string:
+You can also extract structured data directly from HTML, Markdown or text string:
 
 ```typescript
 const result = await extract({
@@ -436,140 +382,6 @@ Main function to extract structured data from content.
 | `includeImages` | `boolean` | When enabled, images in the HTML will be included in the markdown output. Enable this when you need to extract image URLs or related content. | `false` |
 | `cleanUrls` | `boolean` | When enabled, removes tracking parameters and unnecessary URL components to produce cleaner links. Currently supports cleaning Amazon product URLs by removing `/ref=` parameters and everything after. This helps produce more readable URLs in the markdown output. | `false` |
 
-### Browser Class API
-
-The `Browser` class provides a clean interface for loading web pages with Playwright. Use it with direct Playwright API calls to load HTML content before extracting structured data.
-
-#### Constructor
-
-```typescript
-const browser = new Browser(config?: BrowserConfig)
-```
-
-**Browser Configuration Types:**
-
-**Local Browser Configuration:**
-```typescript
-{
-  type: "local",
-  options?: {
-    args?: string[]; // Chrome command line arguments
-    // Other Playwright LaunchOptions (excluding headless and channel)
-  },
-  headless?: boolean; // Override headless mode (default: false for local)
-  proxy?: {
-    host: string;
-    port: number;
-    auth?: { username: string; password: string; };
-  }
-}
-```
-
-**Serverless Browser Configuration (for AWS Lambda, etc.):**
-```typescript
-{
-  type: "serverless",
-  executablePath: string; // Path to Chrome/Chromium binary
-  options?: {
-    args?: string[]; // Chrome command line arguments
-    // Other Playwright LaunchOptions (excluding headless, channel, executablePath)
-  },
-  headless?: boolean; // Override headless mode (default: true for serverless)
-  proxy?: {
-    host: string;
-    port: number;
-    auth?: { username: string; password: string; };
-  }
-}
-```
-
-**Remote Browser Configuration (for browser farms, Docker, etc.):**
-```typescript
-{
-  type: "remote",
-  wsEndpoint: string; // WebSocket endpoint to connect to
-  options?: {
-    timeout?: number;
-    // Other Playwright ConnectOverCDPOptions (excluding endpointURL)
-  }
-}
-```
-
-#### Methods
-
-| Method | Description | Returns |
-|--------|-------------|---------|
-| `start()` | Start the browser instance | `Promise<void>` |
-| `close()` | Close the browser and clean up resources | `Promise<void>` |
-| `newPage()` | Create a new page (browser must be started) | `Promise<Page>` |
-| `newContext()` | Create a new browser context (browser must be started) | `Promise<BrowserContext>` |
-| `isStarted()` | Check if the browser is currently running | `boolean` |
-
-#### Usage Examples
-
-```typescript
-// Local browser with custom Chrome flags
-const browser = new Browser({
-  type: "local",
-  headless: false,
-});
-
-// Serverless browser (AWS Lambda)
-const serverlessBrowser = new Browser({
-  type: "serverless",
-  executablePath: "/opt/chrome/chrome",
-});
-
-// Remote browser (Docker or browser farm)
-const remoteBrowser = new Browser({
-  type: "remote",
-  wsEndpoint: "ws://chrome-service:9222",
-});
-
-// With proxy
-const proxyBrowser = new Browser({
-  type: "local",
-  proxy: {
-    host: "proxy.company.com",
-    port: 8080,
-    auth: {
-      username: "user",
-      password: "pass"
-    }
-  }
-});
-
-// Complete usage example with direct Playwright API
-const browser = new Browser();
-try {
-  await browser.start();
-  
-  const page = await browser.newPage();
-  await page.goto("https://example.com");
-  
-  // Wait for content to load
-  try {
-    await page.waitForLoadState("networkidle", { timeout: 10000 });
-  } catch {
-    console.log("Network idle timeout, continuing...");
-  }
-  
-  // Extract HTML
-  const html = await page.content();
-  
-  // Use with extract() function
-  const result = await extract({
-    content: html,
-    format: ContentFormat.HTML,
-    sourceUrl: "https://example.com",
-    schema: mySchema,
-    googleApiKey: "your-key"
-  });
-} finally {
-  await browser.close();
-}
-```
-
 #### Return Value
 
 The function returns a Promise that resolves to an `ExtractorResult<T>` object:
@@ -583,6 +395,92 @@ interface ExtractorResult<T> {
     outputTokens?: number;
   };
 }
+```
+
+### Browser Class
+
+The `Browser` class provides a clean interface for loading web pages with Playwright. Use it with direct Playwright calls to load HTML content before extracting structured data.
+
+#### Constructor
+
+```typescript
+const browser = new Browser(config?: BrowserConfig)
+```
+
+#### Methods
+
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `start()` | Start the browser instance | `Promise<void>` |
+| `close()` | Close the browser and clean up resources | `Promise<void>` |
+| `newPage()` | Create a new page (browser must be started) | `Promise<Page>` |
+| `newContext()` | Create a new browser context (browser must be started) | `Promise<BrowserContext>` |
+| `isStarted()` | Check if the browser is currently running | `boolean` |
+
+#### Local Browser
+
+Use your local Chrome browser for development and testing. Perfect for:
+- Local development and debugging
+- Testing automation scripts
+- Quick prototyping
+
+```typescript
+import { Browser } from "@lightfeed/extractor";
+
+const browser = new Browser({
+  type: "local",
+  headless: false, // Show browser window for debugging
+});
+```
+
+#### Serverless
+
+Perfect for AWS Lambda and other serverless environments. Uses [@sparticuz/chromium](https://github.com/Sparticuz/chromium) to run Chrome in serverless environments with minimal cold start times and memory usage. Supports proxy configuration for geo-tracking and unblocking.
+
+> [!IMPORTANT]
+> This project uses Playwright, which ships with a specific version of Chromium. You need to install the matching version of `@sparticuz/chromium`.
+>
+> For running on AWS Lambda, lambda layer with ARM64 architecture is preferred.
+
+```typescript
+import { Browser } from "@lightfeed/extractor";
+import chromium from "@sparticuz/chromium";
+
+const browser = new Browser({
+  type: "serverless",
+  executablePath: await chromium.executablePath(),
+  options: {
+    args: chromium.args,
+  },
+  // Use proxy (optional)
+  proxy: {
+    host: "proxy.example.com",
+    port: 8080,
+    auth: {
+      username: "user",
+      password: "pass"
+    }
+  }
+});
+```
+
+#### Remote Browser
+
+Connect to any remote browser instance via WebSocket. Great for:
+- Brightdata's Scraping Browser
+- Custom browser instances in the cloud
+- Browser farms and proxy services
+
+```typescript
+import { Browser } from "@lightfeed/extractor";
+
+const browser = new Browser({
+  type: "remote",
+  wsEndpoint: "ws://your-remote-browser:9222/devtools/browser/ws",
+  options: {
+    timeout: 30000
+  }
+});
 ```
 
 ### HTML to Markdown Conversion
