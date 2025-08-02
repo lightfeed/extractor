@@ -42,13 +42,10 @@
 5. **URL Validation**: All extracted URLs are validated - handling relative URLs, removing invalid ones, and repairing markdown-escaped links. See [URL Validation](#url-validation) section for details.
 
 ## Why use an LLM extractor?
-💡 Understands natural language criteria and context to extract the data you need, not just raw content as displayed
-
-🚀 One solution works across all websites — no need to build custom scrapers for each site
-
-🔁 Resilient to website changes, e.g., HTML structure, CSS selectors, or page layout
-
-✅ LLMs are becoming more accurate and cost-effective
+- 💡 Understands natural language criteria and context to extract the data you need, not just raw content as displayed
+- 🚀 One solution works across all websites — no need to build custom scrapers for each site
+- 🔁 Resilient to website changes, e.g., HTML structure, CSS selectors, or page layout
+= ✅ LLMs are becoming more accurate and cost-effective
 
 ## Installation
 
@@ -64,6 +61,7 @@ While this library provides a robust foundation for data extraction, you might w
 - 📊 **Deduplication and Value History**: Maintain consistent data with automatic change tracking
 - 🤖 **AI Enrichment**: Enrich any data point — contact info, product details, company intelligence, and more
 - ⏰ **Workflow Automation**: Set up intelligent data pipelines that run automatically on your schedule
+- 📍 **Geolocation Targeting**: Capture region-specific price, inventory and campaign data for competitive intelligence
 
 ## Usage
 
