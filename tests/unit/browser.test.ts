@@ -132,10 +132,10 @@ describe("Browser Class", () => {
 
       expect(mockProvider.start).toHaveBeenCalled();
       expect(mockBrowser.newPage).toHaveBeenCalled();
-      expect(mockPage.setDefaultTimeout).toHaveBeenCalledWith(30000);
+      expect(mockPage.setDefaultTimeout).toHaveBeenCalledWith(60000);
       expect(mockPage.goto).toHaveBeenCalledWith(url, {
         waitUntil: "domcontentloaded",
-        timeout: 30000,
+        timeout: 60000,
       });
       expect(mockPage.waitForTimeout).toHaveBeenCalledWith(1000);
       expect(mockPage.content).toHaveBeenCalled();
