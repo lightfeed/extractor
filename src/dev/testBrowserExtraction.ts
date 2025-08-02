@@ -1,5 +1,10 @@
 import { extract, ContentFormat, LLMProvider, Browser } from "../index";
 import { z } from "zod";
+import * as path from "path";
+import { config } from "dotenv";
+
+// Load environment variables from .env file
+config({ path: path.resolve(process.cwd(), ".env") });
 
 // Example schema for extracting website information
 const websiteSchema = z.object({
@@ -98,9 +103,6 @@ async function testAdvancedBrowserOperations() {
     // Perform custom operations
     const pageTitle = await page.title();
     console.log(`📝 Page title: ${pageTitle}`);
-
-    // Wait for any dynamic content
-    await page.waitForTimeout(3000);
 
     // You could do more complex operations here:
     // - Wait for specific elements

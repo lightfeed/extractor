@@ -22,6 +22,7 @@
     "test:cov": "jest --coverage",
     "test:local": "ts-node src/dev/runLocalTest.ts",
     "test:usage": "ts-node src/dev/testUsage.ts",
+    "test:browser": "ts-node src/dev/testBrowserExtraction.ts",
     "test:html2md": "jest tests/integration/html-to-markdown.test.ts",
     "test:html2md:update": "git submodule update --init --recursive test-data",
     "test:html2md:sync": "cd test-data && git pull origin main && cd ..",
