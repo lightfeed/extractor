@@ -1,10 +1,4 @@
-import {
-  extract,
-  ContentFormat,
-  LLMProvider,
-  Browser,
-  loadHtmlFromUrl,
-} from "../index";
+import { extract, ContentFormat, LLMProvider, Browser } from "../index";
 import { z } from "zod";
 
 // Example schema for extracting website information
@@ -30,7 +24,7 @@ async function testBrowserClassExtraction() {
     console.log(`📡 Loading page: ${testUrl}`);
     console.log("🤖 Using Browser class with custom configuration...\n");
 
-    // Method 1: Using Browser class directly for full control
+    // Using Browser class directly with full Playwright control
     const browser = new Browser({
       type: "local",
       options: {
@@ -41,15 +35,20 @@ async function testBrowserClassExtraction() {
     await browser.start();
     console.log("✅ Browser started successfully");
 
-    // Load the page with custom options
-    const { html, url } = await browser.loadPage(testUrl, {
-      timeout: 30000,
-      waitUntil: "domcontentloaded",
-      waitTime: 2000, // Wait 2 seconds for dynamic content
-    });
+    // Create page and load content using direct Playwright API
+    const page = await browser.newPage();
+    await page.goto(testUrl);
 
+    try {
+      await page.waitForLoadState("networkidle", { timeout: 10000 });
+    } catch {
+      console.log("Network idle timeout, continuing...");
+    }
+
+    const html = await page.content();
     console.log(`📄 Loaded ${html.length} characters of HTML`);
 
+    await page.close();
     await browser.close();
     console.log("✅ Browser closed");
 
@@ -58,7 +57,7 @@ async function testBrowserClassExtraction() {
     const result = await extract({
       content: html,
       format: ContentFormat.HTML,
-      sourceUrl: url,
+      sourceUrl: testUrl,
       schema: websiteSchema,
       provider: LLMProvider.GOOGLE_GEMINI,
       googleApiKey: process.env.GOOGLE_API_KEY,
@@ -81,44 +80,6 @@ async function testBrowserClassExtraction() {
     console.log(`Output tokens: ${result.usage.outputTokens}`);
   } catch (error) {
     console.error("❌ Error during browser extraction:", error);
-  }
-}
-
-async function testConvenienceFunction() {
-  console.log("\n🚀 Testing convenience function loadHtmlFromUrl...\n");
-
-  try {
-    // Method 2: Using convenience function for simple cases
-    const { html, url } = await loadHtmlFromUrl(
-      "https://example.com",
-      {
-        type: "local",
-        options: { args: ["--no-sandbox"] },
-      },
-      {
-        timeout: 20000,
-        waitUntil: "load",
-      }
-    );
-
-    console.log(
-      `📄 Loaded ${html.length} characters using convenience function`
-    );
-
-    const result = await extract({
-      content: html,
-      format: ContentFormat.HTML,
-      sourceUrl: url,
-      schema: websiteSchema,
-      provider: LLMProvider.GOOGLE_GEMINI,
-      googleApiKey: process.env.GOOGLE_API_KEY,
-    });
-
-    console.log("✅ Convenience function extraction successful!");
-    console.log("\n📊 Extracted Data:");
-    console.log(JSON.stringify(result.data, null, 2));
-  } catch (error) {
-    console.error("❌ Error during convenience function test:", error);
   }
 }
 
@@ -184,6 +145,8 @@ async function testMultiplePages() {
   const browser = new Browser();
 
   try {
+    await browser.start();
+
     const urls = [
       "https://example.com",
       "https://httpbin.org/html", // Another simple test page
@@ -195,8 +158,13 @@ async function testMultiplePages() {
       const url = urls[i];
       console.log(`\n📡 Loading page ${i + 1}: ${url}`);
 
-      const { html } = await browser.loadPage(url, { timeout: 15000 });
+      const page = await browser.newPage();
+      await page.goto(url);
+
+      const html = await page.content();
       console.log(`📄 Loaded ${html.length} characters`);
+
+      await page.close();
 
       // Extract just the title for efficiency
       const titleSchema = z.object({ title: z.string() });
@@ -221,6 +189,55 @@ async function testMultiplePages() {
   }
 }
 
+async function testConcurrentPages() {
+  console.log("\n🚀 Testing concurrent page loading...\n");
+
+  const browser = new Browser();
+
+  try {
+    await browser.start();
+
+    const urls = ["https://example.com", "https://httpbin.org/html"];
+
+    console.log(`⚡ Loading ${urls.length} pages concurrently...`);
+
+    // Load pages concurrently
+    const loadPromises = urls.map(async (url, index) => {
+      const page = await browser.newPage();
+      await page.goto(url);
+      const html = await page.content();
+      await page.close();
+
+      console.log(`📄 Page ${index + 1} loaded: ${html.length} characters`);
+      return { url, html };
+    });
+
+    const results = await Promise.all(loadPromises);
+
+    console.log("✅ All pages loaded concurrently!");
+
+    // Extract from all pages
+    for (const { url, html } of results) {
+      const titleSchema = z.object({ title: z.string() });
+
+      const result = await extract({
+        content: html,
+        format: ContentFormat.HTML,
+        sourceUrl: url,
+        schema: titleSchema,
+        provider: LLMProvider.GOOGLE_GEMINI,
+        googleApiKey: process.env.GOOGLE_API_KEY,
+      });
+
+      console.log(`📝 Extracted from ${url}: ${result.data.title}`);
+    }
+  } catch (error) {
+    console.error("❌ Error during concurrent pages test:", error);
+  } finally {
+    await browser.close();
+  }
+}
+
 async function main() {
   if (!process.env.GOOGLE_API_KEY) {
     console.error("❌ Please set GOOGLE_API_KEY environment variable");
@@ -230,9 +247,9 @@ async function main() {
   console.log("🚀 Starting Browser + Extraction Tests\n");
 
   await testBrowserClassExtraction();
-  await testConvenienceFunction();
   await testAdvancedBrowserOperations();
   await testMultiplePages();
+  await testConcurrentPages();
 
   console.log("\n🎉 All tests completed!");
 }
@@ -243,7 +260,7 @@ if (require.main === module) {
 
 export {
   testBrowserClassExtraction,
-  testConvenienceFunction,
   testAdvancedBrowserOperations,
   testMultiplePages,
+  testConcurrentPages,
 };

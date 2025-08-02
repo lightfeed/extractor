@@ -115,10 +115,10 @@ main().catch(console.error);
 
 ### Loading Web Pages with Browser Class (New!)
 
-Use the new `Browser` class to load web pages and then extract structured data:
+Use the new `Browser` class with direct Playwright API to load web pages and then extract structured data:
 
 ```typescript
-import { extract, ContentFormat, LLMProvider, Browser, loadHtmlFromUrl } from "@lightfeed/extractor";
+import { extract, ContentFormat, LLMProvider, Browser } from "@lightfeed/extractor";
 import { z } from "zod";
 
 async function extractFromWebpage() {
@@ -130,7 +130,7 @@ async function extractFromWebpage() {
     technologies: z.array(z.string()).describe("Technologies or frameworks mentioned")
   });
 
-  // Method 1: Using Browser class for full control
+  // Create browser with configuration
   const browser = new Browser({
     type: "local", // or "serverless" or "remote"
     options: {
@@ -139,18 +139,28 @@ async function extractFromWebpage() {
   });
 
   try {
-    // Load the webpage
-    const { html, url } = await browser.loadPage("https://example.com/blog/latest-post", {
-      timeout: 30000,
-      waitUntil: "domcontentloaded",
-      waitTime: 2000 // Wait for dynamic content
-    });
+    await browser.start();
+
+    // Create page and load content using direct Playwright API
+    const page = await browser.newPage();
+    await page.goto("https://example.com/blog/latest-post");
+    
+    // Wait for dynamic content to load
+    try {
+      await page.waitForLoadState("networkidle", { timeout: 10000 });
+    } catch {
+      console.log("Network idle timeout, continuing...");
+    }
+
+    // Get HTML content
+    const html = await page.content();
+    await page.close();
 
     // Extract structured data from the loaded HTML
     const result = await extract({
       content: html,
       format: ContentFormat.HTML,
-      sourceUrl: url,
+      sourceUrl: "https://example.com/blog/latest-post",
       schema,
       googleApiKey: "your-google-gemini-api-key",
       htmlExtractionOptions: {
@@ -168,29 +178,55 @@ async function extractFromWebpage() {
   }
 }
 
-// Method 2: Using convenience function for simple cases
-async function extractFromWebpageSimple() {
-  const schema = z.object({
-    title: z.string(),
-    mainContent: z.string().optional(),
-  });
+// Advanced operations example
+async function extractWithCustomOperations() {
+  const browser = new Browser();
+  
+  try {
+    await browser.start();
+    const page = await browser.newPage();
 
-  // One-liner to load HTML and auto-close browser
-  const { html, url } = await loadHtmlFromUrl("https://example.com");
+    // Navigate and perform custom operations
+    await page.goto("https://example.com");
+    
+    // Wait for specific elements, interact with page, etc.
+    await page.waitForSelector("h1", { timeout: 5000 });
+    
+    // Get page title programmatically
+    const pageTitle = await page.title();
+    console.log("Page title:", pageTitle);
+    
+    // Take a screenshot if needed
+    // await page.screenshot({ path: 'page.png' });
+    
+    // Evaluate JavaScript on the page
+    const customData = await page.evaluate(() => {
+      return {
+        url: window.location.href,
+        userAgent: navigator.userAgent
+      };
+    });
+    
+    const html = await page.content();
+    await page.close();
 
-  const result = await extract({
-    content: html,
-    format: ContentFormat.HTML,
-    sourceUrl: url,
-    schema,
-    googleApiKey: "your-google-gemini-api-key",
-  });
+    // Use the extracted HTML with your schema
+    const schema = z.object({ title: z.string() });
+    const result = await extract({
+      content: html,
+      format: ContentFormat.HTML,
+      sourceUrl: customData.url,
+      schema,
+      googleApiKey: "your-google-gemini-api-key",
+    });
 
-  console.log("Title:", result.data.title);
+    console.log("Extracted:", result.data);
+  } finally {
+    await browser.close();
+  }
 }
 
 extractFromWebpage().catch(console.error);
-extractFromWebpageSimple().catch(console.error);
 ```
 
 ### Extracting from Markdown or Plain Text
@@ -409,7 +445,7 @@ Main function to extract structured data from content.
 
 ### Browser Class API
 
-The `Browser` class provides a clean interface for loading web pages with Playwright. Use it to load HTML content before extracting structured data.
+The `Browser` class provides a clean interface for loading web pages with Playwright. Use it with direct Playwright API calls to load HTML content before extracting structured data.
 
 #### Constructor
 
@@ -427,6 +463,7 @@ const browser = new Browser(config?: BrowserConfig)
     args?: string[]; // Chrome command line arguments
     // Other Playwright LaunchOptions (excluding headless and channel)
   },
+  headless?: boolean; // Override headless mode (default: false for local)
   proxy?: {
     host: string;
     port: number;
@@ -442,8 +479,9 @@ const browser = new Browser(config?: BrowserConfig)
   executablePath: string; // Path to Chrome/Chromium binary
   options?: {
     args?: string[]; // Chrome command line arguments
-    // Other Playwright LaunchOptions (excluding headless and channel)
+    // Other Playwright LaunchOptions (excluding headless, channel, executablePath)
   },
+  headless?: boolean; // Override headless mode (default: true for serverless)
   proxy?: {
     host: string;
     port: number;
@@ -473,19 +511,8 @@ const browser = new Browser(config?: BrowserConfig)
 | `newPage()` | Create a new page (browser must be started) | `Promise<Page>` |
 | `getBrowser()` | Get the underlying Playwright browser instance | `PlaywrightBrowser \| null` |
 | `isStarted()` | Check if the browser is currently running | `boolean` |
-| `loadPage(url, options?)` | Load a URL and get HTML content | `Promise<{html: string, url: string}>` |
 
-#### loadPage Options
-
-```typescript
-{
-  timeout?: number; // Page load timeout in ms (default: 30000)
-  waitUntil?: "load" | "domcontentloaded" | "networkidle"; // Wait condition (default: "domcontentloaded")
-  waitTime?: number; // Additional wait time for dynamic content in ms (default: 1000)
-}
-```
-
-#### Examples
+#### Usage Examples
 
 ```typescript
 // Local browser with custom Chrome flags
@@ -527,20 +554,30 @@ const proxyBrowser = new Browser({
   }
 });
 
-// Usage example
+// Complete usage example with direct Playwright API
 const browser = new Browser();
 try {
-  const { html, url } = await browser.loadPage("https://example.com", {
-    timeout: 20000,
-    waitUntil: "load",
-    waitTime: 2000
-  });
+  await browser.start();
   
-  // Use html and url with extract() function
+  const page = await browser.newPage();
+  await page.goto("https://example.com");
+  
+  // Wait for content to load
+  try {
+    await page.waitForLoadState("networkidle", { timeout: 10000 });
+  } catch {
+    console.log("Network idle timeout, continuing...");
+  }
+  
+  // Extract HTML
+  const html = await page.content();
+  await page.close();
+  
+  // Use with extract() function
   const result = await extract({
     content: html,
     format: ContentFormat.HTML,
-    sourceUrl: url,
+    sourceUrl: "https://example.com",
     schema: mySchema,
     googleApiKey: "your-key"
   });
@@ -549,16 +586,28 @@ try {
 }
 ```
 
-#### Convenience Function
-
-For simple use cases, use the `loadHtmlFromUrl` function:
+#### Multiple Pages Example
 
 ```typescript
-const { html, url } = await loadHtmlFromUrl(
-  "https://example.com",
-  browserConfig?, // Optional browser configuration
-  options? // Optional load options
-);
+const browser = new Browser();
+try {
+  await browser.start();
+  
+  // Process multiple URLs
+  const urls = ["https://example.com", "https://httpbin.org/html"];
+  
+  for (const url of urls) {
+    const page = await browser.newPage();
+    await page.goto(url);
+    
+    const html = await page.content();
+    await page.close();
+    
+    // Process each page...
+  }
+} finally {
+  await browser.close();
+}
 ```
 
 #### Return Value

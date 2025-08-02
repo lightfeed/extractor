@@ -1,4 +1,4 @@
-import { Browser, loadHtmlFromUrl } from "../../src/browser";
+import { Browser } from "../../src/browser";
 
 // Mock browser providers
 jest.mock("../../src/utils/browserProviders");
@@ -13,11 +13,12 @@ describe("Browser Class", () => {
 
     // Mock page
     mockPage = {
-      setDefaultTimeout: jest.fn(),
       goto: jest.fn(),
       waitForTimeout: jest.fn(),
+      waitForLoadState: jest.fn(),
       content: jest.fn(),
       close: jest.fn(),
+      title: jest.fn(),
     };
 
     // Mock browser
@@ -113,160 +114,64 @@ describe("Browser Class", () => {
       await browser.start();
       expect(browser.getBrowser()).toBe(mockBrowser);
     });
-  });
 
-  describe("loadPage method", () => {
-    it("should load page successfully", async () => {
+    it("should allow direct page operations with Playwright API", async () => {
+      const browser = new Browser();
+      await browser.start();
+
+      const page = await browser.newPage();
       const url = "https://example.com";
       const htmlContent = "<html><body><h1>Test</h1></body></html>";
 
       mockPage.content.mockResolvedValue(htmlContent);
+      mockPage.title.mockResolvedValue("Test Title");
 
-      const browser = new Browser();
-      const result = await browser.loadPage(url);
+      // Use direct Playwright API
+      await page.goto(url);
+      await page.waitForLoadState("networkidle", { timeout: 10000 });
+      const html = await page.content();
+      const title = await page.title();
+      await page.close();
 
-      expect(result).toEqual({
-        html: htmlContent,
-        url: url,
+      expect(mockPage.goto).toHaveBeenCalledWith(url);
+      expect(mockPage.waitForLoadState).toHaveBeenCalledWith("networkidle", {
+        timeout: 10000,
       });
-
-      expect(mockProvider.start).toHaveBeenCalled();
-      expect(mockBrowser.newPage).toHaveBeenCalled();
-      expect(mockPage.setDefaultTimeout).toHaveBeenCalledWith(60000);
-      expect(mockPage.goto).toHaveBeenCalledWith(url, {
-        waitUntil: "domcontentloaded",
-        timeout: 60000,
-      });
-      expect(mockPage.waitForTimeout).toHaveBeenCalledWith(1000);
       expect(mockPage.content).toHaveBeenCalled();
+      expect(mockPage.title).toHaveBeenCalled();
       expect(mockPage.close).toHaveBeenCalled();
+      expect(html).toBe(htmlContent);
+      expect(title).toBe("Test Title");
     });
 
-    it("should use custom options", async () => {
-      const url = "https://example.com";
-      const options = {
-        timeout: 15000,
-        waitUntil: "load" as const,
-        waitTime: 2000,
-      };
-
-      mockPage.content.mockResolvedValue("<html></html>");
-
+    it("should handle page errors gracefully", async () => {
       const browser = new Browser();
-      await browser.loadPage(url, options);
+      await browser.start();
 
-      expect(mockPage.setDefaultTimeout).toHaveBeenCalledWith(15000);
-      expect(mockPage.goto).toHaveBeenCalledWith(url, {
-        waitUntil: "load",
-        timeout: 15000,
-      });
-      expect(mockPage.waitForTimeout).toHaveBeenCalledWith(2000);
-    });
-
-    it("should handle zero wait time", async () => {
-      const url = "https://example.com";
-      const options = { waitTime: 0 };
-
-      mockPage.content.mockResolvedValue("<html></html>");
-
-      const browser = new Browser();
-      await browser.loadPage(url, options);
-
-      expect(mockPage.waitForTimeout).not.toHaveBeenCalled();
-    });
-
-    it("should throw error for invalid URL", async () => {
-      const browser = new Browser();
-
-      await expect(browser.loadPage("not-a-url")).rejects.toThrow(
-        "Invalid URL provided: not-a-url"
-      );
-    });
-
-    it("should handle navigation errors and close page", async () => {
-      const url = "https://example.com";
+      const page = await browser.newPage();
       const error = new Error("Navigation failed");
 
       mockPage.goto.mockRejectedValue(error);
 
-      const browser = new Browser();
+      await expect(page.goto("https://example.com")).rejects.toThrow(
+        "Navigation failed"
+      );
 
-      await expect(browser.loadPage(url)).rejects.toThrow("Navigation failed");
+      // Page should still be closeable
+      await page.close();
       expect(mockPage.close).toHaveBeenCalled();
     });
 
-    it("should auto-start browser if not started", async () => {
-      const url = "https://example.com";
-      mockPage.content.mockResolvedValue("<html></html>");
-
+    it("should support multiple pages", async () => {
       const browser = new Browser();
-      expect(browser.isStarted()).toBe(false);
+      await browser.start();
 
-      await browser.loadPage(url);
+      const page1 = await browser.newPage();
+      const page2 = await browser.newPage();
 
-      expect(browser.isStarted()).toBe(true);
-      expect(mockProvider.start).toHaveBeenCalled();
-    });
-  });
-
-  describe("loadHtmlFromUrl function", () => {
-    it("should load HTML and close browser automatically", async () => {
-      const url = "https://example.com";
-      const htmlContent = "<html><body><h1>Test</h1></body></html>";
-
-      mockPage.content.mockResolvedValue(htmlContent);
-
-      const result = await loadHtmlFromUrl(url);
-
-      expect(result).toEqual({
-        html: htmlContent,
-        url: url,
-      });
-
-      expect(mockProvider.start).toHaveBeenCalled();
-      expect(mockProvider.close).toHaveBeenCalled();
-    });
-
-    it("should use custom browser config", async () => {
-      const url = "https://example.com";
-      const browserConfig = {
-        type: "serverless" as const,
-        executablePath: "/usr/bin/chromium",
-      };
-
-      mockPage.content.mockResolvedValue("<html></html>");
-
-      await loadHtmlFromUrl(url, browserConfig);
-
-      const {
-        createBrowserProvider,
-      } = require("../../src/utils/browserProviders");
-      expect(createBrowserProvider).toHaveBeenCalledWith(browserConfig);
-    });
-
-    it("should use custom options", async () => {
-      const url = "https://example.com";
-      const options = { timeout: 20000, waitUntil: "networkidle" as const };
-
-      mockPage.content.mockResolvedValue("<html></html>");
-
-      await loadHtmlFromUrl(url, undefined, options);
-
-      expect(mockPage.goto).toHaveBeenCalledWith(url, {
-        waitUntil: "networkidle",
-        timeout: 20000,
-      });
-    });
-
-    it("should close browser even if error occurs", async () => {
-      const url = "https://example.com";
-      const error = new Error("Load failed");
-
-      mockPage.goto.mockRejectedValue(error);
-
-      await expect(loadHtmlFromUrl(url)).rejects.toThrow("Load failed");
-
-      expect(mockProvider.close).toHaveBeenCalled();
+      expect(page1).toBe(mockPage);
+      expect(page2).toBe(mockPage);
+      expect(mockBrowser.newPage).toHaveBeenCalledTimes(2);
     });
   });
 });

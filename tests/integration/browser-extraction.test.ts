@@ -1,10 +1,4 @@
-import {
-  extract,
-  ContentFormat,
-  LLMProvider,
-  Browser,
-  loadHtmlFromUrl,
-} from "../../src/index";
+import { extract, ContentFormat, LLMProvider, Browser } from "../../src/index";
 import { z } from "zod";
 
 // These tests require internet access and will be skipped in environments where it's not available
@@ -40,16 +34,28 @@ describe("Browser + Extraction Integration Tests", () => {
   if (hasGoogleKey) {
     describe("Browser Class with Google Gemini", () => {
       it("should load page and extract data using Browser class", async () => {
-        // Load HTML using Browser class
+        // Load HTML using Browser class with direct Playwright API
         const browser = new Browser();
-        const { html, url } = await browser.loadPage(testUrl);
+        await browser.start();
+
+        const page = await browser.newPage();
+        await page.goto(testUrl);
+
+        try {
+          await page.waitForLoadState("networkidle", { timeout: 10000 });
+        } catch {
+          console.log("Network idle timeout, continuing...");
+        }
+
+        const html = await page.content();
+        await page.close();
         await browser.close();
 
         // Extract data from the loaded HTML
         const result = await extract({
           content: html,
           format: ContentFormat.HTML,
-          sourceUrl: url,
+          sourceUrl: testUrl,
           schema: testSchema,
           provider: LLMProvider.GOOGLE_GEMINI,
           googleApiKey: process.env.GOOGLE_API_KEY,
@@ -72,16 +78,19 @@ describe("Browser + Extraction Integration Tests", () => {
         };
 
         const browser = new Browser(browserConfig);
-        const { html, url } = await browser.loadPage(testUrl, {
-          timeout: 20000,
-          waitUntil: "load",
-        });
+        await browser.start();
+
+        const page = await browser.newPage();
+        await page.goto(testUrl, { waitUntil: "load" });
+
+        const html = await page.content();
+        await page.close();
         await browser.close();
 
         const result = await extract({
           content: html,
           format: ContentFormat.HTML,
-          sourceUrl: url,
+          sourceUrl: testUrl,
           schema: testSchema,
           provider: LLMProvider.GOOGLE_GEMINI,
           googleApiKey: process.env.GOOGLE_API_KEY,
@@ -89,49 +98,33 @@ describe("Browser + Extraction Integration Tests", () => {
 
         expect(result.data).toBeDefined();
         expect(result.data.title).toBeDefined();
-      });
-
-      it("should use convenience function loadHtmlFromUrl", async () => {
-        const { html, url } = await loadHtmlFromUrl(testUrl);
-
-        const result = await extract({
-          content: html,
-          format: ContentFormat.HTML,
-          sourceUrl: url,
-          schema: testSchema,
-          provider: LLMProvider.GOOGLE_GEMINI,
-          googleApiKey: process.env.GOOGLE_API_KEY,
-          htmlExtractionOptions: {
-            extractMainHtml: true,
-            includeImages: false,
-            cleanUrls: true,
-          },
-        });
-
-        expect(result.data).toBeDefined();
-        expect(result.data.title).toBeDefined();
-        expect(result.processedContent).toBeDefined();
       });
 
       it("should handle multiple pages with same browser instance", async () => {
         const browser = new Browser();
+        await browser.start();
 
         try {
           // Load first page
-          const page1 = await browser.loadPage(testUrl);
-          expect(page1.html).toBeDefined();
-          expect(page1.url).toBe(testUrl);
+          const page1 = await browser.newPage();
+          await page1.goto(testUrl);
+          const html1 = await page1.content();
+          await page1.close();
 
           // Load second page with same browser instance
-          const page2 = await browser.loadPage(testUrl);
-          expect(page2.html).toBeDefined();
-          expect(page2.url).toBe(testUrl);
+          const page2 = await browser.newPage();
+          await page2.goto(testUrl);
+          const html2 = await page2.content();
+          await page2.close();
+
+          expect(html1).toBeDefined();
+          expect(html2).toBeDefined();
 
           // Extract from both
           const result1 = await extract({
-            content: page1.html,
+            content: html1,
             format: ContentFormat.HTML,
-            sourceUrl: page1.url,
+            sourceUrl: testUrl,
             schema: testSchema,
             provider: LLMProvider.GOOGLE_GEMINI,
             googleApiKey: process.env.GOOGLE_API_KEY,
@@ -154,12 +147,19 @@ describe("Browser + Extraction Integration Tests", () => {
           mainContent: z.string().nullable(),
         });
 
-        const { html, url } = await loadHtmlFromUrl(testUrl);
+        const browser = new Browser();
+        await browser.start();
+
+        const page = await browser.newPage();
+        await page.goto(testUrl);
+        const html = await page.content();
+        await page.close();
+        await browser.close();
 
         const result = await extract({
           content: html,
           format: ContentFormat.HTML,
-          sourceUrl: url,
+          sourceUrl: testUrl,
           schema: openAISchema,
           provider: LLMProvider.OPENAI,
           openaiApiKey: process.env.OPENAI_API_KEY,
@@ -175,22 +175,21 @@ describe("Browser + Extraction Integration Tests", () => {
   }
 
   describe("Error Handling", () => {
-    it("should handle invalid URLs", async () => {
+    it("should handle navigation errors", async () => {
       const browser = new Browser();
+      await browser.start();
 
-      await expect(browser.loadPage("not-a-valid-url")).rejects.toThrow(
-        "Invalid URL provided"
-      );
+      const page = await browser.newPage();
 
-      await browser.close();
-    });
-
-    it("should handle unreachable URLs", async () => {
+      // Use a non-existent domain
       const unreachableUrl = "https://this-domain-does-not-exist-12345.com";
 
       await expect(
-        loadHtmlFromUrl(unreachableUrl, undefined, { timeout: 5000 })
+        page.goto(unreachableUrl, { timeout: 5000 })
       ).rejects.toThrow();
+
+      await page.close();
+      await browser.close();
     });
 
     it("should handle browser startup errors gracefully", async () => {

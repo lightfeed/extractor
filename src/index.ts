@@ -135,5 +135,5 @@ export {
   createBrowserProvider,
 } from "./utils/browserProviders";
 
-// Browser class for URL loading
-export { Browser, loadHtmlFromUrl } from "./browser";
+// Browser class for web page loading
+export { Browser } from "./browser";
