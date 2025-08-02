@@ -126,3 +126,14 @@ export * from "./types";
 
 // Utils
 export { safeSanitizedParser } from "./utils/schemaUtils";
+
+// Browser utilities
+export {
+  LocalBrowserProvider,
+  ServerlessBrowserProvider,
+  RemoteBrowserProvider,
+  createBrowserProvider,
+} from "./utils/browserProviders";
+
+// Browser class for web page loading
+export { Browser } from "./browser";

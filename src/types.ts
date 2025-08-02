@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Browser, LaunchOptions, ConnectOverCDPOptions } from "playwright";
 
 /**
  * Represents the format of the input content
@@ -16,6 +17,68 @@ export enum LLMProvider {
   OPENAI = "openai",
   GOOGLE_GEMINI = "google_gemini",
 }
+
+/**
+ * Proxy configuration for network requests
+ */
+export interface ProxyConfig {
+  host: string;
+  port: number;
+  auth?: {
+    username: string;
+    password: string;
+  };
+}
+
+/**
+ * Abstract base class for browser providers
+ */
+export abstract class BrowserProvider<T = Browser> {
+  abstract start(): Promise<T>;
+  abstract close(): Promise<void>;
+  abstract getSession(): T | null;
+}
+
+/**
+ * Configuration for local browser provider
+ */
+export interface LocalBrowserConfig {
+  type: "local";
+  options?: Omit<Omit<LaunchOptions, "headless">, "channel">;
+  headless?: boolean;
+  proxy?: ProxyConfig;
+}
+
+/**
+ * Configuration for serverless browser provider
+ */
+export interface ServerlessBrowserConfig {
+  type: "serverless";
+  executablePath: string;
+  options?: Omit<
+    Omit<Omit<LaunchOptions, "headless">, "channel">,
+    "executablePath"
+  >;
+  headless?: boolean;
+  proxy?: ProxyConfig;
+}
+
+/**
+ * Configuration for remote browser provider
+ */
+export interface RemoteBrowserConfig {
+  type: "remote";
+  wsEndpoint: string;
+  options?: Omit<ConnectOverCDPOptions, "endpointURL">;
+}
+
+/**
+ * Union type for all browser configurations
+ */
+export type BrowserConfig =
+  | LocalBrowserConfig
+  | ServerlessBrowserConfig
+  | RemoteBrowserConfig;
 
 /**
  * Options for HTML content processing
@@ -84,7 +147,7 @@ export interface ExtractorOptions<T extends z.ZodTypeAny> {
   /** Custom prompt for extraction (if not provided, a default prompt will be used) */
   prompt?: string;
 
-  /** URL of the HTML content, required only for HTML format */
+  /** URL of the HTML content, required when format is HTML to properly handle relative URLs */
   sourceUrl?: string;
 
   /** Maximum number of input tokens to send to the LLM. Uses a rough conversion of 4 characters per token. */

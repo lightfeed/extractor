@@ -31,22 +31,21 @@
 
 ## How It Works
 
-1. **HTML to Markdown Conversion**: If the input is HTML, it's first converted to clean, LLM-friendly markdown. This step can optionally extract only the main content, include images, and clean URLs by removing tracking parameters. See [HTML to Markdown Conversion](#html-to-markdown-conversion) section for details. The `convertHtmlToMarkdown` function can also be used standalone.
+1. **Browser Loading (New!)**: Use the new `Browser` class to load web pages with Stealth Playwright, handling JavaScript-rendered content with built-in anti-bot patches. Choose between local, serverless, or remote browser configurations for maximum flexibility.
 
-2. **LLM Processing**: The markdown is sent to an LLM in JSON mode (Google Gemini 2.5 flash or OpenAI GPT-4o mini by default) with a prompt to extract structured data according to your Zod schema or enrich existing data objects. You can set a maximum input token limit to control costs or avoid exceeding the model's context window, and the function will return token usage metrics for each LLM call.
+2. **HTML to Markdown Conversion**: HTML content (either from a browser or direct HTML string) is converted to clean, LLM-friendly markdown. This step can optionally extract only the main content, include images, and clean URLs by removing tracking parameters. See [HTML to Markdown Conversion](#html-to-markdown-conversion) section for details. The `convertHtmlToMarkdown` function can also be used standalone.
 
-3. **JSON Sanitization**: If the LLM structured output fails or doesn't fully match your schema, a sanitization process attempts to recover and fix the data. This makes complex schema extraction much more robust, especially with deeply nested objects and arrays. See [JSON Sanitization](#json-sanitization) for details.
+3. **LLM Processing**: The markdown is sent to an LLM in JSON mode (Google Gemini 2.5 flash or OpenAI GPT-4o mini by default) with a prompt to extract structured data according to your Zod schema or enrich existing data objects. You can set a maximum input token limit to control costs or avoid exceeding the model's context window, and the function will return token usage metrics for each LLM call.
 
-4. **URL Validation**: All extracted URLs are validated - handling relative URLs, removing invalid ones, and repairing markdown-escaped links. See [URL Validation](#url-validation) section for details.
+4. **JSON Sanitization**: If the LLM structured output fails or doesn't fully match your schema, a sanitization process attempts to recover and fix the data. This makes complex schema extraction much more robust, especially with deeply nested objects and arrays. See [JSON Sanitization](#json-sanitization) for details.
+
+5. **URL Validation**: All extracted URLs are validated - handling relative URLs, removing invalid ones, and repairing markdown-escaped links. See [URL Validation](#url-validation) section for details.
 
 ## Why use an LLM extractor?
-💡 Understands natural language criteria and context to extract the data you need, not just raw content as displayed
-
-🚀 One solution works across all websites — no need to build custom scrapers for each site
-
-🔁 Resilient to website changes, e.g., HTML structure, CSS selectors, or page layout
-
-✅ LLMs are becoming more accurate and cost-effective
+- 💡 Understands natural language criteria and context to extract the data you need, not just raw content as displayed
+- 🚀 One solution works across all websites — no need to build custom scrapers for each site
+- 🔁 Resilient to website changes, e.g., HTML structure, CSS selectors, or page layout
+- ✅ LLMs are becoming more accurate and cost-effective
 
 ## Installation
 
@@ -62,58 +61,118 @@ While this library provides a robust foundation for data extraction, you might w
 - 📊 **Deduplication and Value History**: Maintain consistent data with automatic change tracking
 - 🤖 **AI Enrichment**: Enrich any data point — contact info, product details, company intelligence, and more
 - ⏰ **Workflow Automation**: Set up intelligent data pipelines that run automatically on your schedule
+- 📍 **Geolocation Targeting**: Capture region-specific price, inventory and campaign data for competitive intelligence
 
 ## Usage
 
-### Basic Example
+### E-commerce Product Extraction with Stealth Browser
+
+This example demonstrates extracting structured product data from a real e-commerce website using a stealth Playwright browser that handles JavaScript rendering and bypasses anti-bot detection. We use a local browser configuration here, but you can also use [serverless or remote browsers](#browser-loading) for production deployments.
+
+> **💡 Try it yourself:** Run `npm run test:browser` to execute this example, or view the complete code in `src/dev/testBrowserExtraction.ts`
 
 ```typescript
-import { extract, ContentFormat, LLMProvider } from "@lightfeed/extractor";
+import { extract, ContentFormat, LLMProvider, Browser } from "@lightfeed/extractor";
 import { z } from "zod";
 
-async function main() {
-  // Define your schema. We will run one more sanitization process to recover imperfect, failed, or partial LLM outputs into this schema
-  const schema = z.object({
-    title: z.string(),
-    author: z.string().optional(),
-    date: z.string().optional(),
-    tags: z.array(z.string()),
-    summary: z.string().describe("A brief summary of the article content within 500 characters"),
-    // Use .url() to fix and validate URL field
-    links: z.array(z.string().url()).describe("All URLs mentioned in the article")
-  });
+// Define schema for product catalog extraction
+const productCatalogSchema = z.object({
+  products: z
+    .array(
+      z.object({
+        name: z.string().describe("Product name or title"),
+        brand: z.string().optional().describe("Brand name"),
+        price: z.number().describe("Current price"),
+        originalPrice: z
+          .number()
+          .optional()
+          .describe("Original price if on sale"),
+        rating: z.number().optional().describe("Product rating out of 5"),
+        reviewCount: z.number().optional().describe("Number of reviews"),
+        productUrl: z.string().url().describe("Link to product detail page"),
+        imageUrl: z.string().url().optional().describe("Product image URL"),
+      })
+    )
+    .describe("List of bread and bakery products"),
+});
 
-  // Extract from HTML
+// Create browser instance
+const browser = new Browser({
+  type: "local", // also supporting serverless and remote browser
+  headless: false,
+});
+
+try {
+  await browser.start();
+  console.log("Browser started successfully");
+
+  // Create page and navigate to e-commerce site
+  const page = await browser.newPage();
+
+  const pageUrl = "https://www.walmart.ca/en/browse/grocery/bread-bakery/10019_6000194327359";
+  await page.goto(pageUrl);
+
+  try {
+    await page.waitForLoadState("networkidle", { timeout: 10000 });
+  } catch {
+    console.log("Network idle timeout, continuing...");
+  }
+
+  // Get HTML content
+  const html = await page.content();
+  console.log(`Loaded ${html.length} characters of HTML`);
+
+  // Extract structured product data
+  console.log("Extracting product data using LLM...");
   const result = await extract({
-    content: `
-      <article>
-        <h1>Understanding Async/Await in JavaScript</h1>
-        <div class="meta">
-          <span class="author">John Doe</span> |
-          <span class="date">January 15, 2023</span> |
-          <span class="tags">#JavaScript #Programming</span>
-        </div>
-        <p>This article explains how async/await works in modern JavaScript.</p>
-        <p>Learn more at <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function">MDN</a>
-        or check our <a href="/blog/javascript-tutorials">tutorials</a>.</p>
-      </article>
-    `,
+    content: html,
     format: ContentFormat.HTML,
-    schema,
-    sourceUrl: "https://example.com/blog/async-await", // Required for HTML format to handle relative URLs
-    googleApiKey: "your-google-gemini-api-key",
+    sourceUrl: pageUrl,
+    schema: productCatalogSchema,
+    provider: LLMProvider.GOOGLE_GEMINI,
+    googleApiKey: process.env.GOOGLE_API_KEY, // Use environment variable
+    htmlExtractionOptions: {
+      extractMainHtml: true,
+      includeImages: true,
+      cleanUrls: true
+    }
   });
 
-  console.log("Extracted Data:", result.data);
-  console.log("Token Usage:", result.usage);
+  console.log("Extraction successful!");
+  console.log("Found products:", result.data.products.length);
+
+  // Print the extracted data
+  console.log(JSON.stringify(result.data, null, 2));
+
+} catch (error) {
+  console.error("Error during extraction:", error);
+} finally {
+  await browser.close();
+  console.log("Browser closed");
 }
 
-main().catch(console.error);
+/* Expected output:
+{
+  "products": [
+    {
+      "name": "Dempster's® Signature The Classic Burger Buns, Pack of 8; 568 g",
+      "brand": "Dempster's",
+      "price": 3.98,
+      "originalPrice": 4.57,
+      "rating": 4.7376,
+      "reviewCount": 141,
+      "productUrl": "https://www.walmart.ca/en/ip/dempsters-signature-the-classic-burger-buns/6000188080451?classType=REGULAR&athbdg=L1300",
+      "imageUrl": "https://i5.walmartimages.ca/images/Enlarge/725/979/6000196725979.jpg?odnHeight=580&odnWidth=580&odnBg=FFFFFF"
+    },
+    ... (more products)
+  ]
+}
+*/
 ```
 
 ### Extracting from Markdown or Plain Text
 
-You can also extract structured data directly from Markdown string:
+You can also extract structured data directly from HTML, Markdown or text string:
 
 ```typescript
 const result = await extract({
@@ -338,6 +397,92 @@ interface ExtractorResult<T> {
     outputTokens?: number;
   };
 }
+```
+
+### Browser Loading
+
+The `Browser` class provides a clean interface for loading web pages with Playwright. Use it with direct Playwright calls to load HTML content before extracting structured data.
+
+#### Constructor
+
+```typescript
+const browser = new Browser(config?: BrowserConfig)
+```
+
+#### Methods
+
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `start()` | Start the browser instance | `Promise<void>` |
+| `close()` | Close the browser and clean up resources | `Promise<void>` |
+| `newPage()` | Create a new page (browser must be started) | `Promise<Page>` |
+| `newContext()` | Create a new browser context (browser must be started) | `Promise<BrowserContext>` |
+| `isStarted()` | Check if the browser is currently running | `boolean` |
+
+#### Local Browser
+
+Use your local Chrome browser for development and testing. Perfect for:
+- Local development and debugging
+- Testing automation scripts
+- Quick prototyping
+
+```typescript
+import { Browser } from "@lightfeed/extractor";
+
+const browser = new Browser({
+  type: "local",
+  headless: false, // Show browser window for debugging
+});
+```
+
+#### Serverless
+
+Perfect for AWS Lambda and other serverless environments. Uses [@sparticuz/chromium](https://github.com/Sparticuz/chromium) to run Chrome in serverless environments with minimal cold start times and memory usage. Supports proxy configuration for geo-tracking and unblocking.
+
+> [!IMPORTANT]
+> This project uses Playwright, which ships with a specific version of Chromium. You need to install the matching version of `@sparticuz/chromium`.
+>
+> For running on AWS Lambda, lambda layer with ARM64 architecture is preferred.
+
+```typescript
+import { Browser } from "@lightfeed/extractor";
+import chromium from "@sparticuz/chromium";
+
+const browser = new Browser({
+  type: "serverless",
+  executablePath: await chromium.executablePath(),
+  options: {
+    args: chromium.args,
+  },
+  // Use proxy (optional)
+  proxy: {
+    host: "proxy.example.com",
+    port: 8080,
+    auth: {
+      username: "user",
+      password: "pass"
+    }
+  }
+});
+```
+
+#### Remote Browser
+
+Connect to any remote browser instance via WebSocket. Great for:
+- Brightdata's Scraping Browser
+- Custom browser instances in the cloud
+- Browser farms and proxy services
+
+```typescript
+import { Browser } from "@lightfeed/extractor";
+
+const browser = new Browser({
+  type: "remote",
+  wsEndpoint: "ws://your-remote-browser:9222/devtools/browser/ws",
+  options: {
+    timeout: 30000
+  }
+});
 ```
 
 ### HTML to Markdown Conversion
