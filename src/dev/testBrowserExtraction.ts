@@ -17,15 +17,11 @@ const productCatalogSchema = z.object({
           .string()
           .optional()
           .describe("Original price if on sale"),
-        weight: z.string().optional().describe("Product weight or size"),
         rating: z.number().optional().describe("Product rating out of 5"),
         reviewCount: z.number().optional().describe("Number of reviews"),
       })
     )
     .describe("List of bread and bakery products"),
-  totalProductsFound: z
-    .number()
-    .describe("Total number of products found on the page"),
 });
 
 async function testProductCatalogExtraction() {
@@ -81,26 +77,11 @@ async function testProductCatalogExtraction() {
     });
 
     console.log("✅ Extraction successful!");
-    console.log(`\n📊 Found ${result.data.totalProductsFound} products\n`);
 
-    console.log("🍞 WALMART BREAD & BAKERY PRODUCTS:");
-    console.log("=".repeat(60));
-
-    result.data.products.forEach((product, index) => {
-      console.log(`\n${index + 1}. ${product.name}`);
-      if (product.brand) console.log(`   Brand: ${product.brand}`);
-      console.log(`   Price: ${product.price}`);
-      if (product.originalPrice)
-        console.log(`   Original Price: ${product.originalPrice}`);
-      if (product.weight) console.log(`   Size: ${product.weight}`);
-      if (product.rating)
-        console.log(
-          `   Rating: ${product.rating}/5 (${product.reviewCount || 0} reviews)`
-        );
-    });
-
-    console.log("\n" + "=".repeat(60));
-    console.log(`Total products extracted: ${result.data.products.length}`);
+    console.log("🍞 EXTRACTED PRODUCT CATALOG DATA:");
+    console.log("=".repeat(80));
+    console.log(JSON.stringify(result.data, null, 2));
+    console.log("=".repeat(80));
 
     console.log("\n💰 Token Usage:");
     console.log(`Input tokens: ${result.usage.inputTokens}`);
