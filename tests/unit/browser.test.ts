@@ -61,6 +61,8 @@ describe("Browser Class", () => {
 
       expect(browser.isStarted()).toBe(true);
       expect(mockProvider.start).toHaveBeenCalled();
+
+      await browser.close();
     });
 
     it("should throw error when starting already started browser", async () => {
@@ -70,6 +72,8 @@ describe("Browser Class", () => {
       await expect(browser.start()).rejects.toThrow(
         "Browser is already started. Call close() first if you want to restart."
       );
+
+      await browser.close();
     });
 
     it("should close browser successfully", async () => {
@@ -83,7 +87,8 @@ describe("Browser Class", () => {
 
     it("should handle closing non-started browser gracefully", async () => {
       const browser = new Browser();
-      await browser.close(); // Should not throw
+      await browser.close();
+
       expect(browser.isStarted()).toBe(false);
     });
   });
@@ -97,6 +102,8 @@ describe("Browser Class", () => {
 
       expect(page).toBe(mockPage);
       expect(mockBrowser.newPage).toHaveBeenCalled();
+
+      await browser.close();
     });
 
     it("should throw error when creating page with non-started browser", async () => {
@@ -113,6 +120,7 @@ describe("Browser Class", () => {
 
       await browser.start();
       expect(browser.getBrowser()).toBe(mockBrowser);
+      await browser.close();
     });
 
     it("should allow direct page operations with Playwright API", async () => {
@@ -131,7 +139,6 @@ describe("Browser Class", () => {
       await page.waitForLoadState("networkidle", { timeout: 10000 });
       const html = await page.content();
       const title = await page.title();
-      await page.close();
 
       expect(mockPage.goto).toHaveBeenCalledWith(url);
       expect(mockPage.waitForLoadState).toHaveBeenCalledWith("networkidle", {
@@ -142,6 +149,8 @@ describe("Browser Class", () => {
       expect(mockPage.close).toHaveBeenCalled();
       expect(html).toBe(htmlContent);
       expect(title).toBe("Test Title");
+
+      await browser.close();
     });
 
     it("should handle page errors gracefully", async () => {
@@ -157,9 +166,9 @@ describe("Browser Class", () => {
         "Navigation failed"
       );
 
-      // Page should still be closeable
-      await page.close();
       expect(mockPage.close).toHaveBeenCalled();
+
+      await browser.close();
     });
 
     it("should support multiple pages", async () => {
@@ -172,6 +181,8 @@ describe("Browser Class", () => {
       expect(page1).toBe(mockPage);
       expect(page2).toBe(mockPage);
       expect(mockBrowser.newPage).toHaveBeenCalledTimes(2);
+
+      await browser.close();
     });
   });
 });

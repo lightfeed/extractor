@@ -66,7 +66,6 @@ describe("Browser + Extraction Integration Tests", () => {
           }
 
           const html = await page.content();
-          await page.close();
           await browser.close();
 
           // Extract data from the loaded HTML
@@ -88,7 +87,6 @@ describe("Browser + Extraction Integration Tests", () => {
           // The processed content should be markdown (converted from HTML)
           expect(result.processedContent).toContain("Example Domain");
         } catch (error) {
-          await page.close();
           await browser.close();
 
           if (handleNetworkError(error)) {
@@ -110,7 +108,6 @@ describe("Browser + Extraction Integration Tests", () => {
           await page.goto(testUrl, { waitUntil: "load" });
 
           const html = await page.content();
-          await page.close();
           await browser.close();
 
           const result = await extract({
@@ -125,7 +122,6 @@ describe("Browser + Extraction Integration Tests", () => {
           expect(result.data).toBeDefined();
           expect(result.data.title).toBeDefined();
         } catch (error) {
-          await page.close();
           await browser.close();
 
           if (handleNetworkError(error)) {
@@ -209,7 +205,6 @@ describe("Browser + Extraction Integration Tests", () => {
         try {
           await page.goto(testUrl);
           const html = await page.content();
-          await page.close();
           await browser.close();
 
           const result = await extract({
@@ -227,7 +222,6 @@ describe("Browser + Extraction Integration Tests", () => {
           expect(result.processedContent).toBeDefined();
           expect(result.usage).toBeDefined();
         } catch (error) {
-          await page.close();
           await browser.close();
 
           if (handleNetworkError(error)) {
@@ -254,7 +248,6 @@ describe("Browser + Extraction Integration Tests", () => {
         page.goto(unreachableUrl, { timeout: 5000 })
       ).rejects.toThrow();
 
-      await page.close();
       await browser.close();
     });
 
@@ -295,8 +288,6 @@ describe("Browser + Extraction Integration Tests", () => {
           // Get HTML content
           const html = await page.content();
 
-          await page.close();
-
           // Extract data
           const result = await extract({
             content: html,
@@ -309,8 +300,6 @@ describe("Browser + Extraction Integration Tests", () => {
 
           expect(result.data.title).toBeDefined();
         } catch (error) {
-          await page.close();
-
           if (handleNetworkError(error)) {
             console.log("Skipping test due to network connectivity issues");
             return;
@@ -352,8 +341,6 @@ describe("Browser + Extraction Integration Tests", () => {
         }
       } finally {
         // Always cleanup resources
-        await page.close();
-        await context.close();
         await browser.close();
       }
     });

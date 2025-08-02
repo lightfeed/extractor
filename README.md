@@ -151,7 +151,6 @@ async function extractFromWebpage() {
 
     // Get HTML content
     const html = await page.content();
-    await page.close();
 
     // Extract structured data from the loaded HTML
     const result = await extract({
@@ -205,7 +204,6 @@ async function extractWithCustomOperations() {
     });
     
     const html = await page.content();
-    await page.close();
 
     // Use the extracted HTML with your schema
     const schema = z.object({ title: z.string() });
@@ -560,7 +558,6 @@ try {
   
   // Extract HTML
   const html = await page.content();
-  await page.close();
   
   // Use with extract() function
   const result = await extract({
@@ -590,7 +587,6 @@ try {
     await page.goto(url);
     
     const html = await page.content();
-    await page.close();
     
     // Process each page...
   }

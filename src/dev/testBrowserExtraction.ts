@@ -45,7 +45,6 @@ async function testBrowserClassExtraction() {
     const html = await page.content();
     console.log(`📄 Loaded ${html.length} characters of HTML`);
 
-    await page.close();
     await browser.close();
     console.log("✅ Browser closed");
 
@@ -112,8 +111,6 @@ async function testAdvancedBrowserOperations() {
     // Get the final HTML
     const html = await page.content();
 
-    // Close the page
-    await page.close();
     console.log("✅ Page operations completed");
 
     // Extract data from the processed HTML
@@ -161,8 +158,6 @@ async function testMultiplePages() {
       const html = await page.content();
       console.log(`📄 Loaded ${html.length} characters`);
 
-      await page.close();
-
       // Extract just the title for efficiency
       const titleSchema = z.object({ title: z.string() });
 
@@ -203,7 +198,6 @@ async function testConcurrentPages() {
       const page = await browser.newPage();
       await page.goto(url);
       const html = await page.content();
-      await page.close();
 
       console.log(`📄 Page ${index + 1} loaded: ${html.length} characters`);
       return { url, html };
