@@ -16,6 +16,7 @@ const handleNetworkError = (error: any) => {
     error.message.includes("net::ERR_INTERNET_DISCONNECTED") ||
     error.message.includes("net::ERR_NAME_NOT_RESOLVED") ||
     error.message.includes("Navigation timeout") ||
+    error.message.includes("page.goto: Timeout") ||
     error.message.includes("net::ERR_NETWORK_CHANGED")
   ) {
     console.log(
