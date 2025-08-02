@@ -45,7 +45,7 @@
 - 💡 Understands natural language criteria and context to extract the data you need, not just raw content as displayed
 - 🚀 One solution works across all websites — no need to build custom scrapers for each site
 - 🔁 Resilient to website changes, e.g., HTML structure, CSS selectors, or page layout
-= ✅ LLMs are becoming more accurate and cost-effective
+- ✅ LLMs are becoming more accurate and cost-effective
 
 ## Installation
 
