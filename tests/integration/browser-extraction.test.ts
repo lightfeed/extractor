@@ -1,9 +1,6 @@
 import { extract, ContentFormat, LLMProvider, Browser } from "../../src/index";
 import { z } from "zod";
 
-// These tests require internet access and will be skipped in environments where it's not available
-// They test against real websites to ensure the Browser class works end-to-end with extraction
-
 const testSchema = z.object({
   title: z.string(),
   description: z.string().optional(),
@@ -11,16 +8,6 @@ const testSchema = z.object({
 });
 
 describe("Browser + Extraction Integration Tests", () => {
-  // Skip these tests if no API keys are available
-  const hasGoogleKey = !!process.env.GOOGLE_API_KEY;
-  const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
-
-  // Skip all tests if no API keys
-  if (!hasGoogleKey && !hasOpenAIKey) {
-    it.skip("Skipping browser extraction tests - no API keys available", () => {});
-    return;
-  }
-
   // Test with a simple, stable website
   const testUrl = "https://example.com";
 
