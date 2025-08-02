@@ -65,9 +65,11 @@ While this library provides a robust foundation for data extraction, you might w
 
 ## Usage
 
-### Extract from Web Pages
+### E-commerce Product Extraction with Stealth Browser
 
-This example shows how to extract structured data from an e-commerce website using a local browser with robust error handling.
+This example demonstrates extracting structured product data from a real e-commerce website using a stealth Playwright browser that handles JavaScript rendering and bypasses anti-bot detection. We use a local browser configuration here, but you can also use [serverless or remote browsers](#browser-loading) for production deployments.
+
+> **💡 Try it yourself:** Run `npm run test:browser` to execute this example, or view the complete code in `src/dev/testBrowserExtraction.ts`
 
 ```typescript
 import { extract, ContentFormat, LLMProvider, Browser } from "@lightfeed/extractor";
@@ -397,7 +399,7 @@ interface ExtractorResult<T> {
 }
 ```
 
-### Browser Class
+### Browser Loading
 
 The `Browser` class provides a clean interface for loading web pages with Playwright. Use it with direct Playwright calls to load HTML content before extracting structured data.
 
