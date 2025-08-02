@@ -20,5 +20,4 @@ module.exports = {
   },
   setupFiles: ["<rootDir>/tests/setup.ts"],
   watchman: false,
-  detectOpenHandles: true,
 };
