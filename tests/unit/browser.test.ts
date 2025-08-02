@@ -49,7 +49,7 @@ describe("Browser Class", () => {
     it("should create browser with custom config", () => {
       const config = {
         type: "local" as const,
-        options: { args: ["--no-sandbox"] },
+        options: { args: ["--disable-dev-shm-usage"] },
       };
       const browser = new Browser(config);
       expect(browser.isStarted()).toBe(false);

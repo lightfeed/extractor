@@ -27,9 +27,6 @@ async function testBrowserClassExtraction() {
     // Using Browser class directly with full Playwright control
     const browser = new Browser({
       type: "local",
-      options: {
-        args: ["--no-sandbox", "--disable-dev-shm-usage"],
-      },
     });
 
     await browser.start();

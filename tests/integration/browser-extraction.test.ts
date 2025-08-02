@@ -72,12 +72,7 @@ describe("Browser + Extraction Integration Tests", () => {
       });
 
       it("should use custom browser configuration", async () => {
-        const browserConfig = {
-          type: "local" as const,
-          options: { args: ["--no-sandbox", "--disable-dev-shm-usage"] },
-        };
-
-        const browser = new Browser(browserConfig);
+        const browser = new Browser({ type: "local" });
         await browser.start();
 
         const page = await browser.newPage();

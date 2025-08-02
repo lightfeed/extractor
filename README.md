@@ -133,9 +133,6 @@ async function extractFromWebpage() {
   // Create browser with configuration
   const browser = new Browser({
     type: "local", // or "serverless" or "remote"
-    options: {
-      args: ["--no-sandbox", "--disable-dev-shm-usage"]
-    }
   });
 
   try {
@@ -518,27 +515,19 @@ const browser = new Browser(config?: BrowserConfig)
 // Local browser with custom Chrome flags
 const browser = new Browser({
   type: "local",
-  options: {
-    args: ["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
-  }
+  headless: false,
 });
 
 // Serverless browser (AWS Lambda)
 const serverlessBrowser = new Browser({
   type: "serverless",
   executablePath: "/opt/chrome/chrome",
-  options: {
-    args: ["--no-sandbox", "--single-process"]
-  }
 });
 
 // Remote browser (Docker or browser farm)
 const remoteBrowser = new Browser({
   type: "remote",
   wsEndpoint: "ws://chrome-service:9222",
-  options: {
-    timeout: 30000
-  }
 });
 
 // With proxy
