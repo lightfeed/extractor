@@ -311,19 +311,20 @@ describe("Browser + Extraction Integration Tests", () => {
       }
     });
 
-    it("should provide access to underlying Playwright browser", async () => {
+    it("should provide access to browser context for advanced operations", async () => {
       const browser = new Browser();
 
-      expect(browser.getBrowser()).toBeNull();
+      // Should fail before browser is started
+      await expect(browser.newContext()).rejects.toThrow(
+        "Browser not started. Call start() first."
+      );
 
       await browser.start();
-      const playwrightBrowser = browser.getBrowser();
+      const context = await browser.newContext();
 
-      expect(playwrightBrowser).toBeDefined();
-      expect(playwrightBrowser).not.toBeNull();
+      expect(context).toBeDefined();
 
-      // Should be able to use Playwright browser directly
-      const context = await playwrightBrowser!.newContext();
+      // Should be able to use Playwright context directly
       const page = await context.newPage();
 
       try {

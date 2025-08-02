@@ -504,7 +504,7 @@ const browser = new Browser(config?: BrowserConfig)
 | `start()` | Start the browser instance | `Promise<void>` |
 | `close()` | Close the browser and clean up resources | `Promise<void>` |
 | `newPage()` | Create a new page (browser must be started) | `Promise<Page>` |
-| `getBrowser()` | Get the underlying Playwright browser instance | `PlaywrightBrowser \| null` |
+| `newContext()` | Create a new browser context (browser must be started) | `Promise<BrowserContext>` |
 | `isStarted()` | Check if the browser is currently running | `boolean` |
 
 #### Usage Examples
@@ -567,29 +567,6 @@ try {
     schema: mySchema,
     googleApiKey: "your-key"
   });
-} finally {
-  await browser.close();
-}
-```
-
-#### Multiple Pages Example
-
-```typescript
-const browser = new Browser();
-try {
-  await browser.start();
-  
-  // Process multiple URLs
-  const urls = ["https://example.com", "https://httpbin.org/html"];
-  
-  for (const url of urls) {
-    const page = await browser.newPage();
-    await page.goto(url);
-    
-    const html = await page.content();
-    
-    // Process each page...
-  }
 } finally {
   await browser.close();
 }

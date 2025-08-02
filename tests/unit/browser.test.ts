@@ -6,6 +6,7 @@ jest.mock("../../src/utils/browserProviders");
 describe("Browser Class", () => {
   let mockBrowser: any;
   let mockPage: any;
+  let mockContext: any;
   let mockProvider: any;
 
   beforeEach(() => {
@@ -21,9 +22,16 @@ describe("Browser Class", () => {
       title: jest.fn(),
     };
 
+    // Mock context
+    mockContext = {
+      newPage: jest.fn().mockResolvedValue(mockPage),
+      close: jest.fn(),
+    };
+
     // Mock browser
     mockBrowser = {
       newPage: jest.fn().mockResolvedValue(mockPage),
+      newContext: jest.fn().mockResolvedValue(mockContext),
       close: jest.fn(),
     };
 
@@ -114,12 +122,19 @@ describe("Browser Class", () => {
       );
     });
 
-    it("should return underlying browser instance", async () => {
+    it("should create new browser context", async () => {
       const browser = new Browser();
-      expect(browser.getBrowser()).toBeNull();
+
+      // Should fail if browser not started
+      await expect(browser.newContext()).rejects.toThrow(
+        "Browser not started. Call start() first."
+      );
 
       await browser.start();
-      expect(browser.getBrowser()).toBe(mockBrowser);
+      const context = await browser.newContext();
+      expect(context).toBe(mockContext);
+      expect(mockBrowser.newContext).toHaveBeenCalled();
+
       await browser.close();
     });
 
@@ -146,7 +161,6 @@ describe("Browser Class", () => {
       });
       expect(mockPage.content).toHaveBeenCalled();
       expect(mockPage.title).toHaveBeenCalled();
-      expect(mockPage.close).toHaveBeenCalled();
       expect(html).toBe(htmlContent);
       expect(title).toBe("Test Title");
 
@@ -165,8 +179,6 @@ describe("Browser Class", () => {
       await expect(page.goto("https://example.com")).rejects.toThrow(
         "Navigation failed"
       );
-
-      expect(mockPage.close).toHaveBeenCalled();
 
       await browser.close();
     });

@@ -1,4 +1,4 @@
-import { Browser as PlaywrightBrowser, Page } from "playwright";
+import { Browser as PlaywrightBrowser, BrowserContext, Page } from "playwright";
 import { BrowserConfig } from "./types";
 import { createBrowserProvider } from "./utils/browserProviders";
 
@@ -40,11 +40,15 @@ export class Browser {
   }
 
   /**
-   * Get the underlying Playwright browser instance
-   * Useful for advanced operations not covered by this class
+   * Create a new browser context
+   * Browser must be started first
+   * Use context for advanced operations like setting cookies, headers, etc.
    */
-  getBrowser(): PlaywrightBrowser | null {
-    return this.browser;
+  async newContext(): Promise<BrowserContext> {
+    if (!this.browser) {
+      throw new Error("Browser not started. Call start() first.");
+    }
+    return await this.browser.newContext();
   }
 
   /**
