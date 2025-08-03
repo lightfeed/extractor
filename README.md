@@ -4,7 +4,7 @@
 </h1>
 
 <p align="center">
-  <strong>Using LLMs and AI Browser Automation to Robustly and Completely Extract Web Data</strong>
+  <strong>Robust Web Data Extraction Using LLMs and AI Browser Automation</strong>
 </p>
 
 <div align="center">
