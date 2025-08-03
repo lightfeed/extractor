@@ -4,7 +4,7 @@
 </h1>
 
 <p align="center">
-  <strong>Robust Web Data Extraction Using LLMs and Browser Automations</strong>
+  <strong>Robust Web Data Extraction Using LLMs and AI Browser Automation</strong>
 </p>
 
 <div align="center">
@@ -32,9 +32,6 @@
 ## Overview
 Lightfeed Extractor is a robust LLM-based web extraction library written in Typescript. Use natural language prompts to navigate web pages and extract structured data completely and accurately.
 
-> [!TIP]  
-> Building web data pipelines or intelligence databases at scale? Go to [lightfeed.ai](https://lightfeed.ai) - our full platform with premium data sources, AI enrichment, workflow automation, advanced anti-bot, and managed databases - get started for free.
-
 ### Features
 
 - 🤖 [**Browser Automation**](#browser-automation) - Run Playwright browsers locally, serverless in the cloud, or connect to a remote browser server. Avoid detection with built-in anti-bot patches and proxy configuration.
@@ -46,6 +43,10 @@ Lightfeed Extractor is a robust LLM-based web extraction library written in Type
 - 🛠️ [**JSON Recovery**](#json-recovery) - Sanitize and recover failed JSON output. This makes complex schema extraction much more robust, especially with deeply nested objects and arrays.
 
 - 🔗 [**URL Validation**](#url-validation) - Handle relative URLs, remove invalid ones, and repair markdown-escaped links.
+
+
+> [!TIP]  
+> Building web data pipelines or intelligence databases at scale? Go to [lightfeed.ai](https://lightfeed.ai) - our full platform with premium data sources, AI enrichment, workflow automation, advanced anti-bot, and managed databases - get started for free.
 
 ## Installation
 
