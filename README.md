@@ -4,7 +4,7 @@
 </h1>
 
 <p align="center">
-  <strong>Using LLMs to Robustly Extract Web Data</strong>
+  <strong>Robust Web Data Extraction Using LLMs and Browser Automations</strong>
 </p>
 
 <div align="center">
@@ -30,7 +30,10 @@
 </div>
 
 ## Overview
-Lightfeed is a robust LLM-based web extraction library written in Typescript. Use natural language prompts to navigate web pages and extract structured data. Looking to create pipelines or databases based on web data? Go to [lightfeed.ai](https://lightfeed.ai) and start for free!
+Lightfeed Extractor is a robust LLM-based web extraction library written in Typescript. Use natural language prompts to navigate web pages and extract structured data completely and accurately.
+
+> [!TIP]  
+> Building web data pipelines or intelligence databases at scale? Go to [lightfeed.ai](https://lightfeed.ai) - our full platform with premium data sources, AI enrichment, workflow automation, advanced anti-bot, and managed databases - get started for free.
 
 ### Features
 
@@ -38,7 +41,7 @@ Lightfeed is a robust LLM-based web extraction library written in Typescript. Us
 
 - 🧹 [**LLM-ready Markdown**](#html-to-markdown-conversion) - Convert HTML to LLM-ready markdown, with options to extract only main content and clean URLs by removing tracking parameters.
 
-- ⚡️ [**LLM Extraction**](#llm-extraction-function) - Use LLMs in JSON mode to extract structured data accordingly to input Zod schema. Token usage limit and tracking included.
+- ⚡️ [**LLM Extraction**](#llm-extraction-function) - Use LLMs in JSON mode to extract structured data according to input Zod schema. Token usage limit and tracking included.
 
 - 🛠️ [**JSON Recovery**](#json-recovery) - Sanitize and recover failed JSON output. This makes complex schema extraction much more robust, especially with deeply nested objects and arrays.
 
