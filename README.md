@@ -34,7 +34,7 @@ Lightfeed is a robust LLM-based web extraction library written in Typescript. Us
 
 ### Features
 
-- 🤖 [**Browser Automation**](#browser-automation) - Run Playwright browsers locally, serverless in the cloud, or connect to a remote browser server. Avoid detection with built-in anti-bot patches.
+- 🤖 [**Browser Automation**](#browser-automation) - Run Playwright browsers locally, serverless in the cloud, or connect to a remote browser server. Avoid detection with built-in anti-bot patches and proxy configuration.
 
 - 🧹 [**LLM-ready Markdown**](#html-to-markdown-conversion) - Convert HTML to LLM-ready markdown, with options to extract only main content and clean URLs by removing tracking parameters.
 
@@ -54,10 +54,7 @@ npm install @lightfeed/extractor
 
 ### E-commerce Product Extraction
 
-This example demonstrates extracting structured product data from a real e-commerce website using a local headed Playwright browser. In production environment, you can also use [serverless or remote browsers](#browser-automation) for production deployments.
-
-> [!TIP]
-> **💡 Try it yourself:** Run `npm run test:browser` to execute this example, or view the complete code in [testBrowserExtraction.ts](src/dev/testBrowserExtraction.ts).
+This example demonstrates extracting structured product data from a real e-commerce website using a local headed Playwright browser. For production environments, you can use a Playwright browser in [serverless](#serverless-browser) or [remote](#remote-browser) mode.
 
 ```typescript
 import { extract, ContentFormat, LLMProvider, Browser } from "@lightfeed/extractor";
@@ -157,6 +154,9 @@ try {
 }
 */
 ```
+
+> [!TIP]
+> Run `npm run test:browser` to execute this example, or view the complete code in [testBrowserExtraction.ts](src/dev/testBrowserExtraction.ts).
 
 ### Extracting from Markdown or Plain Text
 
@@ -331,16 +331,16 @@ const result = await extract({
 > [!NOTE]
 > Currently, URL cleaning supports Amazon product URLs (amazon.com, amazon.ca) by removing `/ref=` parameters and everything after. The feature is designed to be extensible for other e-commerce platforms in the future.
 
-## API Keys
+## LLM Extraction Function
 
-The library will check for API keys in the following order:
+### LLM API Keys
+
+The library will check for LLM API keys in the following order:
 
 1. Directly provided API key parameter (`googleApiKey` or `openaiApiKey`)
 2. Environment variables (`GOOGLE_API_KEY` or `OPENAI_API_KEY`)
 
 While the library can use environment variables, it's recommended to explicitly provide API keys in production code for better control and transparency.
-
-## LLM Extraction Function
 
 ### `extract<T>(options: ExtractorOptions<T>): Promise<ExtractorResult<T>>`
 
@@ -359,12 +359,12 @@ Main function to extract structured data from content.
 | `googleApiKey` | `string` | Google Gemini API key (if using Google Gemini provider) | From env `GOOGLE_API_KEY` |
 | `openaiApiKey` | `string` | OpenAI API key (if using OpenAI provider) | From env `OPENAI_API_KEY` |
 | `temperature` | `number` | Temperature for the LLM (0-1) | `0` |
-| `htmlExtractionOptions` | `HTMLExtractionOptions` | HTML-specific options for content extraction (see below) | `{}` |
+| `htmlExtractionOptions` | `HTMLExtractionOptions` | HTML-specific options for content extraction [see below](#htmlextractionoptions) | `{}` |
 | `sourceUrl` | `string` | URL of the HTML content, required when format is HTML to properly handle relative URLs | Required for HTML format |
 | `maxInputTokens` | `number` | Maximum number of input tokens to send to the LLM. Uses a rough conversion of 4 characters per token. When specified, content will be truncated if the total prompt size exceeds this limit. | `undefined` |
 | `extractionContext` | `Record<string, any>` | Extraction context that provides additional information for the extraction process. Can include partial data objects to enrich, metadata like URLs/locations, or any contextual information relevant to the extraction task. | `undefined` |
 
-#### HTML Extraction Options
+#### htmlExtractionOptions
 
 | Option | Type | Description | Default |
 |--------|------|-------------|---------|
@@ -387,18 +387,16 @@ interface ExtractorResult<T> {
 }
 ```
 
-### Browser Automation
+## Browser Automation
 
 The `Browser` class provides a clean interface for loading web pages with Playwright. Use it with direct Playwright calls to load HTML content before extracting structured data.
 
-#### Constructor
-
+**Constructor**
 ```typescript
 const browser = new Browser(config?: BrowserConfig)
 ```
 
-#### Methods
-
+**Methods**
 | Method | Description | Returns |
 |--------|-------------|---------|
 | `start()` | Start the browser instance | `Promise<void>` |
@@ -407,7 +405,7 @@ const browser = new Browser(config?: BrowserConfig)
 | `newContext()` | Create a new browser context (browser must be started) | `Promise<BrowserContext>` |
 | `isStarted()` | Check if the browser is currently running | `boolean` |
 
-#### Local Browser
+### Local Browser
 
 Use your local Chrome browser for development and testing. Perfect for:
 - Local development and debugging
@@ -423,7 +421,7 @@ const browser = new Browser({
 });
 ```
 
-#### Serverless
+### Serverless Browser
 
 Perfect for AWS Lambda and other serverless environments. Uses [@sparticuz/chromium](https://github.com/Sparticuz/chromium) to run Chrome in serverless environments with minimal cold start times and memory usage. Supports proxy configuration for geo-tracking and unblocking.
 
@@ -454,7 +452,7 @@ const browser = new Browser({
 });
 ```
 
-#### Remote Browser
+### Remote Browser
 
 Connect to any remote browser instance via WebSocket. Great for:
 - Brightdata's Scraping Browser
@@ -473,7 +471,7 @@ const browser = new Browser({
 });
 ```
 
-### HTML to Markdown Conversion
+## HTML to Markdown Conversion
 
 The `convertHtmlToMarkdown` utility function allows you to convert HTML content to markdown without performing extraction.
 
@@ -482,7 +480,7 @@ The `convertHtmlToMarkdown` utility function allows you to convert HTML content 
 convertHtmlToMarkdown(html: string, options?: HTMLExtractionOptions, sourceUrl?: string): string
 ```
 
-#### Parameters
+### Parameters
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
@@ -490,11 +488,11 @@ convertHtmlToMarkdown(html: string, options?: HTMLExtractionOptions, sourceUrl?:
 | `options` | `HTMLExtractionOptions` | See [HTML Extraction Options](#html-extraction-options) | `undefined` |
 | `sourceUrl` | `string` | URL of the HTML content, used to properly convert relative URLs to absolute URLs | `undefined` |
 
-#### Return Value
+### Return Value
 
 The function returns a string containing the markdown conversion of the HTML content.
 
-#### Example
+### Example
 
 ```typescript
 import { convertHtmlToMarkdown, HTMLExtractionOptions } from "@lightfeed/extractor";
@@ -531,7 +529,7 @@ console.log(markdownWithOptions);
 // Output: "![Logo](https://example.com/images/logo.png)[About](https://example.com/about)[Amazon Product](https://www.amazon.com/product/dp/B123)"
 ```
 
-### JSON Recovery
+## JSON Recovery
 
 The `safeSanitizedParser` utility function helps sanitize and recover partial data from LLM outputs that may not perfectly conform to your schema.
 
@@ -636,7 +634,7 @@ This utility is especially useful when:
 - Objects contain invalid values that don't match constraints
 - You want to recover as much valid data as possible while safely removing problematic parts
 
-### URL Validation
+## URL Validation
 
 The library provides robust URL validation and handling through Zod's `z.string().url()` validator:
 
@@ -655,7 +653,7 @@ const result = await extract({
 });
 ```
 
-#### How URL Validation Works
+### How URL Validation Works
 
 Our URL validation system provides several key benefits:
 
