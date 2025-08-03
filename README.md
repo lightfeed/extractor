@@ -4,7 +4,7 @@
 </h1>
 
 <p align="center">
-  <strong>Use LLMs to robustly extract structured data from HTML and markdown</strong>
+  <strong>Using LLMs to Robustly Extract Web Data</strong>
 </p>
 
 <div align="center">
@@ -29,23 +29,20 @@
   </p>
 </div>
 
-## How It Works
+## Overview
+Lightfeed is a robust LLM-based web extraction library written in Typescript. Use natural language prompts to navigate web pages and extract structured data. Looking to create pipelines or databases based on web data? Go to [lightfeed.ai](https://lightfeed.ai) and start for free!
 
-1. **Browser Loading (New!)**: Use the new `Browser` class to load web pages with Stealth Playwright, handling JavaScript-rendered content with built-in anti-bot patches. Choose between local, serverless, or remote browser configurations for maximum flexibility.
+### Features
 
-2. **HTML to Markdown Conversion**: HTML content (either from a browser or direct HTML string) is converted to clean, LLM-friendly markdown. This step can optionally extract only the main content, include images, and clean URLs by removing tracking parameters. See [HTML to Markdown Conversion](#html-to-markdown-conversion) section for details. The `convertHtmlToMarkdown` function can also be used standalone.
+- 🤖 [**Browser Automation**](#browser-automation) - Run Playwright browsers locally, serverless in the cloud, or connect to a remote browser server. Avoid detection with built-in anti-bot patches and proxy configuration.
 
-3. **LLM Processing**: The markdown is sent to an LLM in JSON mode (Google Gemini 2.5 flash or OpenAI GPT-4o mini by default) with a prompt to extract structured data according to your Zod schema or enrich existing data objects. You can set a maximum input token limit to control costs or avoid exceeding the model's context window, and the function will return token usage metrics for each LLM call.
+- 🧹 [**LLM-ready Markdown**](#html-to-markdown-conversion) - Convert HTML to LLM-ready markdown, with options to extract only main content and clean URLs by removing tracking parameters.
 
-4. **JSON Sanitization**: If the LLM structured output fails or doesn't fully match your schema, a sanitization process attempts to recover and fix the data. This makes complex schema extraction much more robust, especially with deeply nested objects and arrays. See [JSON Sanitization](#json-sanitization) for details.
+- ⚡️ [**LLM Extraction**](#llm-extraction-function) - Use LLMs in JSON mode to extract structured data accordingly to input Zod schema. Token usage limit and tracking included.
 
-5. **URL Validation**: All extracted URLs are validated - handling relative URLs, removing invalid ones, and repairing markdown-escaped links. See [URL Validation](#url-validation) section for details.
+- 🛠️ [**JSON Recovery**](#json-recovery) - Sanitize and recover failed JSON output. This makes complex schema extraction much more robust, especially with deeply nested objects and arrays.
 
-## Why use an LLM extractor?
-- 💡 Understands natural language criteria and context to extract the data you need, not just raw content as displayed
-- 🚀 One solution works across all websites — no need to build custom scrapers for each site
-- 🔁 Resilient to website changes, e.g., HTML structure, CSS selectors, or page layout
-- ✅ LLMs are becoming more accurate and cost-effective
+- 🔗 [**URL Validation**](#url-validation) - Handle relative URLs, remove invalid ones, and repair markdown-escaped links.
 
 ## Installation
 
@@ -53,23 +50,11 @@
 npm install @lightfeed/extractor
 ```
 
-## Hosted Version
-
-While this library provides a robust foundation for data extraction, you might want to consider [lightfeed.ai](https://lightfeed.ai) if you need:
-
-- ⚡️ **Database with API**: Manage data in a production-ready vector database with real-time API
-- 📊 **Deduplication and Value History**: Maintain consistent data with automatic change tracking
-- 🤖 **AI Enrichment**: Enrich any data point — contact info, product details, company intelligence, and more
-- ⏰ **Workflow Automation**: Set up intelligent data pipelines that run automatically on your schedule
-- 📍 **Geolocation Targeting**: Capture region-specific price, inventory and campaign data for competitive intelligence
-
 ## Usage
 
-### E-commerce Product Extraction with Stealth Browser
+### E-commerce Product Extraction
 
-This example demonstrates extracting structured product data from a real e-commerce website using a stealth Playwright browser that handles JavaScript rendering and bypasses anti-bot detection. We use a local browser configuration here, but you can also use [serverless or remote browsers](#browser-loading) for production deployments.
-
-> **💡 Try it yourself:** Run `npm run test:browser` to execute this example, or view the complete code in `src/dev/testBrowserExtraction.ts`
+This example demonstrates extracting structured product data from a real e-commerce website using a local headed Playwright browser. For production environments, you can use a Playwright browser in [serverless](#serverless-browser) or [remote](#remote-browser) mode.
 
 ```typescript
 import { extract, ContentFormat, LLMProvider, Browser } from "@lightfeed/extractor";
@@ -169,6 +154,9 @@ try {
 }
 */
 ```
+
+> [!TIP]
+> Run `npm run test:browser` to execute this example, or view the complete code in [testBrowserExtraction.ts](src/dev/testBrowserExtraction.ts).
 
 ### Extracting from Markdown or Plain Text
 
@@ -343,16 +331,16 @@ const result = await extract({
 > [!NOTE]
 > Currently, URL cleaning supports Amazon product URLs (amazon.com, amazon.ca) by removing `/ref=` parameters and everything after. The feature is designed to be extensible for other e-commerce platforms in the future.
 
-## API Keys
+## LLM Extraction Function
 
-The library will check for API keys in the following order:
+### LLM API Keys
+
+The library will check for LLM API keys in the following order:
 
 1. Directly provided API key parameter (`googleApiKey` or `openaiApiKey`)
 2. Environment variables (`GOOGLE_API_KEY` or `OPENAI_API_KEY`)
 
 While the library can use environment variables, it's recommended to explicitly provide API keys in production code for better control and transparency.
-
-## API Reference
 
 ### `extract<T>(options: ExtractorOptions<T>): Promise<ExtractorResult<T>>`
 
@@ -371,12 +359,12 @@ Main function to extract structured data from content.
 | `googleApiKey` | `string` | Google Gemini API key (if using Google Gemini provider) | From env `GOOGLE_API_KEY` |
 | `openaiApiKey` | `string` | OpenAI API key (if using OpenAI provider) | From env `OPENAI_API_KEY` |
 | `temperature` | `number` | Temperature for the LLM (0-1) | `0` |
-| `htmlExtractionOptions` | `HTMLExtractionOptions` | HTML-specific options for content extraction (see below) | `{}` |
+| `htmlExtractionOptions` | `HTMLExtractionOptions` | HTML-specific options for content extraction [see below](#htmlextractionoptions) | `{}` |
 | `sourceUrl` | `string` | URL of the HTML content, required when format is HTML to properly handle relative URLs | Required for HTML format |
 | `maxInputTokens` | `number` | Maximum number of input tokens to send to the LLM. Uses a rough conversion of 4 characters per token. When specified, content will be truncated if the total prompt size exceeds this limit. | `undefined` |
 | `extractionContext` | `Record<string, any>` | Extraction context that provides additional information for the extraction process. Can include partial data objects to enrich, metadata like URLs/locations, or any contextual information relevant to the extraction task. | `undefined` |
 
-#### HTML Extraction Options
+#### htmlExtractionOptions
 
 | Option | Type | Description | Default |
 |--------|------|-------------|---------|
@@ -399,18 +387,16 @@ interface ExtractorResult<T> {
 }
 ```
 
-### Browser Loading
+## Browser Automation
 
 The `Browser` class provides a clean interface for loading web pages with Playwright. Use it with direct Playwright calls to load HTML content before extracting structured data.
 
-#### Constructor
-
+**Constructor**
 ```typescript
 const browser = new Browser(config?: BrowserConfig)
 ```
 
-#### Methods
-
+**Methods**
 | Method | Description | Returns |
 |--------|-------------|---------|
 | `start()` | Start the browser instance | `Promise<void>` |
@@ -419,7 +405,7 @@ const browser = new Browser(config?: BrowserConfig)
 | `newContext()` | Create a new browser context (browser must be started) | `Promise<BrowserContext>` |
 | `isStarted()` | Check if the browser is currently running | `boolean` |
 
-#### Local Browser
+### Local Browser
 
 Use your local Chrome browser for development and testing. Perfect for:
 - Local development and debugging
@@ -435,7 +421,7 @@ const browser = new Browser({
 });
 ```
 
-#### Serverless
+### Serverless Browser
 
 Perfect for AWS Lambda and other serverless environments. Uses [@sparticuz/chromium](https://github.com/Sparticuz/chromium) to run Chrome in serverless environments with minimal cold start times and memory usage. Supports proxy configuration for geo-tracking and unblocking.
 
@@ -466,7 +452,7 @@ const browser = new Browser({
 });
 ```
 
-#### Remote Browser
+### Remote Browser
 
 Connect to any remote browser instance via WebSocket. Great for:
 - Brightdata's Scraping Browser
@@ -485,7 +471,7 @@ const browser = new Browser({
 });
 ```
 
-### HTML to Markdown Conversion
+## HTML to Markdown Conversion
 
 The `convertHtmlToMarkdown` utility function allows you to convert HTML content to markdown without performing extraction.
 
@@ -494,7 +480,7 @@ The `convertHtmlToMarkdown` utility function allows you to convert HTML content 
 convertHtmlToMarkdown(html: string, options?: HTMLExtractionOptions, sourceUrl?: string): string
 ```
 
-#### Parameters
+### Parameters
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
@@ -502,11 +488,11 @@ convertHtmlToMarkdown(html: string, options?: HTMLExtractionOptions, sourceUrl?:
 | `options` | `HTMLExtractionOptions` | See [HTML Extraction Options](#html-extraction-options) | `undefined` |
 | `sourceUrl` | `string` | URL of the HTML content, used to properly convert relative URLs to absolute URLs | `undefined` |
 
-#### Return Value
+### Return Value
 
 The function returns a string containing the markdown conversion of the HTML content.
 
-#### Example
+### Example
 
 ```typescript
 import { convertHtmlToMarkdown, HTMLExtractionOptions } from "@lightfeed/extractor";
@@ -543,7 +529,7 @@ console.log(markdownWithOptions);
 // Output: "![Logo](https://example.com/images/logo.png)[About](https://example.com/about)[Amazon Product](https://www.amazon.com/product/dp/B123)"
 ```
 
-### JSON Sanitization
+## JSON Recovery
 
 The `safeSanitizedParser` utility function helps sanitize and recover partial data from LLM outputs that may not perfectly conform to your schema.
 
@@ -648,7 +634,7 @@ This utility is especially useful when:
 - Objects contain invalid values that don't match constraints
 - You want to recover as much valid data as possible while safely removing problematic parts
 
-### URL Validation
+## URL Validation
 
 The library provides robust URL validation and handling through Zod's `z.string().url()` validator:
 
@@ -667,7 +653,7 @@ const result = await extract({
 });
 ```
 
-#### How URL Validation Works
+### How URL Validation Works
 
 Our URL validation system provides several key benefits:
 
@@ -766,6 +752,17 @@ npm run test -- -t "should convert forum/tech-0 to markdown"
 ```
 
 The `-t` flag uses pattern matching, so you can be as specific or general as needed to select the tests you want to run.
+
+## Hosted Version
+
+While this library provides a robust foundation for data extraction, you might want to consider [lightfeed.ai](https://lightfeed.ai) if you need:
+
+- 🤖 **AI Enrichment** - Enrich any data point: contact info, product details, company intelligence, and more
+- 📍 **Geolocation Targeting** - Capture region-specific price, inventory and campaign data for competitive intelligence
+- ⏰ **Workflow Automation** - Set up intelligent data pipelines that run automatically on your schedule
+- 📊 **Deduplication and Value History** - Maintain consistent data with automatic change tracking
+- ⚡️ **Database with API** - Manage data in a production-ready vector database with real-time API
+- 🥷 **Premium Proxies and Anti-bot** - Automatically handle CAPTCHAs and proxy rotation without intervention
 
 ## Support
 
