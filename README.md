@@ -34,7 +34,7 @@ Lightfeed Extractor is a Typescript library built for robust web data extraction
 
 ### Features
 
-- 🤖 [**Browser Automation**](#browser-automation) - Run Playwright browsers locally, serverless in the cloud, or connect to a remote browser server. Avoid detection with built-in anti-bot patches and proxy configuration.
+- 🤖 [**Browser Automation in Stealth Mode**](#browser-automation) - Launch Playwright browsers locally, in serverless clouds, or connect to a remote browser server. Avoid detection with built-in anti-bot patches and proxy configuration for reliable web scraping.
 
 - 🧹 [**LLM-ready Markdown**](#html-to-markdown-conversion) - Convert HTML to LLM-ready markdown, with options to extract only main content and clean URLs by removing tracking parameters.
 
@@ -339,12 +339,15 @@ const result = await extract({
 
 ### LLM API Keys
 
-The library will check for LLM API keys in the following order:
+The library currently supports Google Gemini and OpenAI ChatGPT models. It will check for LLM API keys in the following order:
 
 1. Directly provided API key parameter (`googleApiKey` or `openaiApiKey`)
 2. Environment variables (`GOOGLE_API_KEY` or `OPENAI_API_KEY`)
 
 While the library can use environment variables, it's recommended to explicitly provide API keys in production code for better control and transparency.
+
+> [!NOTE]
+> Want support for additional LLM providers? Please [create an issue](https://github.com/lightfeed/extractor/issues/new/choose) and let us know which providers you'd like to see supported.
 
 ### `extract<T>(options: ExtractorOptions<T>): Promise<ExtractorResult<T>>`
 
