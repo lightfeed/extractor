@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2025-09-29
+- Included html button into markdown for extraction
+
 ## [0.2.0] - 2025-08-02
 - Added playwright browser
 
