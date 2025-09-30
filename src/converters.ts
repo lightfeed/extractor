@@ -251,6 +251,7 @@ function tidyHtml(html: string, includeImages: boolean): string {
   // - footer (might contain company info)
   // - img, picture, figure (if includeImages is false)
   // - option, label, select (this can present product options and titles)
+  // - button (this can present product metadata, e.g. number of reviews)
   const manuallyCleanedElements = [
     // important
     "aside",
@@ -272,7 +273,7 @@ function tidyHtml(html: string, includeImages: boolean): string {
     // secondary
     "area",
     "blink",
-    "button",
+    // "button",
     "datalist",
     "dialog",
     "frame",
