@@ -37,8 +37,8 @@ To enable integration tests in CI, add your API keys as secrets in your GitHub r
 1. Go to your GitHub repository
 2. Click on "Settings" > "Secrets and variables" > "Actions"
 3. Add the following secrets:
-   - `OPENAI_API_KEY` - Your OpenAI API key
-   - `GOOGLE_API_KEY` - Your Google API key
+   - `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` - Your OpenAI API key
+
 
 ## Release Process
 
