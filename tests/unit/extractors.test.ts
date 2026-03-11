@@ -1,47 +1,26 @@
 import {
   getUsage,
-  createLLM,
   extractWithLLM,
   truncateContent,
   generateExtractionPrompt,
 } from "../../src/extractors";
-import { LLMProvider, ContentFormat } from "../../src/types";
+import { ContentFormat } from "../../src/types";
 import { z } from "zod";
 
-// Mock the LLM providers
-jest.mock("@langchain/openai", () => ({
-  ChatOpenAI: jest.fn().mockImplementation(() => ({
-    constructor: { name: "ChatOpenAI" },
+function createMockLLM() {
+  return {
     withStructuredOutput: jest.fn().mockImplementation(() => ({
       invoke: jest.fn().mockResolvedValue({
         parsed: { title: "Test Title", content: "Test Content" },
         raw: {
           tool_calls: [
-            {
-              args: { title: "Test Title", content: "Test Content" },
-            },
+            { args: { title: "Test Title", content: "Test Content" } },
           ],
         },
       }),
     })),
-  })),
-}));
-
-jest.mock("@langchain/google-genai", () => ({
-  ChatGoogleGenerativeAI: jest.fn().mockImplementation(() => ({
-    constructor: { name: "ChatGoogleGenerativeAI" },
-    withStructuredOutput: jest.fn().mockImplementation(() => ({
-      invoke: jest.fn().mockResolvedValue({
-        parsed: { title: "Test Title", content: "Test Content" },
-        raw: {
-          lc_kwargs: {
-            content: '{"title":"Test Title","content":"Test Content"}',
-          },
-        },
-      }),
-    })),
-  })),
-}));
+  };
+}
 
 describe("extractors", () => {
   const mockSchema = z.object({
@@ -50,7 +29,6 @@ describe("extractors", () => {
   });
 
   const mockContent = "Test content";
-  const mockApiKey = "test-api-key";
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -95,63 +73,10 @@ describe("extractors", () => {
     });
   });
 
-  describe("createLLM", () => {
-    it("should create ChatOpenAI instance for OPENAI provider", () => {
-      const llm = createLLM(
-        LLMProvider.OPENAI,
-        "gpt-4o-mini",
-        "fake-api-key",
-        0
-      );
-
-      expect(llm).toBeDefined();
-      expect(llm.constructor.name).toBe("ChatOpenAI");
-    });
-
-    it("should create ChatGoogleGenerativeAI instance for GOOGLE_GEMINI provider", () => {
-      const llm = createLLM(
-        LLMProvider.GOOGLE_GEMINI,
-        "gemini-2.5-flash",
-        "fake-api-key",
-        0
-      );
-
-      expect(llm).toBeDefined();
-      expect(llm.constructor.name).toBe("ChatGoogleGenerativeAI");
-    });
-
-    it("should throw error for unsupported provider", () => {
-      expect(() => {
-        // @ts-ignore - Testing invalid provider
-        createLLM("unsupported-provider", "model", "api-key", 0);
-      }).toThrow("Unsupported LLM provider");
-    });
-  });
-
   describe("extractWithLLM", () => {
-    it("should extract data using OpenAI", async () => {
-      const result = await extractWithLLM(
-        mockContent,
-        mockSchema,
-        LLMProvider.OPENAI,
-        "gpt-4o-mini",
-        mockApiKey
-      );
-
-      expect(result.data).toEqual({
-        title: "Test Title",
-        content: "Test Content",
-      });
-    });
-
-    it("should extract data using Google Gemini", async () => {
-      const result = await extractWithLLM(
-        mockContent,
-        mockSchema,
-        LLMProvider.GOOGLE_GEMINI,
-        "gemini-2.5-flash",
-        mockApiKey
-      );
+    it("should extract data using provided LLM", async () => {
+      const llm = createMockLLM() as any;
+      const result = await extractWithLLM(mockContent, mockSchema, llm);
 
       expect(result.data).toEqual({
         title: "Test Title",
@@ -160,14 +85,12 @@ describe("extractors", () => {
     });
 
     it("should handle custom prompts", async () => {
+      const llm = createMockLLM() as any;
       const customPrompt = "Extract the main topic and summary";
       const result = await extractWithLLM(
         mockContent,
         mockSchema,
-        LLMProvider.OPENAI,
-        "gpt-4o-mini",
-        mockApiKey,
-        0,
+        llm,
         customPrompt
       );
 
@@ -178,13 +101,11 @@ describe("extractors", () => {
     });
 
     it("should handle different content formats", async () => {
+      const llm = createMockLLM() as any;
       const result = await extractWithLLM(
         mockContent,
         mockSchema,
-        LLMProvider.OPENAI,
-        "gpt-4o-mini",
-        mockApiKey,
-        0,
+        llm,
         undefined,
         ContentFormat.TXT
       );
@@ -196,18 +117,16 @@ describe("extractors", () => {
     });
 
     it("should handle extraction context", async () => {
+      const llm = createMockLLM() as any;
       const extractionContext = {
         title: "Existing Title",
-        content: "", // Empty field that should be filled
+        content: "",
       };
 
       const result = await extractWithLLM(
         mockContent,
         mockSchema,
-        LLMProvider.OPENAI,
-        "gpt-4o-mini",
-        mockApiKey,
-        0,
+        llm,
         undefined,
         ContentFormat.TXT,
         undefined,

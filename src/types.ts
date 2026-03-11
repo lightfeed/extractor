@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import type { Browser, LaunchOptions, ConnectOverCDPOptions } from "playwright";
 
 /**
@@ -8,14 +9,6 @@ export enum ContentFormat {
   HTML = "html",
   MARKDOWN = "markdown",
   TXT = "txt",
-}
-
-/**
- * Supported LLM providers
- */
-export enum LLMProvider {
-  OPENAI = "openai",
-  GOOGLE_GEMINI = "google_gemini",
 }
 
 /**
@@ -126,20 +119,18 @@ export interface ExtractorOptions<T extends z.ZodTypeAny> {
   /** Schema for structured extraction */
   schema: T;
 
-  /** LLM Provider (OpenAI or Google Gemini) */
-  provider?: LLMProvider;
-
-  /** Model name to use */
-  modelName?: string;
-
-  /** OpenAI API key */
-  openaiApiKey?: string;
-
-  /** Google API key */
-  googleApiKey?: string;
-
-  /** Temperature for the LLM (0-1), defaults to 0 */
-  temperature?: number;
+  /**
+   * A LangChain chat model instance to use for extraction.
+   * Accepts any LangChain chat model (ChatOpenAI, ChatAnthropic, ChatGoogleGenerativeAI, etc.).
+   *
+   * @example
+   * ```typescript
+   * import { ChatOpenAI } from "@langchain/openai";
+   * const llm = new ChatOpenAI({ model: "gpt-4o-mini" });
+   * const result = await extract({ llm, content, format, schema });
+   * ```
+   */
+  llm: BaseChatModel;
 
   /** HTML-specific extraction options (only applies when format is HTML) */
   htmlExtractionOptions?: HTMLExtractionOptions;

@@ -51,7 +51,23 @@ Lightfeed Extractor is a Typescript library built for robust web data extraction
 ## Installation
 
 ```bash
-npm install @lightfeed/extractor
+npm install @lightfeed/extractor @langchain/openai
+```
+
+Install the LangChain integration package for your chosen provider. `@langchain/core` is a peer dependency — it's shared automatically:
+
+```bash
+# OpenAI
+npm install @lightfeed/extractor @langchain/openai
+
+# Google Gemini
+npm install @lightfeed/extractor @langchain/google-genai
+
+# Anthropic
+npm install @lightfeed/extractor @langchain/anthropic
+
+# Ollama (local models)
+npm install @lightfeed/extractor @langchain/ollama
 ```
 
 ## Usage
@@ -61,7 +77,8 @@ npm install @lightfeed/extractor
 This example demonstrates extracting structured product data from a real e-commerce website using a local headed Playwright browser. For production environments, you can use a Playwright browser in [serverless](#serverless-browser) or [remote](#remote-browser) mode.
 
 ```typescript
-import { extract, ContentFormat, LLMProvider, Browser } from "@lightfeed/extractor";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { extract, ContentFormat, Browser } from "@lightfeed/extractor";
 import { z } from "zod";
 
 // Define schema for product catalog extraction
@@ -114,12 +131,15 @@ try {
   // Extract structured product data
   console.log("Extracting product data using LLM...");
   const result = await extract({
+    llm: new ChatGoogleGenerativeAI({
+      apiKey: process.env.GOOGLE_API_KEY,
+      model: "gemini-2.5-flash",
+      temperature: 0,
+    }),
     content: html,
     format: ContentFormat.HTML,
     sourceUrl: pageUrl,
     schema: productCatalogSchema,
-    provider: LLMProvider.GOOGLE_GEMINI,
-    googleApiKey: process.env.GOOGLE_API_KEY, // Use environment variable
     htmlExtractionOptions: {
       extractMainHtml: true,
       includeImages: true,
@@ -164,15 +184,21 @@ try {
 
 ### Extracting from Markdown or Plain Text
 
-You can also extract structured data directly from HTML, Markdown or text string:
+You can also extract structured data directly from HTML, Markdown or text string. Pass any [LangChain chat model](https://js.langchain.com/docs/integrations/chat/):
 
 ```typescript
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { extract, ContentFormat } from "@lightfeed/extractor";
+
 const result = await extract({
+  llm: new ChatGoogleGenerativeAI({
+    apiKey: process.env.GOOGLE_API_KEY,
+    model: "gemini-2.5-flash",
+    temperature: 0,
+  }),
   content: markdownContent,
-  // Specify that content is Markdown. In addition to HTML and Markdown, you can also extract plain text by ContentFormat.TXT
   format: ContentFormat.MARKDOWN,
   schema: mySchema,
-  googleApiKey: "your-google-gemini-api-key",
 });
 ```
 
@@ -182,13 +208,12 @@ You can provide a custom prompt to guide the extraction process:
 
 ```typescript
 const result = await extract({
+  llm: myLLM,
   content: htmlContent,
   format: ContentFormat.HTML,
   schema: mySchema,
   sourceUrl: "https://example.com/products",
-  // In custom prompt, defined what data should be retrieved
   prompt: "Extract ONLY products that are on sale or have special discounts. Include their original prices, discounted prices, and product URL.",
-  googleApiKey: "your-google-gemini-api-key",
 });
 ```
 
@@ -222,12 +247,12 @@ const schema = z.object({
 });
 
 const result = await extract({
+  llm: myLLM,
   content: htmlContent,
   format: ContentFormat.HTML,
   schema: schema,
   sourceUrl: "https://acme.com/products/smart-security-camera",
   extractionContext: extractionContext,
-  googleApiKey: "your-google-gemini-api-key",
 });
 
 // The LLM will use the context to extract store name (acme) and consider the location
@@ -241,27 +266,44 @@ console.log(result.data);
 // }
 ```
 
-### Customizing LLM Provider and Managing Token Limits
+### Using Any LangChain Model
 
-You can customize LLM and manage token limits to control costs and ensure your content fits within the model's maximum context window:
+Pass **any LangChain chat model** via the `llm` option. Use OpenAI, Google Gemini, Anthropic, Mistral, Ollama, Azure OpenAI, AWS Bedrock, or any [LangChain-supported provider](https://js.langchain.com/docs/integrations/chat/):
 
 ```typescript
-// Extract from Markdown with token limit
+// OpenAI
+import { ChatOpenAI } from "@langchain/openai";
+const llm = new ChatOpenAI({ modelName: "gpt-4o-mini", apiKey: process.env.OPENAI_API_KEY });
+
+// Google Gemini
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+const llm = new ChatGoogleGenerativeAI({ model: "gemini-2.5-flash", apiKey: process.env.GOOGLE_API_KEY });
+
+// Anthropic
+import { ChatAnthropic } from "@langchain/anthropic";
+const llm = new ChatAnthropic({ model: "claude-sonnet-4-20250514", apiKey: process.env.ANTHROPIC_API_KEY });
+
+// Ollama (local)
+import { ChatOllama } from "@langchain/ollama";
+const llm = new ChatOllama({ model: "llama3" });
+```
+
+### Managing Token Limits
+
+Use `maxInputTokens` to truncate content when it exceeds the model's context window:
+
+```typescript
 const result = await extract({
+  llm: new ChatOpenAI({ modelName: "gpt-4o-mini", apiKey: "..." }),
   content: markdownContent,
   format: ContentFormat.MARKDOWN,
   schema,
-  // Provide model provider and model name
-  provider: LLMProvider.OPENAI,
-  modelName: "gpt-4o-mini",
-  openaiApiKey: "your-openai-api-key",
-  // Limit to roughly 128K tokens (max input for gpt-4o-mini)
-  maxInputTokens: 128000,
+  maxInputTokens: 128000, // Roughly 128K tokens (4 chars/token)
 });
 ```
 
 > [!WARNING]
-> For OpenAI models, optional schema is not supported. You need to change `.optional()` to `.nullable()`.
+> For OpenAI models, optional schema is not supported. Use `.nullable()` instead of `.optional()`.
 
 ### Extracting from Main HTML
 
@@ -269,6 +311,7 @@ For blog posts or articles with lots of navigation elements, headers, and footer
 
 ```typescript
 const result = await extract({
+  llm: myLLM,
   content: htmlContent,
   format: ContentFormat.HTML,
   schema: mySchema,
@@ -304,6 +347,7 @@ const productListSchema = z.object({
 });
 
 const result = await extract({
+  llm: myLLM,
   content: htmlContent,
   format: ContentFormat.HTML,
   schema: mySchema,
@@ -320,6 +364,7 @@ The library can clean URLs to remove tracking parameters and unnecessary compone
 
 ```typescript
 const result = await extract({
+  llm: myLLM,
   content: htmlContent,
   format: ContentFormat.HTML,
   schema: mySchema,
@@ -337,17 +382,9 @@ const result = await extract({
 
 ## LLM Extraction Function
 
-### LLM API Keys
+### LLM Configuration
 
-The library currently supports Google Gemini and OpenAI ChatGPT models. It will check for LLM API keys in the following order:
-
-1. Directly provided API key parameter (`googleApiKey` or `openaiApiKey`)
-2. Environment variables (`GOOGLE_API_KEY` or `OPENAI_API_KEY`)
-
-While the library can use environment variables, it's recommended to explicitly provide API keys in production code for better control and transparency.
-
-> [!NOTE]
-> Want support for additional LLM providers? Please [create an issue](https://github.com/lightfeed/extractor/issues/new/choose) and let us know which providers you'd like to see supported.
+Pass a [LangChain chat model](https://js.langchain.com/docs/integrations/chat/) instance via the `llm` option. Install the LangChain integration for your provider (e.g. `@langchain/openai`, `@langchain/google-genai`, `@langchain/anthropic`) and configure API keys on the model instance.
 
 ### `extract<T>(options: ExtractorOptions<T>): Promise<ExtractorResult<T>>`
 
@@ -357,15 +394,11 @@ Main function to extract structured data from content.
 
 | Option | Type | Description | Default |
 |--------|------|-------------|---------|
+| `llm` | `BaseChatModel` | A [LangChain chat model](https://js.langchain.com/docs/integrations/chat/) instance (ChatOpenAI, ChatGoogleGenerativeAI, ChatAnthropic, etc.) | Required |
 | `content` | `string` | HTML, markdown, or plain text content to extract from | Required |
 | `format` | `ContentFormat` | Content format (HTML, MARKDOWN, or TXT) | Required |
 | `schema` | `z.ZodTypeAny` | Zod schema defining the structure to extract | Required |
 | `prompt` | `string` | Custom prompt to guide the extraction process | Internal default prompt |
-| `provider` | `LLMProvider` | LLM provider (GOOGLE_GEMINI or OPENAI) | `LLMProvider.GOOGLE_GEMINI` |
-| `modelName` | `string` | Model name to use | Provider-specific default, Google Gemini 2.5 flash or OpenAI GPT-4o mini  |
-| `googleApiKey` | `string` | Google Gemini API key (if using Google Gemini provider) | From env `GOOGLE_API_KEY` |
-| `openaiApiKey` | `string` | OpenAI API key (if using OpenAI provider) | From env `OPENAI_API_KEY` |
-| `temperature` | `number` | Temperature for the LLM (0-1) | `0` |
 | `htmlExtractionOptions` | `HTMLExtractionOptions` | HTML-specific options for content extraction [see below](#htmlextractionoptions) | `{}` |
 | `sourceUrl` | `string` | URL of the HTML content, required when format is HTML to properly handle relative URLs | Required for HTML format |
 | `maxInputTokens` | `number` | Maximum number of input tokens to send to the LLM. Uses a rough conversion of 4 characters per token. When specified, content will be truncated if the total prompt size exceeds this limit. | `undefined` |
@@ -653,6 +686,7 @@ const schema = z.object({
 });
 
 const result = await extract({
+  llm: myLLM,
   content: markdownContent,
   format: ContentFormat.MARKDOWN,
   schema,

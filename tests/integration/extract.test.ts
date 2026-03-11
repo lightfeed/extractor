@@ -1,13 +1,30 @@
 import * as fs from "fs";
 import * as path from "path";
 import { z } from "zod";
+import { ChatOpenAI } from "@langchain/openai";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import {
   extract,
   ContentFormat,
-  LLMProvider,
   ExtractorResult,
 } from "../../src";
 import { htmlToMarkdown } from "../../src/converters";
+
+function createGeminiLLM() {
+  return new ChatGoogleGenerativeAI({
+    apiKey: process.env.GOOGLE_API_KEY,
+    model: "gemini-2.5-flash",
+    temperature: 0,
+  });
+}
+
+function createOpenAILLM(modelName = "gpt-4o-mini") {
+  return new ChatOpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+    modelName,
+    temperature: 0,
+  });
+}
 
 // Read the sample HTML files
 const blogPostHtml = fs.readFileSync(
@@ -77,11 +94,10 @@ describe("Extract Integration Tests", () => {
   describe("Blog Post Extraction", () => {
     test("should extract blog post data using Google Gemini default model", async () => {
       const result = await extract({
+        llm: createGeminiLLM(),
         content: blogPostHtml,
         format: ContentFormat.HTML,
         schema: blogSchema,
-        provider: LLMProvider.GOOGLE_GEMINI,
-        googleApiKey: process.env.GOOGLE_API_KEY,
         sourceUrl: "https://example.com/blog/async-await",
       });
 
@@ -90,11 +106,10 @@ describe("Extract Integration Tests", () => {
 
     test("should extract blog post data using OpenAI default model", async () => {
       const result = await extract({
+        llm: createOpenAILLM(),
         content: blogPostHtml,
         format: ContentFormat.HTML,
         schema: blogSchemaOpenAI,
-        provider: LLMProvider.OPENAI,
-        openaiApiKey: process.env.OPENAI_API_KEY,
         sourceUrl: "https://example.com/blog/async-await",
       });
 
@@ -223,11 +238,10 @@ describe("Extract Integration Tests", () => {
   describe("Product List Extraction", () => {
     test("should extract product list data using Google Gemini", async () => {
       const result = await extract({
+        llm: createGeminiLLM(),
         content: productListHtml,
         format: ContentFormat.HTML,
         schema: productSchema,
-        provider: LLMProvider.GOOGLE_GEMINI,
-        googleApiKey: process.env.GOOGLE_API_KEY,
         sourceUrl: "https://example.com/products",
         htmlExtractionOptions: {
           extractMainHtml: true,
@@ -239,11 +253,10 @@ describe("Extract Integration Tests", () => {
 
     test("should extract product list data using OpenAI", async () => {
       const result = await extract({
+        llm: createOpenAILLM(),
         content: productListHtml,
         format: ContentFormat.HTML,
         schema: productSchemaOpenAI,
-        provider: LLMProvider.OPENAI,
-        openaiApiKey: process.env.OPENAI_API_KEY,
         sourceUrl: "https://example.com/products",
         htmlExtractionOptions: {
           extractMainHtml: true,
@@ -268,9 +281,7 @@ describe("Extract Integration Tests", () => {
           // a value that is not expected by the schema.
           price: z.number().describe("Use 'N/A' if not available").nullable(),
         }),
-        provider: LLMProvider.OPENAI,
-        openaiApiKey: process.env.OPENAI_API_KEY,
-        modelName: "gpt-3.5-turbo",
+        llm: createOpenAILLM("gpt-3.5-turbo"),
       });
       expect(result.data).toEqual(
         expect.objectContaining({
@@ -299,8 +310,7 @@ describe("Extract Integration Tests", () => {
           // to fail in some cases to return the structured output.
           content: z.string().optional(),
         }),
-        provider: LLMProvider.GOOGLE_GEMINI,
-        googleApiKey: process.env.GOOGLE_API_KEY,
+        llm: createGeminiLLM(),
         sourceUrl: "https://example.com/blog/async-await",
       });
       expect(result.data).toBeDefined();
@@ -319,11 +329,10 @@ describe("Extract Integration Tests", () => {
       });
 
       const result = await extract({
+        llm: createOpenAILLM(),
         content: markdownContent,
         format: ContentFormat.MARKDOWN,
         schema,
-        provider: LLMProvider.OPENAI,
-        openaiApiKey: process.env.OPENAI_API_KEY,
       });
 
       // Verify the extracted data
@@ -347,11 +356,10 @@ describe("Extract Integration Tests", () => {
       });
 
       const result = await extract({
+        llm: createOpenAILLM(),
         content: markdownContent,
         format: ContentFormat.MARKDOWN,
         schema,
-        provider: LLMProvider.OPENAI,
-        openaiApiKey: process.env.OPENAI_API_KEY,
       });
 
       // Verify the extracted data
@@ -378,11 +386,10 @@ describe("Extract Integration Tests", () => {
       };
 
       const result = await extract({
+        llm: createGeminiLLM(),
         content: blogPostHtml,
         format: ContentFormat.HTML,
         schema: blogSchema,
-        provider: LLMProvider.GOOGLE_GEMINI,
-        googleApiKey: process.env.GOOGLE_API_KEY,
         sourceUrl: "https://example.com/blog/async-await",
         extractionContext: partialData,
       });
@@ -400,11 +407,10 @@ describe("Extract Integration Tests", () => {
       };
 
       const result = await extract({
+        llm: createOpenAILLM(),
         content: blogPostHtml,
         format: ContentFormat.HTML,
         schema: blogSchemaOpenAI,
-        provider: LLMProvider.OPENAI,
-        openaiApiKey: process.env.OPENAI_API_KEY,
         sourceUrl: "https://example.com/blog/async-await",
         extractionContext: partialData,
       });
@@ -436,11 +442,10 @@ describe("Extract Integration Tests", () => {
       };
 
       const result = await extract({
+        llm: createGeminiLLM(),
         content: productListHtml,
         format: ContentFormat.HTML,
         schema: productSchema,
-        provider: LLMProvider.GOOGLE_GEMINI,
-        googleApiKey: process.env.GOOGLE_API_KEY,
         sourceUrl: "https://example.com/products",
         extractionContext: partialData,
         prompt:
@@ -596,11 +601,10 @@ describe("Image Extraction Integration Tests", () => {
   // Test with OpenAI
   test("should extract images using OpenAI when includeImages is true", async () => {
     const result = await extract({
+      llm: createOpenAILLM(),
       content: articleWithImages,
       format: ContentFormat.HTML,
       schema: articleSchemaOpenAI,
-      provider: LLMProvider.OPENAI,
-      openaiApiKey: process.env.OPENAI_API_KEY,
       htmlExtractionOptions: {
         includeImages: true,
       },
@@ -613,11 +617,10 @@ describe("Image Extraction Integration Tests", () => {
   // Test with Google Gemini
   test("should extract images using Google Gemini when includeImages is true", async () => {
     const result = await extract({
+      llm: createGeminiLLM(),
       content: articleWithImages,
       format: ContentFormat.HTML,
       schema: articleSchema,
-      provider: LLMProvider.GOOGLE_GEMINI,
-      googleApiKey: process.env.GOOGLE_API_KEY,
       htmlExtractionOptions: {
         includeImages: true,
       },

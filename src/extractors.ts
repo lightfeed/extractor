@@ -1,7 +1,6 @@
-import { ChatOpenAI } from "@langchain/openai";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { z } from "zod";
-import { LLMProvider, Usage, ContentFormat } from "./types";
+import { Usage, ContentFormat } from "./types";
 import { AIMessage } from "@langchain/core/messages";
 import {
   safeSanitizedParser,
@@ -37,35 +36,6 @@ export function getUsage(output: LLMResult): Usage {
   }
 
   return usage;
-}
-
-/**
- * Create LLM instance based on provider and configuration
- */
-export function createLLM(
-  provider: LLMProvider,
-  modelName: string,
-  apiKey: string,
-  temperature: number = 0,
-) {
-  switch (provider) {
-    case LLMProvider.OPENAI:
-      return new ChatOpenAI({
-        apiKey,
-        modelName,
-        temperature,
-      });
-
-    case LLMProvider.GOOGLE_GEMINI:
-      return new ChatGoogleGenerativeAI({
-        apiKey,
-        model: modelName,
-        temperature,
-      });
-
-    default:
-      throw new Error(`Unsupported LLM provider: ${provider}`);
-  }
 }
 
 interface ExtractionPromptOptions {
@@ -181,16 +151,12 @@ export function truncateContent({
 export async function extractWithLLM<T extends z.ZodTypeAny>(
   content: string,
   schema: T,
-  provider: LLMProvider,
-  modelName: string,
-  apiKey: string,
-  temperature: number = 0,
+  llm: BaseChatModel,
   customPrompt?: string,
   format: string = ContentFormat.MARKDOWN,
   maxInputTokens?: number,
   extractionContext?: Record<string, any>,
 ): Promise<{ data: z.infer<T>; usage: Usage }> {
-  const llm = createLLM(provider, modelName, apiKey, temperature);
   let usage: Usage = {};
 
   // Truncate content if maxInputTokens is specified

@@ -2,10 +2,29 @@ import * as fs from "fs";
 import * as path from "path";
 import { config } from "dotenv";
 import { z } from "zod";
-import { extract, ContentFormat, LLMProvider } from "../index";
+import { ChatOpenAI } from "@langchain/openai";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { extract, ContentFormat } from "../index";
 
 // Load environment variables from .env file
 config({ path: path.resolve(process.cwd(), ".env") });
+
+type Provider = "gemini" | "openai";
+
+function createLLM(provider: Provider) {
+  if (provider === "gemini") {
+    return new ChatGoogleGenerativeAI({
+      apiKey: process.env.GOOGLE_API_KEY,
+      model: "gemini-2.5-flash",
+      temperature: 0,
+    });
+  }
+  return new ChatOpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+    modelName: "gpt-4o-mini",
+    temperature: 0,
+  });
+}
 
 // Helper to load HTML test fixtures
 function loadFixture(filename: string): string {
@@ -67,34 +86,25 @@ const productSchemaOpenAI = z.object({
 });
 
 // Test functions
-async function testBlogExtraction(provider = LLMProvider.GOOGLE_GEMINI) {
+async function testBlogExtraction(provider: Provider = "gemini") {
   console.log(`Testing blog post extraction with ${provider}...`);
 
   try {
     const html = loadFixture("blog-post.html");
 
-    // Check for required API key
-    if (provider === LLMProvider.GOOGLE_GEMINI && !process.env.GOOGLE_API_KEY) {
+    if (provider === "gemini" && !process.env.GOOGLE_API_KEY) {
       console.error("Error: GOOGLE_API_KEY environment variable is required");
       process.exit(1);
-    } else if (provider === LLMProvider.OPENAI && !process.env.OPENAI_API_KEY) {
+    } else if (provider === "openai" && !process.env.OPENAI_API_KEY) {
       console.error("Error: OPENAI_API_KEY environment variable is required");
       process.exit(1);
     }
 
-    const apiKey =
-      provider === LLMProvider.GOOGLE_GEMINI
-        ? process.env.GOOGLE_API_KEY
-        : process.env.OPENAI_API_KEY;
-
     const result = await extract({
+      llm: createLLM(provider),
       content: html,
       format: ContentFormat.HTML,
-      schema:
-        provider === LLMProvider.GOOGLE_GEMINI ? blogSchema : blogSchemaOpenAI,
-      provider,
-      googleApiKey: provider === LLMProvider.GOOGLE_GEMINI ? apiKey : undefined,
-      openaiApiKey: provider === LLMProvider.OPENAI ? apiKey : undefined,
+      schema: provider === "gemini" ? blogSchema : blogSchemaOpenAI,
       htmlExtractionOptions: {
         extractMainHtml: false,
       },
@@ -113,36 +123,25 @@ async function testBlogExtraction(provider = LLMProvider.GOOGLE_GEMINI) {
   }
 }
 
-async function testProductExtraction(provider = LLMProvider.GOOGLE_GEMINI) {
+async function testProductExtraction(provider: Provider = "gemini") {
   console.log(`Testing product listing extraction with ${provider}...`);
 
   try {
     const html = loadFixture("product-list.html");
 
-    // Check for required API key
-    if (provider === LLMProvider.GOOGLE_GEMINI && !process.env.GOOGLE_API_KEY) {
+    if (provider === "gemini" && !process.env.GOOGLE_API_KEY) {
       console.error("Error: GOOGLE_API_KEY environment variable is required");
       process.exit(1);
-    } else if (provider === LLMProvider.OPENAI && !process.env.OPENAI_API_KEY) {
+    } else if (provider === "openai" && !process.env.OPENAI_API_KEY) {
       console.error("Error: OPENAI_API_KEY environment variable is required");
       process.exit(1);
     }
 
-    const apiKey =
-      provider === LLMProvider.GOOGLE_GEMINI
-        ? process.env.GOOGLE_API_KEY
-        : process.env.OPENAI_API_KEY;
-
     const result = await extract({
+      llm: createLLM(provider),
       content: html,
       format: ContentFormat.HTML,
-      schema:
-        provider === LLMProvider.GOOGLE_GEMINI
-          ? productSchema
-          : productSchemaOpenAI,
-      provider,
-      googleApiKey: provider === LLMProvider.GOOGLE_GEMINI ? apiKey : undefined,
-      openaiApiKey: provider === LLMProvider.OPENAI ? apiKey : undefined,
+      schema: provider === "gemini" ? productSchema : productSchemaOpenAI,
       htmlExtractionOptions: {
         extractMainHtml: true,
       },
@@ -163,38 +162,32 @@ async function testProductExtraction(provider = LLMProvider.GOOGLE_GEMINI) {
 
 // Run tests based on command line arguments
 async function main() {
-  // Parse arguments: content type and provider
   const args = process.argv.slice(2);
-  const contentType = args[0] || "all"; // 'blog', 'product', or 'all'
-  const provider =
-    args[1]?.toUpperCase() === "OPENAI"
-      ? LLMProvider.OPENAI
-      : args[1]?.toUpperCase() === "GEMINI"
-      ? LLMProvider.GOOGLE_GEMINI
-      : "all"; // 'OPENAI', 'GEMINI', or 'all'
+  const contentType = args[0] || "all";
+  const providerArg = args[1]?.toUpperCase();
+  const provider: Provider | "all" =
+    providerArg === "OPENAI" ? "openai" : providerArg === "GEMINI" ? "gemini" : "all";
 
   console.log("API Keys available:");
   console.log(`- GOOGLE_API_KEY: ${process.env.GOOGLE_API_KEY ? "Yes" : "No"}`);
   console.log(`- OPENAI_API_KEY: ${process.env.OPENAI_API_KEY ? "Yes" : "No"}`);
   console.log("");
 
-  // Run blog tests
   if (contentType === "blog" || contentType === "all") {
-    if (provider === LLMProvider.GOOGLE_GEMINI || provider === "all") {
-      await testBlogExtraction(LLMProvider.GOOGLE_GEMINI);
+    if (provider === "gemini" || provider === "all") {
+      await testBlogExtraction("gemini");
     }
-    if (provider === LLMProvider.OPENAI || provider === "all") {
-      await testBlogExtraction(LLMProvider.OPENAI);
+    if (provider === "openai" || provider === "all") {
+      await testBlogExtraction("openai");
     }
   }
 
-  // Run product tests
   if (contentType === "product" || contentType === "all") {
-    if (provider === LLMProvider.GOOGLE_GEMINI || provider === "all") {
-      await testProductExtraction(LLMProvider.GOOGLE_GEMINI);
+    if (provider === "gemini" || provider === "all") {
+      await testProductExtraction("gemini");
     }
-    if (provider === LLMProvider.OPENAI || provider === "all") {
-      await testProductExtraction(LLMProvider.OPENAI);
+    if (provider === "openai" || provider === "all") {
+      await testProductExtraction("openai");
     }
   }
 }
