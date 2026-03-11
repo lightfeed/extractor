@@ -46,7 +46,7 @@ export function createLLM(
   provider: LLMProvider,
   modelName: string,
   apiKey: string,
-  temperature: number = 0
+  temperature: number = 0,
 ) {
   switch (provider) {
     case LLMProvider.OPENAI:
@@ -188,7 +188,7 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
   customPrompt?: string,
   format: string = ContentFormat.MARKDOWN,
   maxInputTokens?: number,
-  extractionContext?: Record<string, any>
+  extractionContext?: Record<string, any>,
 ): Promise<{ data: z.infer<T>; usage: Usage }> {
   const llm = createLLM(provider, modelName, apiKey, temperature);
   let usage: Usage = {};
@@ -217,7 +217,7 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
     const llmSchema = transformSchemaForLLM(schema);
 
     // Extract structured data with a withStructuredOutput chain
-    const structuredOutputLLM = llm.withStructuredOutput(llmSchema, {
+    const structuredOutputLLM = llm.withStructuredOutput(llmSchema as never, {
       includeRaw: true,
     });
 
@@ -266,7 +266,7 @@ export async function extractWithLLM<T extends z.ZodTypeAny>(
     // If validation fails, something went wrong with the URL validation
     if (validatedData === null) {
       throw new Error(
-        "Extracted data failed validation against original schema"
+        "Extracted data failed validation against original schema",
       );
     }
 
