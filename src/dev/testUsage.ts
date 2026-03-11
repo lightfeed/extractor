@@ -1,7 +1,8 @@
 import { config } from "dotenv";
 import * as path from "path";
 import { z } from "zod";
-import { extract, ContentFormat, LLMProvider } from "../index";
+import { ChatOpenAI } from "@langchain/openai";
+import { extract, ContentFormat } from "../index";
 
 // Load environment variables from .env file
 config({ path: path.resolve(process.cwd(), ".env") });
@@ -32,11 +33,14 @@ This is a test of the usage tracking system.
   try {
     // Run extraction
     const result = await extract({
+      llm: new ChatOpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+        modelName: "gpt-4o-mini",
+        temperature: 0,
+      }),
       content: markdown,
       format: ContentFormat.MARKDOWN,
       schema,
-      provider: LLMProvider.OPENAI,
-      openaiApiKey: process.env.OPENAI_API_KEY,
     });
 
     // Log the results

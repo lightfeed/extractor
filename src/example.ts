@@ -1,4 +1,5 @@
-import { extract, ContentFormat, LLMProvider } from "./index";
+import { ChatOpenAI } from "@langchain/openai";
+import { extract, ContentFormat } from "./index";
 import { z } from "zod";
 import { config } from "dotenv";
 import * as path from "path";
@@ -11,8 +12,8 @@ config({ path: path.resolve(process.cwd(), ".env") });
 async function example() {
   try {
     // Check if API key is available
-    if (!process.env.GOOGLE_API_KEY) {
-      console.error("Error: GOOGLE_API_KEY environment variable is required");
+    if (!process.env.OPENAI_API_KEY) {
+      console.error("Error: OPENAI_API_KEY environment variable is required");
       return;
     }
 
@@ -46,12 +47,14 @@ async function example() {
 
     // Extract data from HTML
     const result = await extract({
+      llm: new ChatOpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+        modelName: "gpt-4o-mini",
+        temperature: 0,
+      }),
       content: htmlContent,
       format: ContentFormat.HTML,
       schema,
-      // Using Google Gemini by default
-      openaiApiKey: process.env.OPENAI_API_KEY,
-      provider: LLMProvider.OPENAI,
       sourceUrl,
     });
 

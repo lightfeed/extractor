@@ -1,5 +1,14 @@
-import { extract, ContentFormat, LLMProvider, Browser } from "../../src/index";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { extract, ContentFormat, Browser } from "../../src/index";
 import { z } from "zod";
+
+function createGeminiLLM() {
+  return new ChatGoogleGenerativeAI({
+    apiKey: process.env.GOOGLE_API_KEY,
+    model: "gemini-2.5-flash",
+    temperature: 0,
+  });
+}
 
 const testSchema = z.object({
   title: z.string(),
@@ -33,12 +42,11 @@ describe("Browser + Extraction Integration Tests", () => {
 
         // Extract data from the loaded HTML
         const result = await extract({
+          llm: createGeminiLLM(),
           content: html,
           format: ContentFormat.HTML,
           sourceUrl: testUrl,
           schema: testSchema,
-          provider: LLMProvider.GOOGLE_GEMINI,
-          googleApiKey: process.env.GOOGLE_API_KEY,
         });
 
         expect(result.data).toBeDefined();

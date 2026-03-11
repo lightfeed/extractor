@@ -1,4 +1,5 @@
-import { extract, ContentFormat, LLMProvider, Browser } from "../index";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { extract, ContentFormat, Browser } from "../index";
 import { z } from "zod";
 import * as path from "path";
 import { config } from "dotenv";
@@ -65,12 +66,15 @@ async function testProductCatalogExtraction() {
     console.log("\n🧠 Extracting product data using LLM...");
 
     const result = await extract({
+      llm: new ChatGoogleGenerativeAI({
+        apiKey: process.env.GOOGLE_API_KEY,
+        model: "gemini-2.5-flash",
+        temperature: 0,
+      }),
       content: html,
       format: ContentFormat.HTML,
       sourceUrl: testUrl,
       schema: productCatalogSchema,
-      provider: LLMProvider.GOOGLE_GEMINI,
-      googleApiKey: process.env.GOOGLE_API_KEY,
       htmlExtractionOptions: {
         extractMainHtml: true,
         includeImages: true,

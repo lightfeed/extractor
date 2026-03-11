@@ -1,69 +1,21 @@
 import { z } from "zod";
-import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { htmlToMarkdown } from "./converters";
-import { createLLM, extractWithLLM } from "./extractors";
+import { extractWithLLM } from "./extractors";
 import {
   ContentFormat,
-  LLMProvider,
   ExtractorOptions,
   ExtractorResult,
   HTMLExtractionOptions,
 } from "./types";
 
-// Default model names
-const DEFAULT_MODELS = {
-  [LLMProvider.GOOGLE_GEMINI]: "gemini-2.5-flash",
-  [LLMProvider.OPENAI]: "gpt-4o-mini",
-};
-
-/**
- * Resolve the LLM to use: either a user-provided instance or one created from provider config.
- */
-function resolveLLM<T extends z.ZodTypeAny>(
-  options: ExtractorOptions<T>,
-): BaseChatModel {
-  if (options.llm) {
-    return options.llm;
-  }
-
-  const provider = options.provider ?? LLMProvider.GOOGLE_GEMINI;
-  let apiKey: string;
-
-  if (provider === LLMProvider.GOOGLE_GEMINI) {
-    apiKey = options.googleApiKey ?? process.env.GOOGLE_API_KEY ?? "";
-    if (!apiKey) {
-      throw new Error(
-        "Google API key is required. Provide googleApiKey option or set GOOGLE_API_KEY environment variable."
-      );
-    }
-  } else if (provider === LLMProvider.OPENAI) {
-    apiKey = options.openaiApiKey ?? process.env.OPENAI_API_KEY ?? "";
-    if (!apiKey) {
-      throw new Error(
-        "OpenAI API key is required. Provide openaiApiKey option or set OPENAI_API_KEY environment variable."
-      );
-    }
-  } else {
-    throw new Error(`Unsupported LLM provider: ${provider}`);
-  }
-
-  const modelName = options.modelName ?? DEFAULT_MODELS[provider];
-  return createLLM(provider, modelName, apiKey, options.temperature ?? 0);
-}
-
 /**
  * Extract structured data from HTML, markdown, or plain text content using an LLM
  *
  * @param options Configuration options for extraction
+ * @param options.llm A LangChain chat model instance (ChatOpenAI, ChatAnthropic, etc.)
  * @param options.content HTML, markdown, or plain text content to extract from
  * @param options.format Content format (HTML, MARKDOWN, or TXT)
  * @param options.schema Zod schema defining the structure to extract
- * @param options.llm A LangChain chat model instance. When provided, provider/modelName/apiKey options are ignored.
- * @param options.provider LLM provider (GOOGLE_GEMINI or OPENAI). Ignored when llm is provided.
- * @param options.modelName Model name to use (provider-specific). Ignored when llm is provided.
- * @param options.googleApiKey Google API key (if using Google Gemini provider). Ignored when llm is provided.
- * @param options.openaiApiKey OpenAI API key (if using OpenAI provider). Ignored when llm is provided.
- * @param options.temperature Temperature for the LLM (0-1). Ignored when llm is provided.
  * @param options.prompt Custom prompt to guide the extraction process
  * @param options.sourceUrl URL of the HTML content (required for HTML format)
  * @param options.htmlExtractionOptions HTML-specific options for content extraction
@@ -74,7 +26,6 @@ function resolveLLM<T extends z.ZodTypeAny>(
 export async function extract<T extends z.ZodTypeAny>(
   options: ExtractorOptions<T>
 ): Promise<ExtractorResult<z.infer<T>>> {
-  const llm = resolveLLM(options);
 
   // Validate sourceUrl for HTML format
   if (options.format === ContentFormat.HTML && !options.sourceUrl) {
@@ -100,7 +51,7 @@ export async function extract<T extends z.ZodTypeAny>(
   const { data, usage } = await extractWithLLM(
     content,
     options.schema,
-    llm,
+    options.llm,
     options.prompt,
     formatToUse.toString(),
     options.maxInputTokens,

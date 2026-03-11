@@ -1,5 +1,14 @@
 import { z } from "zod";
-import { extract, ContentFormat, LLMProvider } from "../../src";
+import { ChatOpenAI } from "@langchain/openai";
+import { extract, ContentFormat } from "../../src";
+
+function createOpenAILLM() {
+  return new ChatOpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+    modelName: "gpt-4o-mini",
+    temperature: 0,
+  });
+}
 
 describe("ProcessedContent Integration Tests", () => {
   const simpleSchema = z.object({
@@ -25,11 +34,10 @@ describe("ProcessedContent Integration Tests", () => {
       "Title: Simple Test\n\nThis is a test of plain text extraction.";
 
     const result = await extract({
+      llm: createOpenAILLM(),
       content: plainTextContent,
       format: ContentFormat.TXT,
       schema: simpleSchema,
-      provider: LLMProvider.OPENAI,
-      openaiApiKey: process.env.OPENAI_API_KEY,
     });
 
     // Verify the processedContent is the same as the original content
@@ -46,11 +54,10 @@ describe("ProcessedContent Integration Tests", () => {
       "# Simple Test\n\nThis is a test of markdown extraction.";
 
     const result = await extract({
+      llm: createOpenAILLM(),
       content: markdownContent,
       format: ContentFormat.MARKDOWN,
       schema: simpleSchema,
-      provider: LLMProvider.OPENAI,
-      openaiApiKey: process.env.OPENAI_API_KEY,
     });
 
     // Verify the processedContent is the same as the original content
@@ -67,11 +74,10 @@ describe("ProcessedContent Integration Tests", () => {
       "<h1>Simple Test</h1><p>This is a test of HTML extraction.</p>";
 
     const result = await extract({
+      llm: createOpenAILLM(),
       content: htmlContent,
       format: ContentFormat.HTML,
       schema: simpleSchema,
-      provider: LLMProvider.OPENAI,
-      openaiApiKey: process.env.OPENAI_API_KEY,
       sourceUrl: "https://example.com",
     });
 
