@@ -1,5 +1,6 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { z } from "zod";
 import { LLMProvider, Usage, ContentFormat } from "./types";
 import { AIMessage } from "@langchain/core/messages";
@@ -181,16 +182,12 @@ export function truncateContent({
 export async function extractWithLLM<T extends z.ZodTypeAny>(
   content: string,
   schema: T,
-  provider: LLMProvider,
-  modelName: string,
-  apiKey: string,
-  temperature: number = 0,
+  llm: BaseChatModel,
   customPrompt?: string,
   format: string = ContentFormat.MARKDOWN,
   maxInputTokens?: number,
   extractionContext?: Record<string, any>,
 ): Promise<{ data: z.infer<T>; usage: Usage }> {
-  const llm = createLLM(provider, modelName, apiKey, temperature);
   let usage: Usage = {};
 
   // Truncate content if maxInputTokens is specified

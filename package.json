@@ -42,8 +42,11 @@
     "html",
     "markdown",
     "structured-data",
+    "langchain",
     "openai",
-    "gemini"
+    "gemini",
+    "anthropic",
+    "ollama"
   ],
   "author": "Lightfeed",
   "license": "Apache-2.0",

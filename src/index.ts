@@ -1,6 +1,7 @@
 import { z } from "zod";
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { htmlToMarkdown } from "./converters";
-import { extractWithLLM } from "./extractors";
+import { createLLM, extractWithLLM } from "./extractors";
 import {
   ContentFormat,
   LLMProvider,
@@ -16,28 +17,15 @@ const DEFAULT_MODELS = {
 };
 
 /**
- * Extract structured data from HTML, markdown, or plain text content using an LLM
- *
- * @param options Configuration options for extraction
- * @param options.content HTML, markdown, or plain text content to extract from
- * @param options.format Content format (HTML, MARKDOWN, or TXT)
- * @param options.schema Zod schema defining the structure to extract
- * @param options.provider LLM provider (GOOGLE_GEMINI or OPENAI)
- * @param options.modelName Model name to use (provider-specific)
- * @param options.googleApiKey Google API key (if using Google Gemini provider)
- * @param options.openaiApiKey OpenAI API key (if using OpenAI provider)
- * @param options.temperature Temperature for the LLM (0-1)
- * @param options.prompt Custom prompt to guide the extraction process
- * @param options.sourceUrl URL of the HTML content (required for HTML format)
- * @param options.htmlExtractionOptions HTML-specific options for content extraction
- * @param options.maxInputTokens Maximum number of input tokens to send to the LLM
- * @param options.extractionContext Extraction context that provides additional information for the extraction process (partial data, metadata, etc.)
- * @returns The extracted data, original content, and usage statistics
+ * Resolve the LLM to use: either a user-provided instance or one created from provider config.
  */
-export async function extract<T extends z.ZodTypeAny>(
-  options: ExtractorOptions<T>
-): Promise<ExtractorResult<z.infer<T>>> {
-  // Validate required parameters
+function resolveLLM<T extends z.ZodTypeAny>(
+  options: ExtractorOptions<T>,
+): BaseChatModel {
+  if (options.llm) {
+    return options.llm;
+  }
+
   const provider = options.provider ?? LLMProvider.GOOGLE_GEMINI;
   let apiKey: string;
 
@@ -59,15 +47,41 @@ export async function extract<T extends z.ZodTypeAny>(
     throw new Error(`Unsupported LLM provider: ${provider}`);
   }
 
+  const modelName = options.modelName ?? DEFAULT_MODELS[provider];
+  return createLLM(provider, modelName, apiKey, options.temperature ?? 0);
+}
+
+/**
+ * Extract structured data from HTML, markdown, or plain text content using an LLM
+ *
+ * @param options Configuration options for extraction
+ * @param options.content HTML, markdown, or plain text content to extract from
+ * @param options.format Content format (HTML, MARKDOWN, or TXT)
+ * @param options.schema Zod schema defining the structure to extract
+ * @param options.llm A LangChain chat model instance. When provided, provider/modelName/apiKey options are ignored.
+ * @param options.provider LLM provider (GOOGLE_GEMINI or OPENAI). Ignored when llm is provided.
+ * @param options.modelName Model name to use (provider-specific). Ignored when llm is provided.
+ * @param options.googleApiKey Google API key (if using Google Gemini provider). Ignored when llm is provided.
+ * @param options.openaiApiKey OpenAI API key (if using OpenAI provider). Ignored when llm is provided.
+ * @param options.temperature Temperature for the LLM (0-1). Ignored when llm is provided.
+ * @param options.prompt Custom prompt to guide the extraction process
+ * @param options.sourceUrl URL of the HTML content (required for HTML format)
+ * @param options.htmlExtractionOptions HTML-specific options for content extraction
+ * @param options.maxInputTokens Maximum number of input tokens to send to the LLM
+ * @param options.extractionContext Extraction context that provides additional information for the extraction process (partial data, metadata, etc.)
+ * @returns The extracted data, original content, and usage statistics
+ */
+export async function extract<T extends z.ZodTypeAny>(
+  options: ExtractorOptions<T>
+): Promise<ExtractorResult<z.infer<T>>> {
+  const llm = resolveLLM(options);
+
   // Validate sourceUrl for HTML format
   if (options.format === ContentFormat.HTML && !options.sourceUrl) {
     throw new Error(
       "sourceUrl is required when format is HTML to properly handle relative URLs"
     );
   }
-
-  // Get model name (use defaults if not provided)
-  const modelName = options.modelName ?? DEFAULT_MODELS[provider];
 
   // Convert HTML to markdown if needed
   let content = options.content;
@@ -79,7 +93,6 @@ export async function extract<T extends z.ZodTypeAny>(
       options.htmlExtractionOptions,
       options.sourceUrl
     );
-    // For the LLM, the content is now markdown
     formatToUse = ContentFormat.MARKDOWN;
   }
 
@@ -87,17 +100,13 @@ export async function extract<T extends z.ZodTypeAny>(
   const { data, usage } = await extractWithLLM(
     content,
     options.schema,
-    provider,
-    modelName,
-    apiKey,
-    options.temperature ?? 0,
+    llm,
     options.prompt,
-    formatToUse.toString(), // Pass the correct format based on actual content
+    formatToUse.toString(),
     options.maxInputTokens,
     options.extractionContext
   );
 
-  // Return the full result
   return {
     data,
     processedContent: content,

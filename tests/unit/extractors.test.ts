@@ -130,13 +130,8 @@ describe("extractors", () => {
 
   describe("extractWithLLM", () => {
     it("should extract data using OpenAI", async () => {
-      const result = await extractWithLLM(
-        mockContent,
-        mockSchema,
-        LLMProvider.OPENAI,
-        "gpt-4o-mini",
-        mockApiKey
-      );
+      const llm = createLLM(LLMProvider.OPENAI, "gpt-4o-mini", mockApiKey, 0);
+      const result = await extractWithLLM(mockContent, mockSchema, llm);
 
       expect(result.data).toEqual({
         title: "Test Title",
@@ -145,13 +140,13 @@ describe("extractors", () => {
     });
 
     it("should extract data using Google Gemini", async () => {
-      const result = await extractWithLLM(
-        mockContent,
-        mockSchema,
+      const llm = createLLM(
         LLMProvider.GOOGLE_GEMINI,
         "gemini-2.5-flash",
-        mockApiKey
+        mockApiKey,
+        0
       );
+      const result = await extractWithLLM(mockContent, mockSchema, llm);
 
       expect(result.data).toEqual({
         title: "Test Title",
@@ -160,14 +155,12 @@ describe("extractors", () => {
     });
 
     it("should handle custom prompts", async () => {
+      const llm = createLLM(LLMProvider.OPENAI, "gpt-4o-mini", mockApiKey, 0);
       const customPrompt = "Extract the main topic and summary";
       const result = await extractWithLLM(
         mockContent,
         mockSchema,
-        LLMProvider.OPENAI,
-        "gpt-4o-mini",
-        mockApiKey,
-        0,
+        llm,
         customPrompt
       );
 
@@ -178,13 +171,11 @@ describe("extractors", () => {
     });
 
     it("should handle different content formats", async () => {
+      const llm = createLLM(LLMProvider.OPENAI, "gpt-4o-mini", mockApiKey, 0);
       const result = await extractWithLLM(
         mockContent,
         mockSchema,
-        LLMProvider.OPENAI,
-        "gpt-4o-mini",
-        mockApiKey,
-        0,
+        llm,
         undefined,
         ContentFormat.TXT
       );
@@ -196,18 +187,16 @@ describe("extractors", () => {
     });
 
     it("should handle extraction context", async () => {
+      const llm = createLLM(LLMProvider.OPENAI, "gpt-4o-mini", mockApiKey, 0);
       const extractionContext = {
         title: "Existing Title",
-        content: "", // Empty field that should be filled
+        content: "",
       };
 
       const result = await extractWithLLM(
         mockContent,
         mockSchema,
-        LLMProvider.OPENAI,
-        "gpt-4o-mini",
-        mockApiKey,
-        0,
+        llm,
         undefined,
         ContentFormat.TXT,
         undefined,

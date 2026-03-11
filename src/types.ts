@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import type { Browser, LaunchOptions, ConnectOverCDPOptions } from "playwright";
 
 /**
@@ -126,19 +127,33 @@ export interface ExtractorOptions<T extends z.ZodTypeAny> {
   /** Schema for structured extraction */
   schema: T;
 
-  /** LLM Provider (OpenAI or Google Gemini) */
+  /**
+   * A LangChain chat model instance to use for extraction.
+   * When provided, `provider`, `modelName`, and API key options are ignored.
+   * Accepts any LangChain chat model (ChatOpenAI, ChatAnthropic, ChatGoogleGenerativeAI, etc.).
+   *
+   * @example
+   * ```typescript
+   * import { ChatAnthropic } from "@langchain/anthropic";
+   * const llm = new ChatAnthropic({ model: "claude-sonnet-4-20250514" });
+   * const result = await extract({ llm, content, format, schema });
+   * ```
+   */
+  llm?: BaseChatModel;
+
+  /** LLM Provider (OpenAI or Google Gemini). Ignored when `llm` is provided. */
   provider?: LLMProvider;
 
-  /** Model name to use */
+  /** Model name to use. Ignored when `llm` is provided. */
   modelName?: string;
 
-  /** OpenAI API key */
+  /** OpenAI API key. Ignored when `llm` is provided. */
   openaiApiKey?: string;
 
-  /** Google API key */
+  /** Google API key. Ignored when `llm` is provided. */
   googleApiKey?: string;
 
-  /** Temperature for the LLM (0-1), defaults to 0 */
+  /** Temperature for the LLM (0-1), defaults to 0. Ignored when `llm` is provided. */
   temperature?: number;
 
   /** HTML-specific extraction options (only applies when format is HTML) */
