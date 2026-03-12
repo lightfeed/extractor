@@ -121,7 +121,7 @@ export interface ExtractorOptions<T extends z.ZodTypeAny> {
 
   /**
    * A LangChain chat model instance to use for extraction.
-   * Accepts any LangChain chat model (ChatOpenAI, ChatAnthropic, ChatGoogleGenerativeAI, etc.).
+   * Accepts any LangChain chat model (ChatOpenAI, ChatGoogle, etc.).
    *
    * @example
    * ```typescript

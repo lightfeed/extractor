@@ -1,4 +1,4 @@
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatGoogle } from "@langchain/google";
 import { extract, ContentFormat, Browser } from "../index";
 import { z } from "zod";
 import * as path from "path";
@@ -22,7 +22,7 @@ const productCatalogSchema = z.object({
         reviewCount: z.number().optional().describe("Number of reviews"),
         productUrl: z.string().url().describe("Link to product detail page"),
         imageUrl: z.string().url().optional().describe("Product image URL"),
-      })
+      }),
     )
     .describe("List of bread and bakery products"),
 });
@@ -66,7 +66,7 @@ async function testProductCatalogExtraction() {
     console.log("\n🧠 Extracting product data using LLM...");
 
     const result = await extract({
-      llm: new ChatGoogleGenerativeAI({
+      llm: new ChatGoogle({
         apiKey: process.env.GOOGLE_API_KEY,
         model: "gemini-2.5-flash",
         temperature: 0,
