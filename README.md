@@ -15,18 +15,8 @@
           alt="Test status (main branch)"></a>
   <a href="https://github.com/lightfeed/extractor/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/lightfeed/extractor" alt="License" /></a>
-</div>
-<div>
-  <p align="center">
-    <a href="https://lightfeed.ai/docs">
-      <img src="https://img.shields.io/badge/docs-lightfeed.ai-3E63DD" alt="Lightfeed Documentation" /></a>
-    <a href="https://discord.gg/txZ2s4pgQJ" alt="Discord">
-      <img src="https://img.shields.io/discord/1209342987008614501?label=chat&logo=discord&logoColor=white&color=5865F2" alt="Discord" /></a>
-    <a href="https://www.linkedin.com/company/lightfeed-ai">
-      <img src="https://img.shields.io/badge/Follow%20on%20LinkedIn-0A66C2?logo=linkedin&logoColor=white" alt="Follow on LinkedIn" /></a>
-    <a href="https://twitter.com/lightfeed_ai">
-      <img src="https://img.shields.io/badge/Follow%20on%20X-202020?logo=x&logoColor=white" alt="Follow on X" /></a>
-  </p>
+        <a href="https://www.linkedin.com/company/lightfeed-ai">
+    <img src="https://img.shields.io/badge/Follow%20on%20LinkedIn-0A66C2?logo=linkedin&logoColor=white" alt="Follow on LinkedIn" /></a>
 </div>
 
 ## Overview
@@ -46,7 +36,7 @@ Lightfeed Extractor is a Typescript library built for robust web data extraction
 
 
 > [!TIP]  
-> Building web data pipelines or intelligence databases at scale? Go to [lightfeed.ai](https://lightfeed.ai) - our full platform with premium data sources, AI enrichment, value tracking, captcha solving and geotargeting - get started for free.
+> Building competitor intelligence at scale? Go to [app.lightfeed.ai](https://app.lightfeed.ai) - our full platform for tracking competitor pricing, sales, promotions, and SEO across 1,000+ retail chains - get started for free.
 
 ## Installation
 
@@ -800,14 +790,13 @@ The `-t` flag uses pattern matching, so you can be as specific or general as nee
 
 ## Hosted Version
 
-While this library provides a robust foundation for data extraction, you might want to consider [lightfeed.ai](https://lightfeed.ai) if you need:
+While this library provides a robust foundation for data extraction, you might want to consider [lightfeed.ai](https://app.lightfeed.ai) if you need:
 
-- 🤖 **AI Enrichment** - Enrich any data point: contact info, product details, company intelligence, and more
-- 📍 **Geolocation Targeting** - Capture region-specific price, inventory and campaign data for competitive intelligence
-- ⏰ **Workflow Automation** - Set up intelligent data pipelines that run automatically on your schedule
-- 📊 **Deduplication and Value History** - Maintain consistent data with automatic change tracking
-- ⚡️ **Database with API** - Manage data in a production-ready vector database with real-time API
-- 🥷 **Premium Proxies and Anti-bot** - Automatically handle CAPTCHAs and proxy rotation without intervention
+- 💰 **Pricing Intelligence** - Track and compare competitor prices, sales, and promotions across retailer chains and store locations
+- 🛡️ **MAP & Brand Monitoring** - Detect MAP violations across your distribution network with instant alerts
+- 🔍 **Product Discovery** - Automatically match SKUs across retailers and discover comparable competitor products at scale
+- 📈 **SEO Intelligence** - Monitor competitor product SEO strategies, keywords, and content patterns
+- 📍 **Store-level Data** - Access data across 1,000+ retailers including Home Depot, Lowe's, Walmart, Costco, and more
 
 ## Support
 
