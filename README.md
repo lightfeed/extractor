@@ -853,7 +853,7 @@ The `-t` flag uses pattern matching, so you can be as specific or general as nee
 
 ## Hosted Version
 
-While this library provides a robust foundation for data extraction, you might want to consider [lightfeed.ai](https://app.lightfeed.ai) if you need:
+While this library provides a robust foundation for data extraction, you might want to consider [app.lightfeed.ai](https://app.lightfeed.ai) if you need:
 
 - 💰 **Pricing Intelligence** - Track and compare competitor prices, sales, and promotions across retailer chains and store locations
 - 🛡️ **MAP & Brand Monitoring** - Detect MAP violations across your distribution network with instant alerts
