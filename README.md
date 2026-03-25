@@ -38,7 +38,7 @@ Lightfeed Extractor is a Typescript library built for robust web data extraction
 
 
 > [!TIP]  
-> Building competitor intelligence at scale? Go to [app.lightfeed.ai](https://app.lightfeed.ai) - our full platform for tracking competitor pricing, sales, promotions, and SEO across 1,000+ retail chains - get started for free.
+> Building retail competitor intelligence at scale? Go to [app.lightfeed.ai](https://app.lightfeed.ai) - our full platform for tracking competitor pricing, sales, promotions, and SEO across 1,000+ retail chains - get started for free. For generic web data pipelines with AI enrichment and workflow automation, check out [lightfeed.ai](https://lightfeed.ai).
 
 ## Installation
 
@@ -177,6 +177,68 @@ try {
 
 > [!TIP]
 > Run `npm run test:browser` to execute this example, or view the complete code in [testBrowserExtraction.ts](src/dev/testBrowserExtraction.ts).
+
+### Using with Browser Agent
+
+For pages that require interaction before extraction — searching, clicking through pagination, dismissing popups, etc. — you can pair this library with [@lightfeed/browser-agent](https://github.com/lightfeed/browser-agent). The browser agent uses AI to navigate pages via natural language commands, and this library extracts structured data from the result.
+
+Install both packages:
+
+```bash
+npm install @lightfeed/extractor @lightfeed/browser-agent
+```
+
+Then use the browser agent to navigate and the extractor to pull structured data:
+
+```typescript
+import { BrowserAgent } from "@lightfeed/browser-agent";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { extract, ContentFormat } from "@lightfeed/extractor";
+import { z } from "zod";
+
+const schema = z.object({
+  products: z.array(
+    z.object({
+      name: z.string(),
+      price: z.number(),
+      rating: z.number().optional(),
+      productUrl: z.string().url(),
+    })
+  ),
+});
+
+// 1. Use browser agent to navigate with AI
+const agent = new BrowserAgent({ browserProvider: "Local" });
+const page = await agent.newPage();
+await page.goto("https://amazon.com");
+await page.ai("Search for 'organic coffee' and go to the second page of results");
+
+// 2. Extract structured data from the resulting page
+const html = await page.content();
+const result = await extract({
+  llm: new ChatGoogleGenerativeAI({
+    model: "gemini-2.5-flash",
+    apiKey: process.env.GOOGLE_API_KEY,
+    temperature: 0,
+  }),
+  content: html,
+  format: ContentFormat.HTML,
+  sourceUrl: page.url(),
+  schema,
+  prompt: "Extract all product listings from the search results",
+  htmlExtractionOptions: {
+    extractMainHtml: true,
+    includeImages: true,
+    cleanUrls: true,
+  },
+});
+
+console.log(result.data.products);
+await agent.close();
+```
+
+The browser agent supports local, serverless, and remote browsers — see the [browser-agent docs](https://github.com/lightfeed/browser-agent) for configuration options.
+
 
 ### Extracting from Markdown or Plain Text
 
@@ -507,67 +569,6 @@ const browser = new Browser({
 });
 ```
 
-### Using with Browser Agent
-
-For pages that require interaction before extraction — searching, clicking through pagination, dismissing popups, etc. — you can pair this library with [@lightfeed/browser-agent](https://github.com/lightfeed/browser-agent). The browser agent uses AI to navigate pages via natural language commands, and this library extracts structured data from the result.
-
-Install both packages:
-
-```bash
-npm install @lightfeed/extractor @lightfeed/browser-agent
-```
-
-Then use the browser agent to navigate and the extractor to pull structured data:
-
-```typescript
-import { BrowserAgent } from "@lightfeed/browser-agent";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { extract, ContentFormat } from "@lightfeed/extractor";
-import { z } from "zod";
-
-const schema = z.object({
-  products: z.array(
-    z.object({
-      name: z.string(),
-      price: z.number(),
-      rating: z.number().optional(),
-      productUrl: z.string().url(),
-    })
-  ),
-});
-
-// 1. Use browser agent to navigate with AI
-const agent = new BrowserAgent({ browserProvider: "Local" });
-const page = await agent.newPage();
-await page.goto("https://amazon.com");
-await page.ai("Search for 'organic coffee' and go to the second page of results");
-
-// 2. Extract structured data from the resulting page
-const html = await page.content();
-const result = await extract({
-  llm: new ChatGoogleGenerativeAI({
-    model: "gemini-2.5-flash",
-    apiKey: process.env.GOOGLE_API_KEY,
-    temperature: 0,
-  }),
-  content: html,
-  format: ContentFormat.HTML,
-  sourceUrl: page.url(),
-  schema,
-  prompt: "Extract all product listings from the search results",
-  htmlExtractionOptions: {
-    extractMainHtml: true,
-    includeImages: true,
-    cleanUrls: true,
-  },
-});
-
-console.log(result.data.products);
-await agent.close();
-```
-
-The browser agent supports local, serverless, and remote browsers — see the [browser-agent docs](https://github.com/lightfeed/browser-agent) for configuration options.
-
 ## HTML to Markdown Conversion
 
 The `convertHtmlToMarkdown` utility function allows you to convert HTML content to markdown without performing extraction.
@@ -853,13 +854,22 @@ The `-t` flag uses pattern matching, so you can be as specific or general as nee
 
 ## Hosted Version
 
-While this library provides a robust foundation for data extraction, you might want to consider [lightfeed.ai](https://app.lightfeed.ai) if you need:
+While this library provides a robust foundation for data extraction, you might want to consider [app.lightfeed.ai](https://app.lightfeed.ai) if you need:
 
 - 💰 **Pricing Intelligence** - Track and compare competitor prices, sales, and promotions across retailer chains and store locations
 - 🛡️ **MAP & Brand Monitoring** - Detect MAP violations across your distribution network with instant alerts
 - 🔍 **Product Discovery** - Automatically match SKUs across retailers and discover comparable competitor products at scale
 - 📈 **SEO Intelligence** - Monitor competitor product SEO strategies, keywords, and content patterns
 - 📍 **Store-level Data** - Access data across 1,000+ retailers including Home Depot, Lowe's, Walmart, Costco, and more
+
+For generic web data pipelines beyond retail, [lightfeed.ai](https://lightfeed.ai) offers:
+
+- 🤖 **AI Enrichment** - Enrich any data point: contact info, product details, company intelligence, and more
+- 📍 **Geolocation Targeting** - Capture region-specific price, inventory and campaign data for competitive intelligence
+- ⏰ **Workflow Automation** - Set up intelligent data pipelines that run automatically on your schedule
+- 📊 **Deduplication and Value History** - Maintain consistent data with automatic change tracking
+- ⚡️ **Database with API** - Manage data in a production-ready vector database with real-time API
+- 🥷 **Premium Proxies and Anti-bot** - Automatically handle CAPTCHAs and proxy rotation without intervention
 
 ## Support
 
