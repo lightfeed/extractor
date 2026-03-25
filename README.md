@@ -36,7 +36,7 @@ Lightfeed Extractor is a Typescript library built for robust web data extraction
 
 
 > [!TIP]  
-> Building competitor intelligence at scale? Go to [lightfeed.ai](https://app.lightfeed.ai) - our full platform for tracking competitor pricing, sales, promotions, and SEO across 1,000+ retail chains - get started for free.
+> Building competitor intelligence at scale? Go to [app.lightfeed.ai](https://app.lightfeed.ai) - our full platform for tracking competitor pricing, sales, promotions, and SEO across 1,000+ retail chains - get started for free.
 
 ## Installation
 
