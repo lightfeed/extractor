@@ -26,6 +26,8 @@ Lightfeed Extractor is a Typescript library built for robust web data extraction
 
 - 🤖 [**Browser Automation in Stealth Mode**](#browser-automation) - Launch Playwright browsers locally, in serverless clouds, or connect to a remote browser server. Avoid detection with built-in anti-bot patches and proxy configuration for reliable web scraping.
 
+- 🧭 [**AI Browser Navigation**](#using-with-browser-agent) - Pair with [@lightfeed/browser-agent](https://github.com/lightfeed/browser-agent) to navigate pages using natural language commands before extracting structured data.
+
 - 🧹 [**LLM-ready Markdown**](#html-to-markdown-conversion) - Convert HTML to LLM-ready markdown, with options to extract only main content and clean URLs by removing tracking parameters.
 
 - ⚡️ [**LLM Extraction**](#llm-extraction-function) - Use LLMs in JSON mode to extract structured data according to input Zod schema. Token usage limit and tracking included.
@@ -504,6 +506,67 @@ const browser = new Browser({
   }
 });
 ```
+
+### Using with Browser Agent
+
+For pages that require interaction before extraction — searching, clicking through pagination, dismissing popups, etc. — you can pair this library with [@lightfeed/browser-agent](https://github.com/lightfeed/browser-agent). The browser agent uses AI to navigate pages via natural language commands, and this library extracts structured data from the result.
+
+Install both packages:
+
+```bash
+npm install @lightfeed/extractor @lightfeed/browser-agent
+```
+
+Then use the browser agent to navigate and the extractor to pull structured data:
+
+```typescript
+import { BrowserAgent } from "@lightfeed/browser-agent";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { extract, ContentFormat } from "@lightfeed/extractor";
+import { z } from "zod";
+
+const schema = z.object({
+  products: z.array(
+    z.object({
+      name: z.string(),
+      price: z.number(),
+      rating: z.number().optional(),
+      productUrl: z.string().url(),
+    })
+  ),
+});
+
+// 1. Use browser agent to navigate with AI
+const agent = new BrowserAgent({ browserProvider: "Local" });
+const page = await agent.newPage();
+await page.goto("https://amazon.com");
+await page.ai("Search for 'organic coffee' and go to the second page of results");
+
+// 2. Extract structured data from the resulting page
+const html = await page.content();
+const result = await extract({
+  llm: new ChatGoogleGenerativeAI({
+    model: "gemini-2.5-flash",
+    apiKey: process.env.GOOGLE_API_KEY,
+    temperature: 0,
+  }),
+  content: html,
+  format: ContentFormat.HTML,
+  sourceUrl: page.url(),
+  schema,
+  prompt: "Extract all product listings from the search results",
+  htmlExtractionOptions: {
+    extractMainHtml: true,
+    includeImages: true,
+    cleanUrls: true,
+  },
+});
+
+console.log(result.data.products);
+await agent.close();
+```
+
+The browser agent supports local, serverless, and remote browsers — see the [browser-agent docs](https://github.com/lightfeed/browser-agent) for configuration options.
 
 ## HTML to Markdown Conversion
 
