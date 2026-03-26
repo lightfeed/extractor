@@ -10,10 +10,10 @@ const cheerio = require("cheerio");
 /**
  * Clean URL by removing tracking parameters and unnecessary components
  */
-function cleanUrl(url: string): string {
+function cleanUrl(urlString: string): string {
   try {
     // Check if this is an Amazon URL (amazon.com or amazon.ca)
-    const urlObj = new URL(url);
+    const urlObj = new URL(urlString);
     const hostname = urlObj.hostname.toLowerCase();
 
     if (
@@ -23,17 +23,17 @@ function cleanUrl(url: string): string {
       hostname.startsWith("www.amazon.ca")
     ) {
       // For Amazon URLs, remove /ref= and everything after it
-      const refIndex = url.indexOf("/ref=");
+      const refIndex = urlString.indexOf("/ref=");
       if (refIndex !== -1) {
-        return url.substring(0, refIndex);
+        return urlString.substring(0, refIndex);
       }
     }
 
     // For other URLs, return as-is (can be extended in the future)
-    return url;
+    return urlString;
   } catch (error) {
     // If URL parsing fails, return original URL
-    return url;
+    return urlString;
   }
 }
 
@@ -235,11 +235,11 @@ function tidyHtml(html: string, includeImages: boolean): string {
 
     for (let i = 0; i < attributes.length; i++) {
       let attr = attributes[i];
-      // Check if the attribute value has an odd number of quotes
-      // If the attribute name has a quote, it might be a broken attribute. Remove it completely.
-      // (this occured at dealnews.com)
+      // Check if the attribute name has a quote, it might be a broken attribute.
+      // Remove only the attribute, not the entire element.
+      // (this occurred at dealnews.com)
       if (attr.includes('"')) {
-        element.remove();
+        element.removeAttr(attr);
       }
     }
   });
