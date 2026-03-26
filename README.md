@@ -24,7 +24,7 @@ Lightfeed Extractor is a Typescript library built for robust web data extraction
 
 ### Features
 
-- 🤖 [**Browser Automation in Stealth Mode**](#browser-automation) - Launch Playwright browsers locally, in serverless clouds, or connect to a remote browser server. Avoid detection with built-in anti-bot patches and proxy configuration for reliable web scraping.
+- 🤖 [**Browser Automation in Stealth Mode**](#browser-automation) - Launch Playwright browsers locally, in serverless clouds, or connect to a remote browser server. Uses [Patchright](https://github.com/AryansinhDot/patchright) to prevent automated browser detection (e.g., CDP leak fixes) and supports proxy configuration.
 
 - 🧭 [**AI Browser Navigation**](#using-with-browser-agent) - Pair with [@lightfeed/browser-agent](https://github.com/lightfeed/browser-agent) to navigate pages using natural language commands before extracting structured data.
 
@@ -488,6 +488,9 @@ interface ExtractorResult<T> {
 ## Browser Automation
 
 The `Browser` class provides a clean interface for loading web pages with Playwright. Use it with direct Playwright calls to load HTML content before extracting structured data.
+
+> [!NOTE]
+> This library uses [Patchright](https://github.com/AryansinhDot/patchright) (a patched Playwright) to prevent the browser from being detected as automated — for example, by fixing Chrome DevTools Protocol leaks that anti-bot systems flag. This is not about bypassing access restrictions; it simply keeps your browser session from being blocked mid-request. Please respect `robots.txt` and the terms of service of any website you interact with.
 
 **Constructor**
 ```typescript
