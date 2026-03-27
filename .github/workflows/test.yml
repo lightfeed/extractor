@@ -16,10 +16,10 @@ jobs:
         node-version: [20.x, 22.x, 24.x]
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
@@ -31,19 +31,19 @@ jobs:
         run: npm run test:unit
   
   integration-tests:
+    # Only run on push to main and scheduled runs (not on PRs — those use integration-test.yml)
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     needs: unit-tests
-    strategy:
-      matrix:
-        node-version: [20.x]
+    environment: integration-tests
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 20.x
           cache: 'npm'
           
       - name: Install dependencies
