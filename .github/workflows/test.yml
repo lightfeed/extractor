@@ -3,7 +3,7 @@ name: Test
 on:
   push:
     branches: [main]
-  pull_request:
+  pull_request_target:
     branches: [main]
   schedule:
     - cron: '0 0 * * 1' # Run weekly on Monday at midnight UTC
@@ -16,10 +16,12 @@ jobs:
         node-version: [20.x, 22.x, 24.x]
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
@@ -32,29 +34,28 @@ jobs:
   
   integration-tests:
     runs-on: ubuntu-latest
-    environment: integration-tests
     needs: unit-tests
-    strategy:
-      matrix:
-        node-version: [20.x]
-    
+    environment: integration-tests
+
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
           cache: 'npm'
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Update test data submodule
         run: npm run test:html2md:update
-        
+
       - name: Run integration tests
         run: npm run test:integration
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }} 
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
