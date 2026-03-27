@@ -1,19 +1,22 @@
-name: Integration Tests (PR)
+name: Integration Tests
 
 on:
+  push:
+    branches: [main]
   pull_request_target:
     branches: [main]
+  schedule:
+    - cron: '0 0 * * 1' # Run weekly on Monday at midnight UTC
 
 jobs:
   integration-tests:
     runs-on: ubuntu-latest
-    # Requires approval via GitHub Environment protection rules
     environment: integration-tests
 
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Use Node.js 20.x
         uses: actions/setup-node@v4
