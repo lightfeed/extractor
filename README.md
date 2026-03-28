@@ -24,10 +24,6 @@ Lightfeed Extractor is a Typescript library built for robust web data extraction
 
 ### Features
 
-- 🤖 [**Browser Automation in Stealth Mode**](#browser-automation) - Launch Playwright browsers locally, in serverless clouds, or connect to a remote browser server. Avoid detection with built-in anti-bot patches and proxy configuration for reliable web scraping.
-
-- 🧭 [**AI Browser Navigation**](#using-with-browser-agent) - Pair with [@lightfeed/browser-agent](https://github.com/lightfeed/browser-agent) to navigate pages using natural language commands before extracting structured data.
-
 - 🧹 [**LLM-ready Markdown**](#html-to-markdown-conversion) - Convert HTML to LLM-ready markdown, with options to extract only main content and clean URLs by removing tracking parameters.
 
 - ⚡️ [**LLM Extraction**](#llm-extraction-function) - Use LLMs in JSON mode to extract structured data according to input Zod schema. Token usage limit and tracking included.
@@ -38,7 +34,7 @@ Lightfeed Extractor is a Typescript library built for robust web data extraction
 
 
 > [!TIP]  
-> Building retail competitor intelligence at scale? Go to [app.lightfeed.ai](https://app.lightfeed.ai) - our full platform for tracking competitor pricing, sales, promotions, and SEO across 1,000+ retail chains - get started for free. For generic web data pipelines with AI enrichment and workflow automation, check out [lightfeed.ai](https://lightfeed.ai).
+> Building retail competitor intelligence at scale? Go to [lightfeed.ai](https://lightfeed.ai) - our full platform for tracking competitor pricing, sales, promotions, and SEO.
 
 ## Installation
 
@@ -852,31 +848,11 @@ npm run test -- -t "should convert forum/tech-0 to markdown"
 
 The `-t` flag uses pattern matching, so you can be as specific or general as needed to select the tests you want to run.
 
-## Hosted Version
-
-While this library provides a robust foundation for data extraction, you might want to consider [app.lightfeed.ai](https://app.lightfeed.ai) if you need:
-
-- 💰 **Pricing Intelligence** - Track and compare competitor prices, sales, and promotions across retailer chains and store locations
-- 🛡️ **MAP & Brand Monitoring** - Detect MAP violations across your distribution network with instant alerts
-- 🔍 **Product Discovery** - Automatically match SKUs across retailers and discover comparable competitor products at scale
-- 📈 **SEO Intelligence** - Monitor competitor product SEO strategies, keywords, and content patterns
-- 📍 **Store-level Data** - Access data across 1,000+ retailers including Home Depot, Lowe's, Walmart, Costco, and more
-
-For generic web data pipelines beyond retail, [lightfeed.ai](https://lightfeed.ai) offers:
-
-- 🤖 **AI Enrichment** - Enrich any data point: contact info, product details, company intelligence, and more
-- 📍 **Geolocation Targeting** - Capture region-specific price, inventory and campaign data for competitive intelligence
-- ⏰ **Workflow Automation** - Set up intelligent data pipelines that run automatically on your schedule
-- 📊 **Deduplication and Value History** - Maintain consistent data with automatic change tracking
-- ⚡️ **Database with API** - Manage data in a production-ready vector database with real-time API
-- 🥷 **Premium Proxies and Anti-bot** - Automatically handle CAPTCHAs and proxy rotation without intervention
-
 ## Support
 
 If you need direct assistance with your implementation:
 - Email us at support@lightfeed.ai
 - Open an issue in this repository
-- Post your question in our [Discord community](https://discord.gg/txZ2s4pgQJ)
 
 ## License
 
