@@ -3,17 +3,28 @@ name: Test
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - '*.md'
   pull_request_target:
     branches: [main]
-    paths-ignore:
-      - '*.md'
   schedule:
     - cron: '0 0 * * 1' # Run weekly on Monday at midnight UTC
 
 jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      should-test: ${{ steps.filter.outputs.should-test }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            should-test:
+              - '!*.md'
+
   unit-tests:
+    needs: check-changes
+    if: needs.check-changes.outputs.should-test == 'true' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -38,7 +49,8 @@ jobs:
   
   integration-tests:
     runs-on: ubuntu-latest
-    needs: unit-tests
+    needs: [check-changes, unit-tests]
+    if: needs.check-changes.outputs.should-test == 'true' || github.event_name == 'schedule'
     environment: integration-tests
 
     steps:
