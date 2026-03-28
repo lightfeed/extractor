@@ -32,6 +32,9 @@ Lightfeed Extractor is a Typescript library built for robust web data extraction
 
 - 🔗 [**URL Validation**](#url-validation) - Handle relative URLs, remove invalid ones, and repair markdown-escaped links.
 
+- 🤖 [**Browser Automation in Stealth Mode**](#browser-automation) - Launch Playwright browsers locally, in serverless clouds, or connect to a remote browser server. Avoid detection with built-in anti-bot patches and proxy configuration for reliable web scraping.
+
+- 🧭 [**AI Browser Navigation**](#using-with-browser-agent) - Pair with [@lightfeed/browser-agent](https://github.com/lightfeed/browser-agent) to navigate pages using natural language commands before extracting structured data.
 
 > [!TIP]  
 > Building retail competitor intelligence at scale? Go to [lightfeed.ai](https://lightfeed.ai) - our full platform for tracking competitor pricing, sales, promotions, and SEO.
