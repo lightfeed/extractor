@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="https://www.lightfeed.ai/docs/img/logo.svg" width="32" height="32" alt="Lightfeed Logo"/>
+  <img src="https://www.lightfeed.ai/static/site/logo.svg" width="32" height="32" alt="Lightfeed Logo"/>
   Lightfeed Extractor
 </h1>
 
