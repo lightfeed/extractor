@@ -3,8 +3,12 @@ name: Test
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '*.md'
   pull_request_target:
     branches: [main]
+    paths-ignore:
+      - '*.md'
   schedule:
     - cron: '0 0 * * 1' # Run weekly on Monday at midnight UTC
 
