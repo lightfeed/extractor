@@ -72,7 +72,7 @@ npm install @langchain/ollama
 This example demonstrates extracting structured product data from a real e-commerce website using a local headed Playwright browser. For production environments, you can use a Playwright browser in [serverless](#serverless-browser) or [remote](#remote-browser) mode.
 
 ```typescript
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatGoogle } from "@langchain/google";
 import { extract, ContentFormat, Browser } from "@lightfeed/extractor";
 import { z } from "zod";
 
@@ -126,7 +126,7 @@ try {
   // Extract structured product data
   console.log("Extracting product data using LLM...");
   const result = await extract({
-    llm: new ChatGoogleGenerativeAI({
+    llm: new ChatGoogle({
       apiKey: process.env.GOOGLE_API_KEY,
       model: "gemini-2.5-flash",
       temperature: 0,
@@ -244,11 +244,11 @@ The browser agent supports local, serverless, and remote browsers — see the [b
 You can also extract structured data directly from HTML, Markdown or text string. Pass any [LangChain chat model](https://js.langchain.com/docs/integrations/chat/):
 
 ```typescript
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatGoogle } from "@langchain/google";
 import { extract, ContentFormat } from "@lightfeed/extractor";
 
 const result = await extract({
-  llm: new ChatGoogleGenerativeAI({
+  llm: new ChatGoogle({
     apiKey: process.env.GOOGLE_API_KEY,
     model: "gemini-2.5-flash",
     temperature: 0,
@@ -333,8 +333,8 @@ import { ChatOpenAI } from "@langchain/openai";
 const llm = new ChatOpenAI({ modelName: "gpt-4o-mini", apiKey: process.env.OPENAI_API_KEY });
 
 // Google Gemini
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-const llm = new ChatGoogleGenerativeAI({ model: "gemini-2.5-flash", apiKey: process.env.GOOGLE_API_KEY });
+import { ChatGoogle } from "@langchain/google";
+const llm = new ChatGoogle({ model: "gemini-2.5-flash", apiKey: process.env.GOOGLE_API_KEY });
 
 // Anthropic
 import { ChatAnthropic } from "@langchain/anthropic";
@@ -451,7 +451,7 @@ Main function to extract structured data from content.
 
 | Option | Type | Description | Default |
 |--------|------|-------------|---------|
-| `llm` | `BaseChatModel` | A [LangChain chat model](https://js.langchain.com/docs/integrations/chat/) instance (ChatOpenAI, ChatGoogleGenerativeAI, ChatAnthropic, etc.) | Required |
+| `llm` | `BaseChatModel` | A [LangChain chat model](https://js.langchain.com/docs/integrations/chat/) instance (ChatOpenAI, ChatGoogle, etc.) | Required |
 | `content` | `string` | HTML, markdown, or plain text content to extract from | Required |
 | `format` | `ContentFormat` | Content format (HTML, MARKDOWN, or TXT) | Required |
 | `schema` | `z.ZodTypeAny` | Zod schema defining the structure to extract | Required |

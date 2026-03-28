@@ -1,9 +1,9 @@
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatGoogle } from "@langchain/google";
 import { extract, ContentFormat, Browser } from "../../src/index";
 import { z } from "zod";
 
 function createGeminiLLM() {
-  return new ChatGoogleGenerativeAI({
+  return new ChatGoogle({
     apiKey: process.env.GOOGLE_API_KEY,
     model: "gemini-2.5-flash",
     temperature: 0,
@@ -76,7 +76,7 @@ describe("Browser + Extraction Integration Tests", () => {
       const unreachableUrl = "https://this-domain-does-not-exist-12345.com";
 
       await expect(
-        page.goto(unreachableUrl, { timeout: 5000 })
+        page.goto(unreachableUrl, { timeout: 5000 }),
       ).rejects.toThrow();
 
       await browser.close();

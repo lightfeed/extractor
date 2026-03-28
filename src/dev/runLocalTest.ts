@@ -3,7 +3,7 @@ import * as path from "path";
 import { config } from "dotenv";
 import { z } from "zod";
 import { ChatOpenAI } from "@langchain/openai";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatGoogle } from "@langchain/google";
 import { extract, ContentFormat } from "../index";
 
 // Load environment variables from .env file
@@ -13,7 +13,7 @@ type Provider = "gemini" | "openai";
 
 function createLLM(provider: Provider) {
   if (provider === "gemini") {
-    return new ChatGoogleGenerativeAI({
+    return new ChatGoogle({
       apiKey: process.env.GOOGLE_API_KEY,
       model: "gemini-2.5-flash",
       temperature: 0,
@@ -30,7 +30,7 @@ function createLLM(provider: Provider) {
 function loadFixture(filename: string): string {
   return fs.readFileSync(
     path.resolve(__dirname, "../../tests/fixtures", filename),
-    "utf8"
+    "utf8",
   );
 }
 
@@ -68,7 +68,7 @@ const productSchema = z.object({
       rating: z.string().optional(),
       description: z.string().optional(),
       features: z.array(z.string()).optional(),
-    })
+    }),
   ),
 });
 
@@ -81,7 +81,7 @@ const productSchemaOpenAI = z.object({
       rating: z.string().nullable(),
       description: z.string().nullable(),
       features: z.array(z.string()).nullable(),
-    })
+    }),
   ),
 });
 
@@ -166,7 +166,11 @@ async function main() {
   const contentType = args[0] || "all";
   const providerArg = args[1]?.toUpperCase();
   const provider: Provider | "all" =
-    providerArg === "OPENAI" ? "openai" : providerArg === "GEMINI" ? "gemini" : "all";
+    providerArg === "OPENAI"
+      ? "openai"
+      : providerArg === "GEMINI"
+        ? "gemini"
+        : "all";
 
   console.log("API Keys available:");
   console.log(`- GOOGLE_API_KEY: ${process.env.GOOGLE_API_KEY ? "Yes" : "No"}`);
