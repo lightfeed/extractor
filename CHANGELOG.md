@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-03-28
+- Fixed element removal bug and variable naming conflicts
+- Supported running tests on fork PRs
+
 ## [0.3.0] - 2026-03-12
 - Upgraded to langchain v1
 - Supported any LLM through langchain BaseChatModel
