@@ -29,7 +29,7 @@ describe("Browser + Extraction Integration Tests", () => {
 
   describe("Playwright with Google Gemini", () => {
     it("should load page and extract data using Playwright", async () => {
-      browser = await chromium.launch();
+      browser = await chromium.launch({ headless: true });
       const page = await browser.newPage();
 
       try {
@@ -66,13 +66,13 @@ describe("Browser + Extraction Integration Tests", () => {
 
   describe("Error Handling", () => {
     it("should handle navigation errors", async () => {
-      browser = await chromium.launch();
+      browser = await chromium.launch({ headless: true });
       const page = await browser.newPage();
 
       const unreachableUrl = "https://this-domain-does-not-exist-12345.com";
 
       await expect(
-        page.goto(unreachableUrl, { timeout: 5000 })
+        page.goto(unreachableUrl, { timeout: 5000 }),
       ).rejects.toThrow();
     });
   });
