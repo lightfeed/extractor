@@ -67,6 +67,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+
       - name: Update test data submodule
         run: npm run test:html2md:update
 
