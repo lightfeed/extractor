@@ -5,7 +5,7 @@ import { extract, ContentFormat } from "../../src";
 function createOpenAILLM() {
   return new ChatOpenAI({
     apiKey: process.env.OPENAI_API_KEY,
-    modelName: "gpt-4o-mini",
+    modelName: "gpt-4.1-mini",
     temperature: 0,
   });
 }
@@ -84,7 +84,7 @@ describe("ProcessedContent Integration Tests", () => {
     // For HTML, processedContent should be the converted markdown
     expect(result.processedContent).toContain("Simple Test");
     expect(result.processedContent).toContain(
-      "This is a test of HTML extraction."
+      "This is a test of HTML extraction.",
     );
     expect(result.processedContent).not.toContain("<h1>");
     expect(result.processedContent).not.toContain("</p>");
