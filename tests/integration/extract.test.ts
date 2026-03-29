@@ -3,11 +3,7 @@ import * as path from "path";
 import { z } from "zod";
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import {
-  extract,
-  ContentFormat,
-  ExtractorResult,
-} from "../../src";
+import { extract, ContentFormat, ExtractorResult } from "../../src";
 import { htmlToMarkdown } from "../../src/converters";
 
 function createGeminiLLM() {
@@ -18,7 +14,7 @@ function createGeminiLLM() {
   });
 }
 
-function createOpenAILLM(modelName = "gpt-4o-mini") {
+function createOpenAILLM(modelName = "gpt-4.1-mini") {
   return new ChatOpenAI({
     apiKey: process.env.OPENAI_API_KEY,
     modelName,
@@ -29,7 +25,7 @@ function createOpenAILLM(modelName = "gpt-4o-mini") {
 // Read the sample HTML files
 const blogPostHtml = fs.readFileSync(
   path.resolve(__dirname, "../fixtures/blog-post.html"),
-  "utf8"
+  "utf8",
 );
 // Define schemas that will be reused
 const blogSchema = z.object({
@@ -78,10 +74,10 @@ function verifyBlogPostExtraction(result: ExtractorResult<any>): void {
   expect(result.data.links).toBeDefined();
   expect(Array.isArray(result.data.links)).toBe(true);
   expect(result.data.links).toContain(
-    "https://example.com/blog/javascript-tutorials"
+    "https://example.com/blog/javascript-tutorials",
   );
   expect(result.data.links).toContain(
-    "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function"
+    "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function",
   );
 
   // Verify that usage statistics are returned
@@ -119,7 +115,7 @@ describe("Extract Integration Tests", () => {
 
   const productListHtml = fs.readFileSync(
     path.resolve(__dirname, "../fixtures/product-list.html"),
-    "utf8"
+    "utf8",
   );
 
   const productSchema = z.object({
@@ -132,7 +128,7 @@ describe("Extract Integration Tests", () => {
         features: z.array(z.string()).optional(),
         imageUrl: z.string().url().optional(),
         productUrl: z.string().url().optional(),
-      })
+      }),
     ),
   });
 
@@ -147,7 +143,7 @@ describe("Extract Integration Tests", () => {
         features: z.array(z.string()).nullable(),
         imageUrl: z.string().url().nullable(),
         productUrl: z.string().url().nullable(),
-      })
+      }),
     ),
   });
 
@@ -212,7 +208,7 @@ describe("Extract Integration Tests", () => {
     for (const product of result.data.products) {
       // Find matching product in ground truth by name
       const groundTruthProduct = groundTruthProductList.find(
-        (p) => p.name === product.name
+        (p) => p.name === product.name,
       );
 
       // Ensure the product exists in ground truth
@@ -287,7 +283,7 @@ describe("Extract Integration Tests", () => {
         expect.objectContaining({
           product: expect.stringMatching(/^Apple(?:, Price: N\/A)?$/),
           price: null,
-        })
+        }),
       );
     });
 
@@ -303,7 +299,7 @@ describe("Extract Integration Tests", () => {
             .array(z.string())
             .optional()
             .describe(
-              "Tags appear after the date. Do not include the # symbol."
+              "Tags appear after the date. Do not include the # symbol.",
             ),
           summary: z.string(),
           // For this test, adding an additional content field seems to cause the Google Gemini model
@@ -365,13 +361,13 @@ describe("Extract Integration Tests", () => {
       // Verify the extracted data
       expect(result.data.title).toBe("Meeting Links");
       expect(result.data.links).toContain(
-        "https://example.com/meetings/q4-planning-(2023)"
+        "https://example.com/meetings/q4-planning-(2023)",
       );
       expect(result.data.links).toContain(
-        "https://example.com/budget/review-[2024]"
+        "https://example.com/budget/review-[2024]",
       );
       expect(result.data.links).toContain(
-        "https://example.com/products/launch-(may-2024)"
+        "https://example.com/products/launch-(may-2024)",
       );
     });
   });
@@ -478,7 +474,7 @@ describe("Extract Integration Tests", () => {
 // Read the sample HTML file with images
 const articleWithImages = fs.readFileSync(
   path.resolve(__dirname, "../fixtures/article-with-images.html"),
-  "utf8"
+  "utf8",
 );
 
 // Define a schema that includes image extraction
@@ -497,11 +493,11 @@ const articleSchema = z.object({
         url: z.string().url(),
         alt: z.string().optional(),
         caption: z.string().optional(),
-      })
+      }),
     )
     .optional()
     .describe(
-      "Extract all images from the article with their URLs and alt text"
+      "Extract all images from the article with their URLs and alt text",
     ),
 });
 
@@ -521,11 +517,11 @@ const articleSchemaOpenAI = z.object({
         url: z.string().url(),
         alt: z.string().nullable(),
         caption: z.string().nullable(),
-      })
+      }),
     )
     .nullable()
     .describe(
-      "Extract all images from the article with their URLs and alt text"
+      "Extract all images from the article with their URLs and alt text",
     ),
 });
 
@@ -534,7 +530,7 @@ function verifyImageExtraction(result: ExtractorResult<any>): void {
   // Check the data is extracted correctly
   expect(result.data).toBeDefined();
   expect(result.data.title).toBe(
-    "Modern Web Development with React and Node.js"
+    "Modern Web Development with React and Node.js",
   );
   expect(result.data.author).toBe("Jane Smith");
   expect(result.data.date).toBe("March 20, 2023");
@@ -549,21 +545,21 @@ function verifyImageExtraction(result: ExtractorResult<any>): void {
 
   // Check for the main architecture image
   const architectureImage = result.data.images.find((img: any) =>
-    img.url.includes("react-node-architecture.png")
+    img.url.includes("react-node-architecture.png"),
   );
   expect(architectureImage).toBeDefined();
   expect(architectureImage.alt).toBe("React and Node.js Architecture");
 
   // Check for the event loop image
   const eventLoopImage = result.data.images.find((img: any) =>
-    img.url.includes("nodejs-event-loop.jpg")
+    img.url.includes("nodejs-event-loop.jpg"),
   );
   expect(eventLoopImage).toBeDefined();
   expect(eventLoopImage.alt).toBe("Node.js Event Loop");
 
   // Check for the webpack image
   const webpackImage = result.data.images.find((img: any) =>
-    img.url.includes("webpack-logo.png")
+    img.url.includes("webpack-logo.png"),
   );
   expect(webpackImage).toBeDefined();
   expect(webpackImage.alt).toBe("Webpack Logo");
@@ -585,15 +581,15 @@ describe("Image Extraction Integration Tests", () => {
 
     // With includeImages: true, markdown should contain image references
     expect(markdownWithImages).toContain(
-      "![React and Node.js Architecture](https://example.com/images/react-node-architecture.png)"
+      "![React and Node.js Architecture](https://example.com/images/react-node-architecture.png)",
     );
     expect(markdownWithImages).toContain(
-      "![Node.js Event Loop](https://example.com/images/nodejs-event-loop.jpg)"
+      "![Node.js Event Loop](https://example.com/images/nodejs-event-loop.jpg)",
     );
 
     // Without includeImages, markdown should not contain image references
     expect(markdownWithoutImages).not.toContain(
-      "![React and Node.js Architecture]"
+      "![React and Node.js Architecture]",
     );
     expect(markdownWithoutImages).not.toContain("![Node.js Event Loop]");
   });

@@ -35,7 +35,7 @@ This is a test of the usage tracking system.
     const result = await extract({
       llm: new ChatOpenAI({
         apiKey: process.env.OPENAI_API_KEY,
-        modelName: "gpt-4o-mini",
+        modelName: "gpt-4.1-mini",
         temperature: 0,
       }),
       content: markdown,
