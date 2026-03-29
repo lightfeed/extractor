@@ -63,7 +63,7 @@ export interface ExtractorOptions<T extends z.ZodTypeAny> {
    * @example
    * ```typescript
    * import { ChatOpenAI } from "@langchain/openai";
-   * const llm = new ChatOpenAI({ model: "gpt-4o-mini" });
+   * const llm = new ChatOpenAI({ model: "gpt-4.1-mini" });
    * const result = await extract({ llm, content, format, schema });
    * ```
    */

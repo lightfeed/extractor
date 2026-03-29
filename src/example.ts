@@ -28,7 +28,7 @@ async function example() {
 
     const htmlContent = fs.readFileSync(
       path.resolve(__dirname, "../tests/fixtures", "blog-post.html"),
-      "utf8"
+      "utf8",
     );
     const sourceUrl = "https://www.example.com/blog/async-await";
 
@@ -38,7 +38,7 @@ async function example() {
         extractMainHtml: true,
         includeImages: true,
       },
-      sourceUrl
+      sourceUrl,
     );
 
     // fs.writeFileSync("test.md", markdown);
@@ -49,7 +49,7 @@ async function example() {
     const result = await extract({
       llm: new ChatOpenAI({
         apiKey: process.env.OPENAI_API_KEY,
-        modelName: "gpt-4o-mini",
+        modelName: "gpt-4.1-mini",
         temperature: 0,
       }),
       content: htmlContent,

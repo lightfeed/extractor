@@ -309,7 +309,7 @@ Pass **any LangChain chat model** via the `llm` option. Use OpenAI, Google Gemin
 ```typescript
 // OpenAI
 import { ChatOpenAI } from "@langchain/openai";
-const llm = new ChatOpenAI({ modelName: "gpt-4o-mini", apiKey: process.env.OPENAI_API_KEY });
+const llm = new ChatOpenAI({ modelName: "gpt-4.1-mini", apiKey: process.env.OPENAI_API_KEY });
 
 // Google Gemini
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
@@ -330,7 +330,7 @@ Use `maxInputTokens` to truncate content when it exceeds the model's context win
 
 ```typescript
 const result = await extract({
-  llm: new ChatOpenAI({ modelName: "gpt-4o-mini", apiKey: "..." }),
+  llm: new ChatOpenAI({ modelName: "gpt-4.1-mini", apiKey: "..." }),
   content: markdownContent,
   format: ContentFormat.MARKDOWN,
   schema,
