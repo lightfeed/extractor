@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-03-29
+- Used playwright instead of patchright
+- Upgraded turndown and test data
+
 ## [0.3.2] - 2026-03-28
 - Used gpt-4.1-mini as default OpenAI model for better perf over gpt-4o-mini
 
