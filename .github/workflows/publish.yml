@@ -33,6 +33,9 @@ jobs:
       - name: Run unit tests
         run: npm run test:unit
         
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+
       - name: Update test data submodule
         run: npm run test:html2md:update
         
