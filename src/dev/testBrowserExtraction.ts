@@ -1,10 +1,10 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { extract, ContentFormat, Browser } from "../index";
+import { chromium } from "playwright";
+import { extract, ContentFormat } from "../index";
 import { z } from "zod";
 import * as path from "path";
 import { config } from "dotenv";
 
-// Load environment variables from .env file
 config({ path: path.resolve(process.cwd(), ".env") });
 
 const productCatalogSchema = z.object({
@@ -28,25 +28,15 @@ const productCatalogSchema = z.object({
 });
 
 async function testProductCatalogExtraction() {
-  console.log("🍞 Testing Product Catalog Extraction...\n");
+  console.log("Testing Product Catalog Extraction...\n");
 
   const testUrl =
     "https://www.walmart.ca/en/browse/grocery/bread-bakery/10019_6000194327359";
 
   try {
-    console.log(`📡 Loading product catalog page: ${testUrl}`);
-    console.log("🤖 Using Browser class to load the page...\n");
+    console.log(`Loading product catalog page: ${testUrl}`);
 
-    // Create browser instance
-    const browser = new Browser({
-      type: "local",
-      headless: false,
-    });
-
-    await browser.start();
-    console.log("✅ Browser started successfully");
-
-    // Create page and load content using direct Playwright API
+    const browser = await chromium.launch({ headless: false });
     const page = await browser.newPage();
     await page.goto(testUrl);
 
@@ -57,13 +47,12 @@ async function testProductCatalogExtraction() {
     }
 
     const html = await page.content();
-    console.log(`📄 Loaded ${html.length} characters of HTML`);
+    console.log(`Loaded ${html.length} characters of HTML`);
 
     await browser.close();
-    console.log("✅ Browser closed");
+    console.log("Browser closed");
 
-    // Now extract product data from the loaded HTML
-    console.log("\n🧠 Extracting product data using LLM...");
+    console.log("\nExtracting product data using LLM...");
 
     const result = await extract({
       llm: new ChatGoogleGenerativeAI({
@@ -82,32 +71,32 @@ async function testProductCatalogExtraction() {
       },
     });
 
-    console.log("✅ Extraction successful!");
+    console.log("Extraction successful!");
 
-    console.log("🍞 EXTRACTED PRODUCT CATALOG DATA:");
+    console.log("EXTRACTED PRODUCT CATALOG DATA:");
     console.log("=".repeat(80));
     console.log(JSON.stringify(result.data, null, 2));
     console.log("=".repeat(80));
 
-    console.log("\n💰 Token Usage:");
+    console.log("\nToken Usage:");
     console.log(`Input tokens: ${result.usage.inputTokens}`);
     console.log(`Output tokens: ${result.usage.outputTokens}`);
   } catch (error) {
-    console.error("❌ Error during product catalog extraction:", error);
+    console.error("Error during product catalog extraction:", error);
   }
 }
 
 async function main() {
   if (!process.env.GOOGLE_API_KEY) {
-    console.error("❌ Please set GOOGLE_API_KEY environment variable");
+    console.error("Please set GOOGLE_API_KEY environment variable");
     process.exit(1);
   }
 
-  console.log("🚀 Starting product catalog extraction\n");
+  console.log("Starting product catalog extraction\n");
 
   await testProductCatalogExtraction();
 
-  console.log("\n🎉 Extraction completed!");
+  console.log("\nExtraction completed!");
 }
 
 if (require.main === module) {

@@ -20,7 +20,7 @@
 </div>
 
 ## Overview
-Lightfeed Extractor is a Typescript library built for robust web data extraction using LLMs and Playwright. Use natural language prompts to navigate web pages and extract structured data. Get complete, accurate results with great token efficiency — critical for production data pipelines.
+Lightfeed Extractor is a Typescript library built for robust web data extraction using LLMs. Use natural language prompts to extract structured data from HTML, markdown, or plain text. Get complete, accurate results with great token efficiency — critical for production data pipelines.
 
 ### Features
 
@@ -32,7 +32,7 @@ Lightfeed Extractor is a Typescript library built for robust web data extraction
 
 - 🔗 [**URL Validation**](#url-validation) - Handle relative URLs, remove invalid ones, and repair markdown-escaped links.
 
-- 🤖 [**Browser Automation in Stealth Mode**](#browser-automation) - Launch Playwright browsers locally, in serverless clouds, or connect to a remote browser server. Avoid detection with built-in anti-bot patches and proxy configuration for reliable web scraping.
+- 🤖 [**Works with Playwright**](#using-with-playwright) - Use Playwright to load pages, then extract structured data from the HTML content.
 
 - 🧭 [**AI Browser Navigation**](#using-with-browser-agent) - Pair with [@lightfeed/browser-agent](https://github.com/lightfeed/browser-agent) to navigate pages using natural language commands before extracting structured data.
 
@@ -69,11 +69,12 @@ npm install @langchain/ollama
 
 ### E-commerce Product Extraction
 
-This example demonstrates extracting structured product data from a real e-commerce website using a local headed Playwright browser. For production environments, you can use a Playwright browser in [serverless](#serverless-browser) or [remote](#remote-browser) mode.
+This example demonstrates extracting structured product data from an e-commerce website using Playwright to load the page and the extractor to pull structured data.
 
 ```typescript
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { extract, ContentFormat, Browser } from "@lightfeed/extractor";
+import { chromium } from "playwright";
+import { extract, ContentFormat } from "@lightfeed/extractor";
 import { z } from "zod";
 
 // Define schema for product catalog extraction
@@ -97,63 +98,41 @@ const productCatalogSchema = z.object({
     .describe("List of bread and bakery products"),
 });
 
-// Create browser instance
-const browser = new Browser({
-  type: "local", // also supporting serverless and remote browser
-  headless: false,
-});
+const browser = await chromium.launch();
+const page = await browser.newPage();
+
+const pageUrl = "https://www.walmart.ca/en/browse/grocery/bread-bakery/10019_6000194327359";
+await page.goto(pageUrl);
 
 try {
-  await browser.start();
-  console.log("Browser started successfully");
-
-  // Create page and navigate to e-commerce site
-  const page = await browser.newPage();
-
-  const pageUrl = "https://www.walmart.ca/en/browse/grocery/bread-bakery/10019_6000194327359";
-  await page.goto(pageUrl);
-
-  try {
-    await page.waitForLoadState("networkidle", { timeout: 10000 });
-  } catch {
-    console.log("Network idle timeout, continuing...");
-  }
-
-  // Get HTML content
-  const html = await page.content();
-  console.log(`Loaded ${html.length} characters of HTML`);
-
-  // Extract structured product data
-  console.log("Extracting product data using LLM...");
-  const result = await extract({
-    llm: new ChatGoogleGenerativeAI({
-      apiKey: process.env.GOOGLE_API_KEY,
-      model: "gemini-2.5-flash",
-      temperature: 0,
-    }),
-    content: html,
-    format: ContentFormat.HTML,
-    sourceUrl: pageUrl,
-    schema: productCatalogSchema,
-    htmlExtractionOptions: {
-      extractMainHtml: true,
-      includeImages: true,
-      cleanUrls: true
-    }
-  });
-
-  console.log("Extraction successful!");
-  console.log("Found products:", result.data.products.length);
-
-  // Print the extracted data
-  console.log(JSON.stringify(result.data, null, 2));
-
-} catch (error) {
-  console.error("Error during extraction:", error);
-} finally {
-  await browser.close();
-  console.log("Browser closed");
+  await page.waitForLoadState("networkidle", { timeout: 10000 });
+} catch {
+  console.log("Network idle timeout, continuing...");
 }
+
+const html = await page.content();
+await browser.close();
+
+// Extract structured product data
+const result = await extract({
+  llm: new ChatGoogleGenerativeAI({
+    apiKey: process.env.GOOGLE_API_KEY,
+    model: "gemini-2.5-flash",
+    temperature: 0,
+  }),
+  content: html,
+  format: ContentFormat.HTML,
+  sourceUrl: pageUrl,
+  schema: productCatalogSchema,
+  htmlExtractionOptions: {
+    extractMainHtml: true,
+    includeImages: true,
+    cleanUrls: true
+  }
+});
+
+console.log("Found products:", result.data.products.length);
+console.log(JSON.stringify(result.data, null, 2));
 
 /* Expected output:
 {
@@ -236,7 +215,7 @@ console.log(result.data.products);
 await agent.close();
 ```
 
-The browser agent supports local, serverless, and remote browsers — see the [browser-agent docs](https://github.com/lightfeed/browser-agent) for configuration options.
+See the [browser-agent docs](https://github.com/lightfeed/browser-agent) for more configuration options.
 
 
 ### Extracting from Markdown or Plain Text
@@ -484,87 +463,31 @@ interface ExtractorResult<T> {
 }
 ```
 
-## Browser Automation
+## Using with Playwright
 
-The `Browser` class provides a clean interface for loading web pages with Playwright. Use it with direct Playwright calls to load HTML content before extracting structured data.
+Use [Playwright](https://playwright.dev/) to load web pages, then pass the HTML content to the extractor. Install Playwright separately:
 
-**Constructor**
-```typescript
-const browser = new Browser(config?: BrowserConfig)
+```bash
+npm install playwright
 ```
 
-**Methods**
-| Method | Description | Returns |
-|--------|-------------|---------|
-| `start()` | Start the browser instance | `Promise<void>` |
-| `close()` | Close the browser and clean up resources | `Promise<void>` |
-| `newPage()` | Create a new page (browser must be started) | `Promise<Page>` |
-| `newContext()` | Create a new browser context (browser must be started) | `Promise<BrowserContext>` |
-| `isStarted()` | Check if the browser is currently running | `boolean` |
-
-### Local Browser
-
-Use your local Chrome browser for development and testing. Perfect for:
-- Local development and debugging
-- Testing automation scripts
-- Quick prototyping
-
 ```typescript
-import { Browser } from "@lightfeed/extractor";
+import { chromium } from "playwright";
+import { extract, ContentFormat } from "@lightfeed/extractor";
 
-const browser = new Browser({
-  type: "local",
-  headless: false, // Show browser window for debugging
-});
-```
+const browser = await chromium.launch();
+const page = await browser.newPage();
+await page.goto("https://example.com/products");
 
-### Serverless Browser
+const html = await page.content();
+await browser.close();
 
-Perfect for AWS Lambda and other serverless environments. Uses [@sparticuz/chromium](https://github.com/Sparticuz/chromium) to run Chrome in serverless environments with minimal cold start times and memory usage. Supports proxy configuration for geo-tracking and unblocking.
-
-> [!IMPORTANT]
-> This project uses Playwright, which ships with a specific version of Chromium. You need to install the matching version of `@sparticuz/chromium`.
->
-> For running on AWS Lambda, lambda layer with ARM64 architecture is preferred.
-
-```typescript
-import { Browser } from "@lightfeed/extractor";
-import chromium from "@sparticuz/chromium";
-
-const browser = new Browser({
-  type: "serverless",
-  executablePath: await chromium.executablePath(),
-  options: {
-    args: chromium.args,
-  },
-  // Use proxy (optional)
-  proxy: {
-    host: "proxy.example.com",
-    port: 8080,
-    auth: {
-      username: "user",
-      password: "pass"
-    }
-  }
-});
-```
-
-### Remote Browser
-
-Connect to any remote browser instance via WebSocket. Great for:
-- Brightdata's Scraping Browser
-- Custom browser instances in the cloud
-- Browser farms and proxy services
-
-```typescript
-import { Browser } from "@lightfeed/extractor";
-
-const browser = new Browser({
-  type: "remote",
-  wsEndpoint: "ws://your-remote-browser:9222/devtools/browser/ws",
-  options: {
-    timeout: 30000
-  }
+const result = await extract({
+  llm: myLLM,
+  content: html,
+  format: ContentFormat.HTML,
+  sourceUrl: "https://example.com/products",
+  schema: mySchema,
 });
 ```
 

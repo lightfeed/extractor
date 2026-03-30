@@ -1,5 +1,6 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { extract, ContentFormat, Browser } from "../../src/index";
+import { chromium, Browser } from "playwright";
+import { extract, ContentFormat } from "../../src/index";
 import { z } from "zod";
 
 function createGeminiLLM() {
@@ -17,15 +18,18 @@ const testSchema = z.object({
 });
 
 describe("Browser + Extraction Integration Tests", () => {
-  // Test with a simple, stable website
   const testUrl = "https://example.com";
+  let browser: Browser;
 
-  describe("Browser Class with Google Gemini", () => {
-    it("should load page and extract data using Browser class", async () => {
-      // Load HTML using Browser class with direct Playwright API
-      const browser = new Browser();
-      await browser.start();
+  afterEach(async () => {
+    if (browser) {
+      await browser.close();
+    }
+  });
 
+  describe("Playwright with Google Gemini", () => {
+    it("should load page and extract data using Playwright", async () => {
+      browser = await chromium.launch({ headless: true });
       const page = await browser.newPage();
 
       try {
@@ -38,9 +42,7 @@ describe("Browser + Extraction Integration Tests", () => {
         }
 
         const html = await page.content();
-        await browser.close();
 
-        // Extract data from the loaded HTML
         const result = await extract({
           llm: createGeminiLLM(),
           content: html,
@@ -55,43 +57,23 @@ describe("Browser + Extraction Integration Tests", () => {
         expect(result.processedContent).toBeDefined();
         expect(result.usage).toBeDefined();
 
-        // The processed content should be markdown (converted from HTML)
         expect(result.processedContent).toContain("Example Domain");
       } catch (error) {
-        throw error; // Re-throw non-network errors
-      } finally {
-        await browser.close();
+        throw error;
       }
     });
   });
 
   describe("Error Handling", () => {
     it("should handle navigation errors", async () => {
-      const browser = new Browser();
-      await browser.start();
-
+      browser = await chromium.launch({ headless: true });
       const page = await browser.newPage();
 
-      // Use a non-existent domain
       const unreachableUrl = "https://this-domain-does-not-exist-12345.com";
 
       await expect(
-        page.goto(unreachableUrl, { timeout: 5000 })
+        page.goto(unreachableUrl, { timeout: 5000 }),
       ).rejects.toThrow();
-
-      await browser.close();
-    });
-
-    it("should handle browser startup errors gracefully", async () => {
-      // Test with invalid serverless config
-      const invalidConfig = {
-        type: "serverless" as const,
-        executablePath: "/non/existent/path",
-      };
-
-      const browser = new Browser(invalidConfig);
-
-      await expect(browser.start()).rejects.toThrow();
     });
   });
 });
