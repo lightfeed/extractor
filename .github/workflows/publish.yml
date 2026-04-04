@@ -55,7 +55,7 @@ jobs:
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          # Extract changes from git log or CHANGELOG if available
+          # Extract changes from git log if available
           CHANGES=$(git log --pretty=format:"* %s (%h)" $(git describe --tags --abbrev=0 HEAD^)..HEAD || echo "Initial release")
           echo "CHANGES<<EOF" >> $GITHUB_ENV
           echo "$CHANGES" >> $GITHUB_ENV
