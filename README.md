@@ -44,17 +44,16 @@ Lightfeed Extractor is a Typescript library built for robust web data extraction
 Install the extractor along with `@langchain/core` and your chosen LLM provider:
 
 ```bash
-# OpenAI
-npm install @lightfeed/extractor @langchain/core @langchain/openai
+npm install @lightfeed/extractor @langchain/core
+```
 
-# Google Gemini
-npm install @lightfeed/extractor @langchain/core @langchain/google-genai
+Then add your LLM provider (we use LangChain for interoperability):
 
-# Anthropic
-npm install @lightfeed/extractor @langchain/core @langchain/anthropic
-
-# Ollama (local models)
-npm install @lightfeed/extractor @langchain/core @langchain/ollama
+```bash
+npm install @langchain/openai         # OpenAI
+npm install @langchain/google-genai   # Google Gemini
+npm install @langchain/anthropic      # Anthropic
+npm install @langchain/ollama         # Ollama (local models)
 ```
 
 > [!IMPORTANT]
@@ -297,7 +296,7 @@ console.log(result.data);
 // }
 ```
 
-### Using Any LangChain Model
+### Using Any LLM via LangChain
 
 Pass **any LangChain chat model** via the `llm` option. Use OpenAI, Google Gemini, Anthropic, Mistral, Ollama, Azure OpenAI, AWS Bedrock, or any [LangChain-supported provider](https://js.langchain.com/docs/integrations/chat/):
 
