@@ -4,7 +4,7 @@
 </h1>
 
 <p align="center">
-  <strong>Robust Web Data Extractor Using LLMs and Browser Automation</strong>
+  <strong>Robust Web Data Extractor Using LLMs</strong>
 </p>
 
 <div align="center">
