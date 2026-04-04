@@ -41,29 +41,24 @@ Lightfeed Extractor is a Typescript library built for robust web data extraction
 
 ## Installation
 
-Install the extractor:
-
-```bash
-npm install @lightfeed/extractor
-```
-
-Then install the LLM provider you want to use:
+Install the extractor along with `@langchain/core` and your chosen LLM provider:
 
 ```bash
 # OpenAI
-npm install @langchain/openai
+npm install @lightfeed/extractor @langchain/core @langchain/openai
 
 # Google Gemini
-npm install @langchain/google-genai
+npm install @lightfeed/extractor @langchain/core @langchain/google-genai
 
 # Anthropic
-npm install @langchain/anthropic
+npm install @lightfeed/extractor @langchain/core @langchain/anthropic
 
 # Ollama (local models)
-npm install @langchain/ollama
+npm install @lightfeed/extractor @langchain/core @langchain/ollama
 ```
 
-`@langchain/core` will be installed automatically as a peer dependency.
+> [!IMPORTANT]
+> `@langchain/core` is a required peer dependency shared by this library and all `@langchain/*` providers. Always install it explicitly to avoid version conflicts.
 
 ## Usage
 
