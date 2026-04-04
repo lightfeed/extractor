@@ -3,7 +3,7 @@ name: Test
 on:
   push:
     branches: [main]
-  pull_request_target:
+  pull_request:
     branches: [main]
   schedule:
     - cron: '0 0 * * 1' # Run weekly on Monday at midnight UTC
