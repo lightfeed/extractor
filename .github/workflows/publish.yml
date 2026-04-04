@@ -26,6 +26,11 @@ jobs:
           
       - name: Install dependencies
         run: npm ci
+
+      - name: Set version from tag
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
         
       - name: Build package
         run: npm run build
@@ -50,7 +55,7 @@ jobs:
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          # Extract changes from git log or CHANGELOG if available
+          # Extract changes from git log if available
           CHANGES=$(git log --pretty=format:"* %s (%h)" $(git describe --tags --abbrev=0 HEAD^)..HEAD || echo "Initial release")
           echo "CHANGES<<EOF" >> $GITHUB_ENV
           echo "$CHANGES" >> $GITHUB_ENV
@@ -64,8 +69,6 @@ jobs:
             ## Changes in this release
             
             ${{ env.CHANGES }}
-            
-            For full details, see the [CHANGELOG](https://github.com/lightfeed/extractor/blob/main/CHANGELOG.md).
           draft: false
           prerelease: false
         
