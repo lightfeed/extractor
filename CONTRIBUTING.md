@@ -32,16 +32,15 @@ The workflow includes:
 
 ## Release Process (Maintainers)
 
-This project uses semantic versioning. To create a new release:
+This project uses semantic versioning. To create a new release, tag `main` and push:
 
 ```bash
-npm version patch  # or minor, or major
-git push origin main --tags
+git tag v0.5.0
+git push origin v0.5.0
 ```
 
-`npm version` automatically bumps the version in `package.json` and `package-lock.json`, creates a commit, and creates a git tag.
-
 When the tag is pushed, GitHub Actions will automatically:
-1. Build the package and run tests
-2. Create a GitHub Release with notes generated from git history
-3. Publish the package to npm
+1. Set the version in `package.json` from the tag
+2. Build the package and run tests
+3. Create a GitHub Release with notes generated from git history
+4. Publish the package to npm
