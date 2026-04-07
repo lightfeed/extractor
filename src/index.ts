@@ -84,5 +84,8 @@ export function convertHtmlToMarkdown(
 // Re-export types and enums
 export * from "./types";
 
+// Scrape mode (Beta)
+export { scrape, htmlToAnnotatedMarkdown } from "./scraper";
+
 // Utils
 export { safeSanitizedParser } from "./utils/schemaUtils";

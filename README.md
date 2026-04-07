@@ -36,6 +36,8 @@ Lightfeed Extractor is a Typescript library built for robust web data extraction
 
 - 🧭 [**AI Browser Navigation**](#using-with-browser-agent) - Pair with [@lightfeed/browser-agent](https://github.com/lightfeed/browser-agent) to navigate pages using natural language commands before extracting structured data.
 
+- 🧪 [**Scrape Mode** (Beta)](#scrape-mode-beta) - Generate reusable, validated scraping code with CSS selector and XPath annotations. Run the code without an LLM for repeated pages.
+
 > [!TIP]  
 > Building retail competitor intelligence at scale? Go to [lightfeed.ai](https://lightfeed.ai) - our full platform for tracking competitor pricing, sales, promotions, and SEO.
 
@@ -455,6 +457,115 @@ interface ExtractorResult<T> {
     outputTokens?: number;
   };
 }
+```
+
+## Scrape Mode (Beta)
+
+Scrape mode generates **reusable scraping code** from a single example page, instead of extracting data directly with the LLM on every page. An LLM sees annotated Markdown (with CSS selectors and XPath from [@lightfeed/scrapedown](https://github.com/lightfeed/scrapedown)), generates scraping code, executes it, validates the result, and iterates until the output is correct — then you run that code on similar pages **without any LLM**.
+
+```
+Traditional:     HTML → Markdown → LLM extracts data (every page, costs tokens)
+With scrape():   HTML → Annotated Markdown → LLM generates scraper (once)
+                                           → scraper runs without LLM (free)
+```
+
+### How it works
+
+1. **Annotate** — HTML is converted to Markdown annotated with CSS selectors and XPath using scrapedown
+2. **Generate** — An LLM writes a `scrape(document)` function targeting your Zod schema, choosing the most robust selectors and handling type conversions
+3. **Execute** — The code runs against the HTML in a sandboxed jsdom environment
+4. **Validate** — The result is checked against the Zod schema, then the LLM reviews the data for accuracy
+5. **Iterate** — If anything fails (runtime error, schema mismatch, or data quality issue), the LLM receives feedback and generates improved code. Repeats up to `maxIterations` (default 3)
+
+### Example
+
+```typescript
+import { ChatOpenAI } from "@langchain/openai";
+import { scrape } from "@lightfeed/extractor";
+import { z } from "zod";
+
+const productSchema = z.object({
+  products: z.array(
+    z.object({
+      name: z.string(),
+      price: z.number().describe("Current price as a number"),
+      rating: z.number().optional(),
+      productUrl: z.string().url().optional().describe("Link to product detail page"),
+    })
+  ),
+});
+
+// Generate scraping code from an example page
+const result = await scrape({
+  llm: new ChatOpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+    modelName: "gpt-4.1",       // Recommend advanced models for code generation
+    temperature: 0,
+  }),
+  content: html,                 // HTML string of the page
+  schema: productSchema,
+  sourceUrl: "https://example.com/products",
+  htmlExtractionOptions: {
+    includeImages: true,
+  },
+  maxIterations: 3,              // Max generate-execute-validate cycles
+});
+
+// result.code  — reusable JavaScript function: scrape(document) => { products: [...] }
+// result.data  — validated extraction result from this page
+// result.usage — accumulated token usage across all iterations
+
+console.log("Generated code:\n", result.code);
+console.log("Extracted data:", JSON.stringify(result.data, null, 2));
+
+// Later, run the code on similar pages without any LLM:
+// const { JSDOM } = require("jsdom");
+// const dom = new JSDOM(anotherPageHtml);
+// const data = scrape(dom.window.document);
+```
+
+> [!NOTE]
+> **Beta**: This feature is in beta and the API may change in future releases.
+> We recommend using advanced models for this mode (e.g. `gpt-4.1`, `gemini-2.5-pro`)
+> since it requires generating, executing, and reasoning about code.
+
+### `scrape<T>(options: ScrapeOptions<T>): Promise<ScrapeResult<T>>`
+
+#### ScrapeOptions
+
+| Option | Type | Description | Default |
+|--------|------|-------------|---------|
+| `llm` | `BaseChatModel` | A [LangChain chat model](https://js.langchain.com/docs/integrations/chat/) instance. Recommend advanced models (gpt-4.1, gemini-2.5-pro). | Required |
+| `content` | `string` | HTML content to generate scraping code for | Required |
+| `schema` | `z.ZodTypeAny` | Zod schema defining the structure to extract | Required |
+| `sourceUrl` | `string` | URL of the HTML content, used to resolve relative URLs | Required |
+| `htmlExtractionOptions` | `HTMLExtractionOptions` | HTML-specific options ([see above](#htmlextractionoptions)) | `{}` |
+| `prompt` | `string` | Custom prompt to guide the code generation | Internal default |
+| `maxInputTokens` | `number` | Maximum input tokens (4 chars/token). Truncates annotated markdown if exceeded. | `undefined` |
+| `maxIterations` | `number` | Maximum generate-execute-validate cycles before throwing | `3` |
+
+#### ScrapeResult
+
+```typescript
+interface ScrapeResult<T> {
+  code: string;              // Generated JavaScript scrape(document) function
+  data: T;                   // Validated extraction result
+  processedContent: string;  // Annotated markdown sent to the LLM
+  usage: Usage;              // Accumulated token usage across iterations
+}
+```
+
+### `htmlToAnnotatedMarkdown`
+
+Standalone utility to convert HTML to annotated Markdown (without LLM code generation).
+
+```typescript
+import { htmlToAnnotatedMarkdown } from "@lightfeed/extractor";
+
+const annotated = htmlToAnnotatedMarkdown(html, { includeImages: true }, "https://example.com");
+// Output includes CSS and XPath annotations as HTML comments:
+// ## Smart Speaker Pro
+// <!-- css="section.product-item > h2" xpath="//main/section[1]/h2" -->
 ```
 
 ## Using with Playwright
