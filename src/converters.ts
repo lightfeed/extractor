@@ -1,10 +1,7 @@
 import TurndownService from "turndown";
 import { HTMLExtractionOptions } from "./types";
-import { DOMParser, XMLSerializer } from "xmldom";
-import { isNodeLike } from "xpath";
 import * as url from "url";
 
-var xpath = require("xpath");
 const cheerio = require("cheerio");
 
 /**
@@ -42,23 +39,29 @@ function cleanUrl(urlString: string): string {
  */
 function extractMainHtml(html: string): string {
   try {
-    const bodyDoc = new DOMParser().parseFromString(html, "text/html");
+    const { JSDOM } = require("jsdom");
+    const dom = new JSDOM(html);
+    const doc = dom.window.document;
 
     [...OVERALL_DISCARD_XPATH, ...PRECISION_DISCARD_XPATH].forEach((xPath) => {
-      const result = xpath.parse(xPath).select({ node: bodyDoc, isHtml: true });
+      const result = doc.evaluate(
+        xPath,
+        doc,
+        null,
+        dom.window.XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+        null,
+      );
 
-      // Ensure result is an array before calling forEach
-      const nodes = Array.isArray(result) ? result : [result];
-
-      nodes.forEach((node) => {
-        if (isNodeLike(node) && node.parentNode) {
+      for (let i = result.snapshotLength - 1; i >= 0; i--) {
+        const node = result.snapshotItem(i);
+        if (node?.parentNode) {
           node.parentNode.removeChild(node);
         }
-      });
+      }
     });
 
-    const refinedHtml = new XMLSerializer().serializeToString(bodyDoc);
-    return refinedHtml == "" ? html : refinedHtml;
+    const refinedHtml = doc.body?.innerHTML ?? "";
+    return refinedHtml === "" ? html : refinedHtml;
   } catch (error) {
     console.error("error extracting main html", error);
     return "";
@@ -71,7 +74,7 @@ function extractMainHtml(html: string): string {
 export function htmlToMarkdown(
   html: string,
   options?: HTMLExtractionOptions,
-  sourceUrl?: string
+  sourceUrl?: string,
 ): string {
   // First clean up the html
   const tidiedHtml = tidyHtml(html, options?.includeImages ?? false);
@@ -126,8 +129,8 @@ export function htmlToMarkdown(
     filter: function (node: any, options: any) {
       return Boolean(
         options.linkStyle === "inlined" &&
-          node.nodeName === "A" &&
-          node.getAttribute("href")
+        node.nodeName === "A" &&
+        node.getAttribute("href"),
       );
     },
 
@@ -145,7 +148,7 @@ export function htmlToMarkdown(
           } catch (error) {
             console.warn(
               `Failed to resolve URL ${href} against ${sourceUrl}:`,
-              error
+              error,
             );
           }
         }
@@ -180,7 +183,7 @@ export function htmlToMarkdown(
           } catch (error) {
             console.warn(
               `Failed to resolve URL ${src} against ${sourceUrl}:`,
-              error
+              error,
             );
           }
         }
