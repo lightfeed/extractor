@@ -39,7 +39,8 @@ function cleanUrl(urlString: string): string {
  */
 function extractMainHtml(html: string): string {
   try {
-    const { JSDOM } = require("jsdom");
+    const jsdomModule = require("jsdom");
+    const { JSDOM } = jsdomModule.default || jsdomModule;
     const dom = new JSDOM(html);
     const doc = dom.window.document;
 
