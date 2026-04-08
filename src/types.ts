@@ -155,6 +155,16 @@ export interface ScrapeOptions<T extends z.ZodTypeAny> {
    * @default 3
    */
   maxIterations?: number;
+
+  /**
+   * Enable debug mode to write intermediate artifacts to disk.
+   * - `true` — writes to `./scrape-debug-<timestamp>/`
+   * - A string path — writes to that directory
+   *
+   * Each attempt gets a sub-folder with the generated code, execution result/error,
+   * validation feedback, etc.  The annotated markdown is written once at the top level.
+   */
+  debug?: boolean | string;
 }
 
 /**

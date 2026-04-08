@@ -2,6 +2,8 @@ import type { BaseChatModel } from "@langchain/core/language_models/chat_models"
 import { z, ZodTypeAny, ZodFirstPartyTypeKind } from "zod";
 import { Scrapedown } from "@lightfeed/scrapedown";
 import { JSDOM } from "jsdom";
+import * as fs from "fs";
+import * as path from "path";
 import {
   HTMLExtractionOptions,
   ScrapeOptions,
@@ -14,6 +16,20 @@ import { jsonrepair } from "jsonrepair";
 import * as url from "url";
 
 const cheerio = require("cheerio");
+
+// ── Debug helpers ───────────────────────────────────────────────────
+
+function resolveDebugDir(debug: boolean | string | undefined): string | null {
+  if (!debug) return null;
+  if (typeof debug === "string") return debug;
+  return path.resolve(`scrape-debug-${Date.now()}`);
+}
+
+function debugWrite(dir: string, filePath: string, content: string): void {
+  const fullPath = path.join(dir, filePath);
+  fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+  fs.writeFileSync(fullPath, content, "utf-8");
+}
 
 // ── Annotated Markdown ──────────────────────────────────────────────
 
@@ -203,6 +219,8 @@ interface ScrapingPromptOptions {
   customPrompt?: string;
   previousCode?: string;
   previousError?: string;
+  /** Cleaned HTML provided on retries so the LLM can cross-reference selectors against actual markup */
+  tidiedHtml?: string;
 }
 
 export function generateScrapingPrompt({
@@ -211,6 +229,7 @@ export function generateScrapingPrompt({
   customPrompt,
   previousCode,
   previousError,
+  tidiedHtml,
 }: ScrapingPromptOptions): string {
   let prompt = `You are a web scraping code generator. You will receive HTML content converted to Markdown with CSS selector and XPath annotations (as HTML comments). Use these annotations to write robust scraping code.
 
@@ -234,6 +253,15 @@ Issues with the previous code:
 ${previousError}
 
 `;
+
+    if (tidiedHtml) {
+      prompt += `Here is the cleaned HTML of the page for reference — use it to verify your selectors against the actual DOM structure:
+\`\`\`html
+${tidiedHtml}
+\`\`\`
+
+`;
+    }
   }
 
   const task = customPrompt
@@ -254,6 +282,12 @@ ${previousError}
 5. Return a plain object matching the schema exactly.
 6. Handle missing/optional fields gracefully (return \`undefined\` or \`null\` for missing optional fields).
 7. The function must be self-contained with no external dependencies.
+8. **Important — add diagnostic logging**: The \`console\` object is available and all output is captured for debugging.
+   - Log the result of each key DOM query: selector used, number of matches, and a preview of what was returned. For example:
+     \`console.log('querySelector(".product-list")', el ? el.tagName : null)\`
+     \`console.log('querySelectorAll(".product-item")', items.length, "elements")\`
+   - Log each extracted item/object as it is built: \`console.log("item", i, item)\`
+   This helps diagnose which selectors match, which return nothing, and which items extract correctly.
 
 Return ONLY the function code, no explanation.`;
 
@@ -299,6 +333,7 @@ If the data is accurate and complete, mark it as valid. If there are issues, des
 interface ExecutionResult {
   result: unknown;
   error: string | null;
+  logs: string[];
 }
 
 /**
@@ -314,28 +349,49 @@ export function executeScrapingCode(
   html: string,
   sourceUrl?: string,
 ): ExecutionResult {
+  const logs: string[] = [];
   try {
     const dom = new JSDOM(html, sourceUrl ? { url: sourceUrl } : undefined);
     const win = dom.window;
+
+    const logProxy = {
+      log: (...args: unknown[]) => {
+        logs.push(
+          args
+            .map((a) =>
+              typeof a === "object" ? JSON.stringify(a, null, 2) : String(a),
+            )
+            .join(" "),
+        );
+      },
+      warn: (...args: unknown[]) => logProxy.log("[warn]", ...args),
+      error: (...args: unknown[]) => logProxy.log("[error]", ...args),
+    };
 
     const wrappedCode = `
       ${code}
       return scrape(document);
     `;
 
-    // Expose the window globals that XPath / TreeWalker code commonly needs
     const fn = new Function(
       "document",
       "window",
       "NodeFilter",
       "XPathResult",
+      "console",
       wrappedCode,
     );
-    const result = fn(win.document, win, win.NodeFilter, win.XPathResult);
+    const result = fn(
+      win.document,
+      win,
+      win.NodeFilter,
+      win.XPathResult,
+      logProxy,
+    );
 
-    return { result, error: null };
+    return { result, error: null, logs };
   } catch (err: any) {
-    return { result: null, error: err.message || String(err) };
+    return { result: null, error: err.message || String(err), logs };
   }
 }
 
@@ -441,7 +497,14 @@ export async function scrape<T extends z.ZodTypeAny>(
     prompt: customPrompt,
     maxInputTokens,
     maxIterations = 3,
+    debug,
   } = options;
+
+  const debugDir = resolveDebugDir(debug);
+  if (debugDir) {
+    fs.mkdirSync(debugDir, { recursive: true });
+    console.log(`[scrape] Debug mode ON — writing artifacts to ${debugDir}`);
+  }
 
   // Step 1: Convert HTML to annotated markdown
   const annotatedMarkdown = htmlToAnnotatedMarkdown(
@@ -449,6 +512,9 @@ export async function scrape<T extends z.ZodTypeAny>(
     htmlExtractionOptions,
     sourceUrl,
   );
+
+  // Pre-compute tidied HTML for retry prompts (gives LLM actual DOM context)
+  const cleanedHtml = tidyHtml(content, htmlExtractionOptions?.includeImages ?? false);
 
   const schemaDescription = schemaToTypeDescription(schema);
 
@@ -461,6 +527,12 @@ export async function scrape<T extends z.ZodTypeAny>(
     }
   }
 
+  if (debugDir) {
+    debugWrite(debugDir, "annotated-markdown.md", processedContent);
+    debugWrite(debugDir, "schema.txt", schemaDescription);
+    debugWrite(debugDir, "tidied.html", cleanedHtml);
+  }
+
   const usage: Usage = {};
   let previousCode: string | undefined;
   let previousError: string | undefined;
@@ -469,6 +541,7 @@ export async function scrape<T extends z.ZodTypeAny>(
   // Step 2: Generate-execute-validate loop
   for (let iteration = 0; iteration < maxIterations; iteration++) {
     const attempt = iteration + 1;
+    const attemptDir = `attempt-${attempt}`;
 
     console.log(`[scrape] Attempt ${attempt}/${maxIterations}: generating scraping code...`);
 
@@ -478,30 +551,59 @@ export async function scrape<T extends z.ZodTypeAny>(
       customPrompt,
       previousCode,
       previousError,
+      tidiedHtml: previousCode ? cleanedHtml : undefined,
     });
+
+    if (debugDir) {
+      debugWrite(debugDir, `${attemptDir}/prompt.txt`, codePrompt);
+    }
 
     let codeResult: z.infer<typeof codeGenerationSchema>;
     try {
       codeResult = await callLLM(llm, codePrompt, codeGenerationSchema, usage);
     } catch (err: any) {
+      if (debugDir) {
+        debugWrite(debugDir, `${attemptDir}/llm-error.txt`, err.message ?? String(err));
+      }
       throw new Error(`Failed to generate scraping code: ${err.message}`);
     }
 
     const code = codeResult.code;
     console.log(`[scrape] Attempt ${attempt}/${maxIterations}: code generated (${code.length} chars), executing...`);
 
+    if (debugDir) {
+      debugWrite(debugDir, `${attemptDir}/code.js`, code);
+    }
+
     // 2b. Execute code against HTML
-    const { result: execResult, error: execError } = executeScrapingCode(
+    const { result: execResult, error: execError, logs: execLogs } = executeScrapingCode(
       code,
       content,
       sourceUrl,
     );
 
+    const logsText = execLogs.length > 0 ? execLogs.join("\n") : "";
+    if (logsText) {
+      console.log(`[scrape] Attempt ${attempt}/${maxIterations}: scraper console output:\n${logsText}`);
+    }
+
+    if (debugDir && logsText) {
+      debugWrite(debugDir, `${attemptDir}/console-output.txt`, logsText);
+    }
+
     if (execError) {
       console.log(`[scrape] Attempt ${attempt}/${maxIterations}: execution failed — ${execError}`);
+      if (debugDir) {
+        debugWrite(debugDir, `${attemptDir}/execution-error.txt`, execError);
+      }
       previousCode = code;
-      previousError = `Execution error: ${execError}`;
+      previousError = `Execution error: ${execError}` +
+        (logsText ? `\n\nConsole output before the error:\n${logsText}` : "");
       continue;
+    }
+
+    if (debugDir) {
+      debugWrite(debugDir, `${attemptDir}/execution-result.json`, JSON.stringify(execResult, null, 2));
     }
 
     console.log(`[scrape] Attempt ${attempt}/${maxIterations}: execution succeeded, validating schema...`);
@@ -513,13 +615,21 @@ export async function scrape<T extends z.ZodTypeAny>(
         .map((i: any) => `${i.path.join(".")}: ${i.message}`)
         .join("; ");
       console.log(`[scrape] Attempt ${attempt}/${maxIterations}: schema validation failed — ${zodErrors}`);
+      if (debugDir) {
+        debugWrite(debugDir, `${attemptDir}/schema-error.txt`, zodErrors);
+      }
       previousCode = code;
-      previousError = `Schema validation failed: ${zodErrors}\n\nExecution result was:\n${JSON.stringify(execResult, null, 2)}`;
+      previousError = `Schema validation failed: ${zodErrors}\n\nExecution result was:\n${JSON.stringify(execResult, null, 2)}` +
+        (logsText ? `\n\nConsole output from the scraper:\n${logsText}` : "");
       continue;
     }
 
     const validatedData = parseResult.data as z.infer<T>;
     lastData = validatedData;
+
+    if (debugDir) {
+      debugWrite(debugDir, `${attemptDir}/validated-data.json`, JSON.stringify(validatedData, null, 2));
+    }
 
     console.log(`[scrape] Attempt ${attempt}/${maxIterations}: schema valid, asking LLM to verify data quality...`);
 
@@ -529,6 +639,10 @@ export async function scrape<T extends z.ZodTypeAny>(
       schemaDescription,
       extractedData: validatedData,
     });
+
+    if (debugDir) {
+      debugWrite(debugDir, `${attemptDir}/validation-prompt.txt`, validationPrompt);
+    }
 
     let validation: z.infer<typeof validationSchema>;
     try {
@@ -540,17 +654,25 @@ export async function scrape<T extends z.ZodTypeAny>(
       );
     } catch {
       console.log(`[scrape] Attempt ${attempt}/${maxIterations}: LLM validation call failed, accepting schema-valid result`);
+      if (debugDir) {
+        debugWrite(debugDir, `${attemptDir}/validation-result.json`, JSON.stringify({ accepted: true, reason: "LLM validation call failed, schema-valid result accepted" }, null, 2));
+      }
       return { code, data: validatedData, processedContent, usage };
     }
 
+    if (debugDir) {
+      debugWrite(debugDir, `${attemptDir}/validation-result.json`, JSON.stringify(validation, null, 2));
+    }
+
     if (validation.isValid) {
-      console.log(`[scrape] Attempt ${attempt}/${maxIterations}: LLM confirmed data is valid`);
+      console.log(`[scrape] Attempt ${attempt}/${maxIterations}: LLM confirmed data is valid ✓`);
       return { code, data: validatedData, processedContent, usage };
     }
 
     console.log(`[scrape] Attempt ${attempt}/${maxIterations}: LLM rejected result — ${validation.issues ?? "no details"}`);
     previousCode = code;
-    previousError = `LLM validation issues: ${validation.issues ?? "Unknown issues"}\n\nExecution result was:\n${JSON.stringify(validatedData, null, 2)}`;
+    previousError = `LLM validation issues: ${validation.issues ?? "Unknown issues"}\n\nExecution result was:\n${JSON.stringify(validatedData, null, 2)}` +
+      (logsText ? `\n\nConsole output from the scraper:\n${logsText}` : "");
   }
 
   console.log(`[scrape] Failed after ${maxIterations} attempts`);

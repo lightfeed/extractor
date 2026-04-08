@@ -20,6 +20,16 @@ describe("HTML to Markdown converter", () => {
     expect(markdown).toContain("Paragraph");
   });
 
+  test("should strip aria-hidden elements", () => {
+    const html =
+      '<span class="sans-serif gray f7" aria-hidden="true" data-testid="product-reviews" data-value="275">275</span>' +
+      '<span class="ld_FS">4.4873 out of 5 stars. 275 reviews</span>';
+    const markdown = htmlToMarkdown(html);
+
+    // aria-hidden span is stripped, only the accessible span remains
+    expect(markdown).toBe("4.4873 out of 5 stars. 275 reviews");
+  });
+
   // TODO: Add test for end-to-end extraction
   test("should escape markdown characters", () => {
     const html =

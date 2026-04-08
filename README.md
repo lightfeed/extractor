@@ -509,6 +509,7 @@ const result = await scrape({
     includeImages: true,
   },
   maxIterations: 3,              // Max generate-execute-validate cycles
+  debug: true,                   // Write intermediate artifacts to disk
 });
 
 // result.code  — reusable JavaScript function: scrape(document) => { products: [...] }
@@ -543,6 +544,28 @@ console.log("Extracted data:", JSON.stringify(result.data, null, 2));
 | `prompt` | `string` | Custom prompt to guide the code generation | Internal default |
 | `maxInputTokens` | `number` | Maximum input tokens (4 chars/token). Truncates annotated markdown if exceeded. | `undefined` |
 | `maxIterations` | `number` | Maximum generate-execute-validate cycles before throwing | `3` |
+| `debug` | `boolean \| string` | Write intermediate artifacts to disk. `true` creates a timestamped directory; a string sets the output path. | `false` |
+
+#### Debug Mode
+
+Pass `debug: true` (or a directory path) to write every intermediate artifact to disk:
+
+```
+scrape-debug-1712345678901/
+├── annotated-markdown.md       # Scrapedown output with CSS/XPath annotations
+├── schema.txt                  # Human-readable schema description
+├── attempt-1/
+│   ├── prompt.txt              # Full LLM code-generation prompt
+│   ├── code.js                 # Generated scraping function
+│   ├── execution-result.json   # Raw result from running the code (or execution-error.txt)
+│   ├── schema-error.txt        # Zod validation errors (if any)
+│   ├── validated-data.json     # Data after Zod validation
+│   ├── validation-prompt.txt   # LLM data-quality review prompt
+│   └── validation-result.json  # LLM validation response
+├── attempt-2/
+│   └── ...                     # Only present when retries occur
+└── ...
+```
 
 #### ScrapeResult
 
