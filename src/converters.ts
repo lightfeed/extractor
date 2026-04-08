@@ -104,6 +104,11 @@ export function htmlToMarkdown(
     replacement: () => "",
   });
 
+  turnDownService.addRule("remove-aria-hidden", {
+    filter: (node: any) => node.getAttribute("aria-hidden") === "true",
+    replacement: () => "",
+  });
+
   turnDownService.addRule("truncate-svg", {
     filter: "svg" as any,
     replacement: () => "",
