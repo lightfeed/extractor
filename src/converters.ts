@@ -70,21 +70,24 @@ function extractMainHtml(html: string): string {
 }
 
 /**
- * Convert HTML to Markdown
+ * Options passed to Turndown rule helpers.
  */
-export function htmlToMarkdown(
-  html: string,
-  options?: HTMLExtractionOptions,
-  sourceUrl?: string,
-): string {
-  // First clean up the html
-  const tidiedHtml = tidyHtml(html, options?.includeImages ?? false);
+export interface TurndownRuleOptions {
+  includeImages?: boolean;
+  cleanUrls?: boolean;
+  sourceUrl?: string;
+}
 
-  // Turndown config
-  // Reference: https://github.com/jina-ai/reader/blob/1e3bae6aad9cf0005c14f0036b46b49390e63203/backend/functions/src/cloud-functions/crawler.ts#L134
-  const turnDownService = new TurndownService();
-
-  // Define elements to remove - conditionally include or exclude images
+/**
+ * Add cleanup / removal rules that strip noise elements from the HTML.
+ * These rules are safe to use with scrapedown — they only remove elements
+ * that should never be annotated (scripts, styles, SVGs, etc.) so they
+ * don't interfere with scrapedown's annotation rules for content elements.
+ */
+export function addTurndownCleanupRules(
+  service: TurndownService,
+  ruleOptions: TurndownRuleOptions = {},
+): void {
   const elementsToRemove: any[] = [
     "meta",
     "style",
@@ -93,45 +96,55 @@ export function htmlToMarkdown(
     "link",
     "textarea",
   ];
-
-  // Only remove image elements if includeImages is not enabled
-  if (!options?.includeImages) {
+  if (!ruleOptions.includeImages) {
     elementsToRemove.push("img", "picture", "figure");
   }
 
-  turnDownService.addRule("remove-irrelevant", {
+  service.addRule("remove-irrelevant", {
     filter: elementsToRemove,
     replacement: () => "",
   });
 
-  turnDownService.addRule("remove-aria-hidden", {
+  service.addRule("remove-aria-hidden", {
     filter: (node: any) => node.getAttribute("aria-hidden") === "true",
     replacement: () => "",
   });
 
-  turnDownService.addRule("truncate-svg", {
+  service.addRule("truncate-svg", {
     filter: "svg" as any,
     replacement: () => "",
   });
+}
 
-  turnDownService.addRule("title-as-h1", {
+/**
+ * Add rendering rules that improve the Markdown output for links, paragraphs,
+ * images, and titles. These rules override Turndown's default element handling
+ * and MUST NOT be used with scrapedown — they would override scrapedown's
+ * annotation rules for those elements, causing CSS/XPath annotations to be lost.
+ */
+export function addTurndownRenderingRules(
+  service: TurndownService,
+  ruleOptions: TurndownRuleOptions = {},
+): void {
+  const { cleanUrls, sourceUrl } = ruleOptions;
+
+  service.addRule("title-as-h1", {
     filter: ["title"],
     replacement: (innerText: string) => `${innerText}\n===============\n`,
   });
 
-  turnDownService.addRule("improved-paragraph", {
+  service.addRule("improved-paragraph", {
     filter: "p",
     replacement: (innerText: string) => {
       const trimmed = innerText.trim();
       if (!trimmed) {
         return "";
       }
-
       return `${trimmed.replace(/\n{3,}/g, "\n\n")}\n\n`;
     },
   });
 
-  turnDownService.addRule("improved-inline-link", {
+  service.addRule("improved-inline-link", {
     filter: function (node: any, options: any) {
       return Boolean(
         options.linkStyle === "inlined" &&
@@ -139,11 +152,9 @@ export function htmlToMarkdown(
         node.getAttribute("href"),
       );
     },
-
     replacement: function (content: string, node: any) {
       let href = node.getAttribute("href");
       if (href) {
-        // Convert relative URLs to absolute if sourceUrl is provided
         if (
           sourceUrl &&
           !href.startsWith("http") &&
@@ -158,12 +169,9 @@ export function htmlToMarkdown(
             );
           }
         }
-
-        // Clean URL if cleanUrls option is enabled (default false)
-        if (options?.cleanUrls) {
+        if (cleanUrls) {
           href = cleanUrl(href);
         }
-
         href = href.replace(/([()])/g, "\\$1");
       }
       let title = cleanAttribute(node.getAttribute("title"));
@@ -176,13 +184,11 @@ export function htmlToMarkdown(
     },
   });
 
-  turnDownService.addRule("images", {
+  service.addRule("images", {
     filter: "img",
-
     replacement: function (content: string, node: any) {
       let src = node.getAttribute("src");
       if (src) {
-        // Convert relative URLs to absolute if sourceUrl is provided
         if (sourceUrl && !src.startsWith("http") && !src.startsWith("data:")) {
           try {
             src = url.resolve(sourceUrl, src);
@@ -193,26 +199,52 @@ export function htmlToMarkdown(
             );
           }
         }
-
-        // Clean URL if cleanUrls option is enabled (default false)
-        if (options?.cleanUrls) {
+        if (cleanUrls) {
           src = cleanUrl(src);
         }
-
         src = src.replace(/([()])/g, "\\$1");
       } else {
-        return ""; // No source, no image
+        return "";
       }
 
       let alt = cleanAttribute(node.getAttribute("alt") || "");
       let title = cleanAttribute(node.getAttribute("title"));
-
       if (title) title = ' "' + title.replace(/"/g, '\\"') + '"';
 
       const fixedSrc = src.replace(/\s+/g, "").trim();
 
       return `![${alt}](${fixedSrc}${title || ""})`;
     },
+  });
+}
+
+/**
+ * Add the full set of Turndown rules (cleanup + rendering) to a TurndownService.
+ * Used by the standard htmlToMarkdown converter.
+ */
+export function addTurndownRules(
+  service: TurndownService,
+  ruleOptions: TurndownRuleOptions = {},
+): void {
+  addTurndownCleanupRules(service, ruleOptions);
+  addTurndownRenderingRules(service, ruleOptions);
+}
+
+/**
+ * Convert HTML to Markdown
+ */
+export function htmlToMarkdown(
+  html: string,
+  options?: HTMLExtractionOptions,
+  sourceUrl?: string,
+): string {
+  const tidiedHtml = tidyHtml(html, options?.includeImages ?? false);
+
+  const turnDownService = new TurndownService();
+  addTurndownRules(turnDownService, {
+    includeImages: options?.includeImages,
+    cleanUrls: options?.cleanUrls,
+    sourceUrl,
   });
 
   const fullMarkdown = turnDownService.turndown(tidiedHtml).trim();
@@ -235,8 +267,7 @@ export function htmlToMarkdown(
   }
 }
 
-// Clean up the html
-function tidyHtml(html: string, includeImages: boolean): string {
+export function tidyHtml(html: string, includeImages: boolean): string {
   const $ = cheerio.load(html);
   $("*").each(function (this: any) {
     const element = $(this);
