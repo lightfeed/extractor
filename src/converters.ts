@@ -105,6 +105,11 @@ export function addTurndownCleanupRules(
     replacement: () => "",
   });
 
+  service.addRule("remove-aria-hidden", {
+    filter: (node: any) => node.getAttribute("aria-hidden") === "true",
+    replacement: () => "",
+  });
+
   service.addRule("truncate-svg", {
     filter: "svg" as any,
     replacement: () => "",
