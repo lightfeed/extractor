@@ -7,7 +7,7 @@ import { HTMLExtractionOptions } from "../types";
 async function testConvertHtmlToMarkdown(
   htmlFilePath: string,
   outputDir: string,
-  options?: HTMLExtractionOptions
+  options?: HTMLExtractionOptions,
 ) {
   try {
     // Read the HTML file
@@ -23,11 +23,13 @@ async function testConvertHtmlToMarkdown(
 
     // Generate output filename
     const baseName = path.basename(htmlFilePath, ".html");
-    const optionsSuffix = options?.includeImages
-      ? ".with-images"
-      : options?.extractMainHtml
-      ? ".main-content"
-      : "";
+    const optionsSuffix = options?.annotateNumberClasses
+      ? ".annotate-number-classes"
+      : options?.includeImages
+        ? ".with-images"
+        : options?.extractMainHtml
+          ? ".main-content"
+          : "";
     const outputPath = path.join(outputDir, `${baseName}${optionsSuffix}.md`);
 
     // Save the markdown
@@ -56,7 +58,7 @@ async function main() {
 
   // Test different conversion options
   console.log(
-    "\n🔍 Testing HTML to Markdown conversion with different options...\n"
+    "\n🔍 Testing HTML to Markdown conversion with different options...\n",
   );
 
   // 1. Basic conversion
@@ -72,15 +74,15 @@ async function main() {
     extractMainHtml: true,
   });
 
-  // 4. Both images and main content
+  // 4. Annotate number classes
   await testConvertHtmlToMarkdown(htmlFilePath, outputDir, {
-    includeImages: true,
     extractMainHtml: true,
+    annotateNumberClasses: true,
   });
 
   console.log(
     "\n✨ All conversions completed! Check the output in:",
-    outputDir
+    outputDir,
   );
 }
 
