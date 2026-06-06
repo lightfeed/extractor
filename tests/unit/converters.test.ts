@@ -149,6 +149,95 @@ describe("HTML to Markdown converter", () => {
     expect(markdownWithoutExtraction).toContain("Footer content");
   });
 
+  describe("number class annotation", () => {
+    const priceHtml = `
+      <span class="price-box__price large ">
+        <span class="price-box__price__amount">
+          <span class="price-box__price__amount__integer">22</span>
+          <span class="price-box__price__amount__decSep">,</span>
+          <sup class="price-box__price__amount__decimal">99</sup>
+        </span>
+        <span class="price-box__price__spec">Chacun</span>
+      </span>`;
+
+    test("does not annotate numbers by default", () => {
+      const markdown = htmlToMarkdown(priceHtml);
+      expect(markdown).not.toContain("{");
+      expect(markdown).toContain("Chacun");
+    });
+
+    test("annotates the outermost numeric element with its class", () => {
+      const markdown = htmlToMarkdown(priceHtml, {
+        annotateNumberClasses: true,
+      });
+
+      // The fully-numeric amount span is annotated with its class...
+      expect(markdown).toContain("22,99 {price-box__price__amount}");
+      // ...while the nested integer / decimal parts are NOT annotated.
+      expect(markdown).not.toContain("__integer}");
+      expect(markdown).not.toContain("__decimal}");
+      // Non-numeric siblings are left untouched.
+      expect(markdown).toContain("Chacun");
+    });
+
+    test("annotates standalone numeric fields", () => {
+      const html = `
+        <div class="product">
+          <span class="rating">4.5</span>
+          <span class="review-count">275</span>
+          <div class="price">$1,234.56</div>
+        </div>`;
+      const markdown = htmlToMarkdown(html, { annotateNumberClasses: true });
+
+      expect(markdown).toContain("4.5 {rating}");
+      expect(markdown).toContain("275 {review-count}");
+      expect(markdown).toContain("$1,234.56 {price}");
+    });
+
+    test("annotates the innermost element for same-number wrappers", () => {
+      // The number is duplicated through a layout wrapper (col-xs-6) whose
+      // only content is the same value. The meaningful class lives on the
+      // inner element, not the grid wrapper.
+      const html = `
+        <div class="row">
+          <div class="col-xs-6">
+            <div class="page-product__specs__label">Weight</div>
+          </div>
+          <div class="col-xs-6">
+            <div class="page-product__specs__value">125</div>
+          </div>
+        </div>`;
+      const markdown = htmlToMarkdown(html, { annotateNumberClasses: true });
+
+      expect(markdown).toContain("125 {page-product__specs__value}");
+      expect(markdown).not.toContain("{col-xs-6}");
+    });
+
+    test("annotates the innermost element through deeply nested wrappers", () => {
+      const html = `
+        <section>
+          <div class="a"><div class="b"><div class="c">125</div></div></div>
+        </section>`;
+      const markdown = htmlToMarkdown(html, { annotateNumberClasses: true });
+
+      expect(markdown).toContain("125 {c}");
+      expect(markdown).not.toContain("{a}");
+      expect(markdown).not.toContain("{b}");
+    });
+
+    test("does not annotate non-numeric or classless elements", () => {
+      const html = `
+        <span class="label">In stock</span>
+        <span>42</span>`;
+      const markdown = htmlToMarkdown(html, { annotateNumberClasses: true });
+
+      // Text content is not a number → no annotation.
+      expect(markdown).not.toContain("{label}");
+      // Numeric but no class → no annotation.
+      expect(markdown).not.toContain("{");
+    });
+  });
+
   describe("URL handling", () => {
     test("should convert relative URLs to absolute URLs when sourceUrl is provided", () => {
       const html = `
