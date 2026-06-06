@@ -41,6 +41,20 @@ export interface HTMLExtractionOptions {
    * Disabled by default to preserve original URLs.
    */
   cleanUrls?: boolean;
+
+  /**
+   * When enabled, appends the CSS class name of number-bearing elements next to
+   * the number in the markdown output (e.g. `22,99 {price-box__price__amount}`).
+   *
+   * Plain markdown discards the semantic meaning encoded in class names, making
+   * it hard for the LLM to tell whether a number is a price, rating, review
+   * count, etc. This annotates the outermost element whose text is purely a
+   * number, preserving that signal while keeping nested numeric parts
+   * (integer / decimal / separator spans) from adding noise.
+   *
+   * Disabled by default.
+   */
+  annotateNumberClasses?: boolean;
 }
 
 /**
