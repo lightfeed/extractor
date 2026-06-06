@@ -70,21 +70,46 @@ function extractMainHtml(html: string): string {
 }
 
 /**
- * Convert HTML to Markdown
+ * Options passed to Turndown rule helpers.
  */
-export function htmlToMarkdown(
-  html: string,
-  options?: HTMLExtractionOptions,
-  sourceUrl?: string,
-): string {
-  // First clean up the html
-  const tidiedHtml = tidyHtml(html, options?.includeImages ?? false);
+export interface TurndownRuleOptions {
+  includeImages?: boolean;
+  cleanUrls?: boolean;
+  sourceUrl?: string;
+  annotateNumberClasses?: boolean;
+}
 
-  // Turndown config
-  // Reference: https://github.com/jina-ai/reader/blob/1e3bae6aad9cf0005c14f0036b46b49390e63203/backend/functions/src/cloud-functions/crawler.ts#L134
-  const turnDownService = new TurndownService();
+/**
+ * Matches a string that is "just a number" once whitespace is removed.
+ * Tolerates a leading currency symbol / sign, thousands and decimal
+ * separators (",", "."), and a trailing percent sign — e.g. "22,99",
+ * "$1,234.56", "4.5", "275", "99%".
+ */
+const NUMBER_LIKE_RE = /^[$€£¥₹+\-]?[\d.,]*\d[\d.,]*%?$/;
 
-  // Define elements to remove - conditionally include or exclude images
+/**
+ * Returns the whitespace-collapsed text when it represents a single number
+ * token (e.g. "22,99", "$1,234.56", "275"), otherwise an empty string. Used
+ * to decide whether an element's class name carries semantic meaning worth
+ * annotating onto the number, and to compare numbers across nested elements.
+ */
+function normalizeNumberText(text: string | null | undefined): string {
+  if (!text) return "";
+  const normalized = text.replace(/\s+/g, "");
+  if (!normalized || !/\d/.test(normalized)) return "";
+  return NUMBER_LIKE_RE.test(normalized) ? normalized : "";
+}
+
+/**
+ * Add cleanup / removal rules that strip noise elements from the HTML.
+ * These rules are safe to use with scrapedown — they only remove elements
+ * that should never be annotated (scripts, styles, SVGs, etc.) so they
+ * don't interfere with scrapedown's annotation rules for content elements.
+ */
+export function addTurndownCleanupRules(
+  service: TurndownService,
+  ruleOptions: TurndownRuleOptions = {},
+): void {
   const elementsToRemove: any[] = [
     "meta",
     "style",
@@ -93,45 +118,114 @@ export function htmlToMarkdown(
     "link",
     "textarea",
   ];
-
-  // Only remove image elements if includeImages is not enabled
-  if (!options?.includeImages) {
+  if (!ruleOptions.includeImages) {
     elementsToRemove.push("img", "picture", "figure");
   }
 
-  turnDownService.addRule("remove-irrelevant", {
+  service.addRule("remove-irrelevant", {
     filter: elementsToRemove,
     replacement: () => "",
   });
 
-  turnDownService.addRule("remove-aria-hidden", {
+  service.addRule("remove-aria-hidden", {
     filter: (node: any) => node.getAttribute("aria-hidden") === "true",
     replacement: () => "",
   });
 
-  turnDownService.addRule("truncate-svg", {
+  service.addRule("truncate-svg", {
     filter: "svg" as any,
     replacement: () => "",
   });
+}
 
-  turnDownService.addRule("title-as-h1", {
+/**
+ * Add rendering rules that improve the Markdown output for links, paragraphs,
+ * images, and titles. These rules override Turndown's default element handling
+ * and MUST NOT be used with scrapedown — they would override scrapedown's
+ * annotation rules for those elements, causing CSS/XPath annotations to be lost.
+ */
+export function addTurndownRenderingRules(
+  service: TurndownService,
+  ruleOptions: TurndownRuleOptions = {},
+): void {
+  const { cleanUrls, sourceUrl } = ruleOptions;
+
+  if (ruleOptions.annotateNumberClasses) {
+    // Append the class name of number-bearing elements next to the number so
+    // the downstream LLM keeps the semantic meaning that plain Markdown drops
+    // (e.g. "22,99 {price-box__price__amount}").
+    //
+    // We pick the single element that best represents the number, navigating
+    // two opposing nesting patterns:
+    //   1. Composed numbers — the number is assembled from fragment children
+    //      (e.g. <span int>22</span><span decSep>,</span><sup dec>99</sup>).
+    //      None of the children holds the whole number, so we annotate the
+    //      parent where it comes together and skip the fragments.
+    //   2. Wrapped numbers — the same full number is duplicated through
+    //      single-purpose wrappers (e.g. layout div <div col-xs-6>
+    //      <div specs__value>125</div></div>). We annotate the innermost
+    //      element and skip the redundant outer wrappers, since the inner
+    //      class (page-product__specs__value) carries the meaning, not the
+    //      layout class (col-xs-6).
+    service.addRule("annotate-number-classes", {
+      filter: function (node: any) {
+        if (typeof node.getAttribute !== "function") return false;
+        const className = node.getAttribute("class");
+        if (!className || !className.trim()) return false;
+        const selfNumber = normalizeNumberText(node.textContent);
+        if (!selfNumber) return false;
+
+        // Wrapped-number case: if a child element already carries the same
+        // full number, that child is more specific — let it be annotated.
+        const childNodes = node.childNodes || [];
+        for (let i = 0; i < childNodes.length; i++) {
+          const child = childNodes[i];
+          if (
+            child.nodeType === 1 &&
+            normalizeNumberText(child.textContent) === selfNumber
+          ) {
+            return false;
+          }
+        }
+
+        // Composed-number case: if the parent is numeric but represents a
+        // different (larger) number, this element is only a fragment of it —
+        // let the parent be annotated instead.
+        const parent = node.parentNode;
+        if (parent && parent.nodeType === 1) {
+          const parentNumber = normalizeNumberText(parent.textContent);
+          if (parentNumber && parentNumber !== selfNumber) {
+            return false;
+          }
+        }
+
+        return true;
+      },
+      replacement: function (_content: string, node: any) {
+        const number = normalizeNumberText(node.textContent);
+        const className = node.getAttribute("class").trim().replace(/\s+/g, " ");
+        return `${number} {${className}}`;
+      },
+    });
+  }
+
+  service.addRule("title-as-h1", {
     filter: ["title"],
     replacement: (innerText: string) => `${innerText}\n===============\n`,
   });
 
-  turnDownService.addRule("improved-paragraph", {
+  service.addRule("improved-paragraph", {
     filter: "p",
     replacement: (innerText: string) => {
       const trimmed = innerText.trim();
       if (!trimmed) {
         return "";
       }
-
       return `${trimmed.replace(/\n{3,}/g, "\n\n")}\n\n`;
     },
   });
 
-  turnDownService.addRule("improved-inline-link", {
+  service.addRule("improved-inline-link", {
     filter: function (node: any, options: any) {
       return Boolean(
         options.linkStyle === "inlined" &&
@@ -139,11 +233,9 @@ export function htmlToMarkdown(
         node.getAttribute("href"),
       );
     },
-
     replacement: function (content: string, node: any) {
       let href = node.getAttribute("href");
       if (href) {
-        // Convert relative URLs to absolute if sourceUrl is provided
         if (
           sourceUrl &&
           !href.startsWith("http") &&
@@ -158,12 +250,9 @@ export function htmlToMarkdown(
             );
           }
         }
-
-        // Clean URL if cleanUrls option is enabled (default false)
-        if (options?.cleanUrls) {
+        if (cleanUrls) {
           href = cleanUrl(href);
         }
-
         href = href.replace(/([()])/g, "\\$1");
       }
       let title = cleanAttribute(node.getAttribute("title"));
@@ -176,13 +265,11 @@ export function htmlToMarkdown(
     },
   });
 
-  turnDownService.addRule("images", {
+  service.addRule("images", {
     filter: "img",
-
     replacement: function (content: string, node: any) {
       let src = node.getAttribute("src");
       if (src) {
-        // Convert relative URLs to absolute if sourceUrl is provided
         if (sourceUrl && !src.startsWith("http") && !src.startsWith("data:")) {
           try {
             src = url.resolve(sourceUrl, src);
@@ -193,26 +280,53 @@ export function htmlToMarkdown(
             );
           }
         }
-
-        // Clean URL if cleanUrls option is enabled (default false)
-        if (options?.cleanUrls) {
+        if (cleanUrls) {
           src = cleanUrl(src);
         }
-
         src = src.replace(/([()])/g, "\\$1");
       } else {
-        return ""; // No source, no image
+        return "";
       }
 
       let alt = cleanAttribute(node.getAttribute("alt") || "");
       let title = cleanAttribute(node.getAttribute("title"));
-
       if (title) title = ' "' + title.replace(/"/g, '\\"') + '"';
 
       const fixedSrc = src.replace(/\s+/g, "").trim();
 
       return `![${alt}](${fixedSrc}${title || ""})`;
     },
+  });
+}
+
+/**
+ * Add the full set of Turndown rules (cleanup + rendering) to a TurndownService.
+ * Used by the standard htmlToMarkdown converter.
+ */
+export function addTurndownRules(
+  service: TurndownService,
+  ruleOptions: TurndownRuleOptions = {},
+): void {
+  addTurndownCleanupRules(service, ruleOptions);
+  addTurndownRenderingRules(service, ruleOptions);
+}
+
+/**
+ * Convert HTML to Markdown
+ */
+export function htmlToMarkdown(
+  html: string,
+  options?: HTMLExtractionOptions,
+  sourceUrl?: string,
+): string {
+  const tidiedHtml = tidyHtml(html, options?.includeImages ?? false);
+
+  const turnDownService = new TurndownService();
+  addTurndownRules(turnDownService, {
+    includeImages: options?.includeImages,
+    cleanUrls: options?.cleanUrls,
+    annotateNumberClasses: options?.annotateNumberClasses,
+    sourceUrl,
   });
 
   const fullMarkdown = turnDownService.turndown(tidiedHtml).trim();
@@ -235,8 +349,7 @@ export function htmlToMarkdown(
   }
 }
 
-// Clean up the html
-function tidyHtml(html: string, includeImages: boolean): string {
+export function tidyHtml(html: string, includeImages: boolean): string {
   const $ = cheerio.load(html);
   $("*").each(function (this: any) {
     const element = $(this);

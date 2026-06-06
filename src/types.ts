@@ -41,6 +41,20 @@ export interface HTMLExtractionOptions {
    * Disabled by default to preserve original URLs.
    */
   cleanUrls?: boolean;
+
+  /**
+   * When enabled, appends the CSS class name of number-bearing elements next to
+   * the number in the markdown output (e.g. `22,99 {price-box__price__amount}`).
+   *
+   * Plain markdown discards the semantic meaning encoded in class names, making
+   * it hard for the LLM to tell whether a number is a price, rating, review
+   * count, etc. This annotates the outermost element whose text is purely a
+   * number, preserving that signal while keeping nested numeric parts
+   * (integer / decimal / separator spans) from adding noise.
+   *
+   * Disabled by default.
+   */
+  annotateNumberClasses?: boolean;
 }
 
 /**
@@ -115,5 +129,73 @@ export interface ExtractorResult<T> {
   processedContent: string;
 
   /** Usage statistics */
+  usage: Usage;
+}
+
+/**
+ * Options for the scrape function (Beta)
+ *
+ * Generates reusable scraping code from HTML using CSS selector and XPath annotations,
+ * then validates it by executing against the page and confirming with the LLM.
+ */
+export interface ScrapeOptions<T extends z.ZodTypeAny> {
+  /** HTML content to generate scraping code for */
+  content: string;
+
+  /** Zod schema defining the structure to extract */
+  schema: T;
+
+  /**
+   * A LangChain chat model instance. Recommend using advanced models for this mode
+   * (e.g. gpt-4.1, gemini-2.5-pro) since it requires generating and reasoning about code.
+   */
+  llm: BaseChatModel;
+
+  /** URL of the HTML content, required to properly handle relative URLs */
+  sourceUrl: string;
+
+  /** HTML-specific extraction options */
+  htmlExtractionOptions?: HTMLExtractionOptions;
+
+  /** Custom prompt to guide the scraping code generation */
+  prompt?: string;
+
+  /** Maximum number of input tokens to send to the LLM. Uses a rough conversion of 4 characters per token. */
+  maxInputTokens?: number;
+
+  /**
+   * Maximum number of generate-execute-validate iterations.
+   * Each iteration generates (or refines) scraping code, executes it, and validates the result.
+   * @default 3
+   */
+  maxIterations?: number;
+
+  /**
+   * Enable debug mode to write intermediate artifacts to disk.
+   * - `true` — writes to `./scrape-debug-<timestamp>/`
+   * - A string path — writes to that directory
+   *
+   * Each attempt gets a sub-folder with the generated code, execution result/error,
+   * validation feedback, etc.  The annotated markdown is written once at the top level.
+   */
+  debug?: boolean | string;
+}
+
+/**
+ * Result of the scrape function (Beta)
+ */
+export interface ScrapeResult<T> {
+  /** Generated JavaScript scraping function code */
+  code: string;
+
+  /** Extracted data from executing the scraping code against the HTML */
+  data: T;
+
+  /**
+   * Annotated markdown (with CSS selector and XPath annotations) that was sent to the LLM.
+   */
+  processedContent: string;
+
+  /** Accumulated usage statistics across all iterations */
   usage: Usage;
 }
