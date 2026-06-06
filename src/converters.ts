@@ -70,6 +70,27 @@ function extractMainHtml(html: string): string {
 }
 
 /**
+ * Matches a string that is "just a number" once whitespace is removed.
+ * Tolerates a leading currency symbol / sign, thousands and decimal
+ * separators (",", "."), and a trailing percent sign — e.g. "22,99",
+ * "$1,234.56", "4.5", "275", "99%".
+ */
+const NUMBER_LIKE_RE = /^[$€£¥₹+\-]?[\d.,]*\d[\d.,]*%?$/;
+
+/**
+ * Returns the whitespace-collapsed text when it represents a single number
+ * token (e.g. "22,99", "$1,234.56", "275"), otherwise an empty string. Used
+ * to decide whether an element's class name carries semantic meaning worth
+ * annotating onto the number, and to compare numbers across nested elements.
+ */
+function normalizeNumberText(text: string | null | undefined): string {
+  if (!text) return "";
+  const normalized = text.replace(/\s+/g, "");
+  if (!normalized || !/\d/.test(normalized)) return "";
+  return NUMBER_LIKE_RE.test(normalized) ? normalized : "";
+}
+
+/**
  * Convert HTML to Markdown
  */
 export function htmlToMarkdown(
@@ -113,6 +134,65 @@ export function htmlToMarkdown(
     filter: "svg" as any,
     replacement: () => "",
   });
+
+  if (options?.annotateNumberClasses) {
+    // Append the class name of number-bearing elements next to the number so
+    // the downstream LLM keeps the semantic meaning that plain Markdown drops
+    // (e.g. "22,99 {price-box__price__amount}").
+    //
+    // We pick the single element that best represents the number, navigating
+    // two opposing nesting patterns:
+    //   1. Composed numbers — the number is assembled from fragment children
+    //      (e.g. <span int>22</span><span decSep>,</span><sup dec>99</sup>).
+    //      None of the children holds the whole number, so we annotate the
+    //      parent where it comes together and skip the fragments.
+    //   2. Wrapped numbers — the same full number is duplicated through
+    //      single-purpose wrappers (e.g. layout div <div col-xs-6>
+    //      <div specs__value>125</div></div>). We annotate the innermost
+    //      element and skip the redundant outer wrappers, since the inner
+    //      class (page-product__specs__value) carries the meaning, not the
+    //      layout class (col-xs-6).
+    turnDownService.addRule("annotate-number-classes", {
+      filter: function (node: any) {
+        if (typeof node.getAttribute !== "function") return false;
+        const className = node.getAttribute("class");
+        if (!className || !className.trim()) return false;
+        const selfNumber = normalizeNumberText(node.textContent);
+        if (!selfNumber) return false;
+
+        // Wrapped-number case: if a child element already carries the same
+        // full number, that child is more specific — let it be annotated.
+        const childNodes = node.childNodes || [];
+        for (let i = 0; i < childNodes.length; i++) {
+          const child = childNodes[i];
+          if (
+            child.nodeType === 1 &&
+            normalizeNumberText(child.textContent) === selfNumber
+          ) {
+            return false;
+          }
+        }
+
+        // Composed-number case: if the parent is numeric but represents a
+        // different (larger) number, this element is only a fragment of it —
+        // let the parent be annotated instead.
+        const parent = node.parentNode;
+        if (parent && parent.nodeType === 1) {
+          const parentNumber = normalizeNumberText(parent.textContent);
+          if (parentNumber && parentNumber !== selfNumber) {
+            return false;
+          }
+        }
+
+        return true;
+      },
+      replacement: function (_content: string, node: any) {
+        const number = normalizeNumberText(node.textContent);
+        const className = node.getAttribute("class").trim().replace(/\s+/g, " ");
+        return `${number} {${className}}`;
+      },
+    });
+  }
 
   turnDownService.addRule("title-as-h1", {
     filter: ["title"],
