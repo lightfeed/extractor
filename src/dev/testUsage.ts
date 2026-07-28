@@ -4,11 +4,20 @@ import { z } from "zod";
 import { ChatOpenAI } from "@langchain/openai";
 import { extract, ContentFormat } from "../index";
 
+const {
+  shutdownAgentPondTracing,
+  startAgentPondTracing,
+} = require("../../agentpond-instrumentation.cjs") as {
+  shutdownAgentPondTracing: () => Promise<void>;
+  startAgentPondTracing: () => Promise<void>;
+};
+
 // Load environment variables from .env file
 config({ path: path.resolve(process.cwd(), ".env") });
 
 // A simple test script to verify usage tracking works
 async function testUsageTracking() {
+  await startAgentPondTracing();
   console.log("Testing usage tracking with OpenAI...");
 
   // Check if API keys are available
@@ -58,6 +67,8 @@ This is a test of the usage tracking system.
     }
   } catch (error) {
     console.error("Error testing usage tracking:", error);
+  } finally {
+    await shutdownAgentPondTracing();
   }
 }
 

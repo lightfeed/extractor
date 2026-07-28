@@ -680,6 +680,33 @@ Our URL validation system provides several key benefits:
 
 This approach ensures reliable URL extraction while maintaining the full power of Zod's schema validation.
 
+## AgentPond tracing
+
+The executable extraction example supports opt-in
+[AgentPond](https://github.com/marcusschiesser/agentpond) tracing. The
+instrumentation runs only when a Files SDK environment is loaded; importing
+`@lightfeed/extractor` as a library remains unchanged.
+
+```bash
+npx agentpond init
+npx agentpond env init local \
+  --provider fs \
+  --root "$PWD/.agentpond/envs/local/objects"
+npx agentpond env use local
+
+eval "$(npx agentpond env get local)"
+npm run test:usage
+
+npx agentpond sync
+npx agentpond traces list --limit 10
+```
+
+The local `fs` provider is for development only. For deployed trusted Node.js
+services, configure a persistent provider from the
+[Files SDK provider catalog](https://files-sdk.dev/docs/providers). OpenInference
+captures model inputs and outputs, so review the data policy before enabling
+tracing with production traffic.
+
 ## Development
 
 ### Setup

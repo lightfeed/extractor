@@ -6,10 +6,20 @@ import * as path from "path";
 import * as fs from "fs";
 import { htmlToMarkdown } from "./converters";
 
+const {
+  shutdownAgentPondTracing,
+  startAgentPondTracing,
+} = require("../agentpond-instrumentation.cjs") as {
+  shutdownAgentPondTracing: () => Promise<void>;
+  startAgentPondTracing: () => Promise<void>;
+};
+
 // Load environment variables from .env file
 config({ path: path.resolve(process.cwd(), ".env") });
 
 async function example() {
+  await startAgentPondTracing();
+
   try {
     // Check if API key is available
     if (!process.env.OPENAI_API_KEY) {
@@ -68,6 +78,8 @@ async function example() {
     console.log(result.usage);
   } catch (error) {
     console.error("Error in example:", error);
+  } finally {
+    await shutdownAgentPondTracing();
   }
 }
 

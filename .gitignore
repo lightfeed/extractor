@@ -11,6 +11,7 @@ lib/
 .env
 .env.local
 .env.*.local
+.agentpond/
 
 # Logs
 logs
@@ -40,4 +41,4 @@ temp/
 /dev-output/
 
 # Keep the .gitmodules file that defines the submodule
-!/.gitmodules 
+!/.gitmodules
